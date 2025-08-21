@@ -13,8 +13,11 @@
 	<link href="assets/plugins/highcharts/css/highcharts.css" rel="stylesheet" />
 	<link href="assets/plugins/vectormap/jquery-jvectormap-2.0.2.css" rel="stylesheet" />
 	<link href="assets/plugins/metismenu/css/metisMenu.min.css" rel="stylesheet" />
+	  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 	<!-- loader-->
 	<link href="assets/css/pace.min.css" rel="stylesheet" />
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 	<script src="assets/js/pace.min.js"></script>
 	<!-- Bootstrap CSS -->
 	<link href="assets/css/bootstrap.min.css" rel="stylesheet">
@@ -25,8 +28,39 @@
 	<link rel="stylesheet" href="assets/css/semi-dark.css" />
 	<link rel="stylesheet" href="assets/css/header-colors.css" />
 	<title>Dashkote - Bootstrap5 Admin Template</title>
-</head>
+    <style>
+    body {
+        background-color: #f8f9fa;
+        padding: 20px;
+    }
 
+    .card {
+        margin-bottom: 20px;
+        border: none;
+        border-radius: 0.35rem;
+        box-shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
+    }
+
+    .fm-menu .list-group-item {
+        border: none;
+        color: #5a5c69;
+        transition: 0.15s;
+    }
+
+    .fm-menu .list-group-item:hover,
+    .fm-menu .list-group-item.active {
+        background-color: #eaecf4 !important;
+        color: #4e73df !important;
+        font-weight: bold;
+    }
+
+    .fm-menu .list-group-item i {
+        width: 20px;
+        text-align: center;
+    }
+
+    </style>
+</head>
 <body>
 	<!--wrapper-->
 	<div class="wrapper">
@@ -47,26 +81,11 @@
 
 				<!-- Tableau de bord -->
 				<li>
-					<a href="dashboard.html">
+					<a href="home.html">
 					<div class="parent-icon"><i class='bx bx-home-circle'></i></div>
 					<div class="menu-title">Tableau de bord</div>
 					</a>
 				</li>
-
-				<!-- Clients -->
-				<!-- <li>
-					<a href="javascript:;" class="has-arrow">
-					<div class="parent-icon"><i class='bx bx-user'></i></div>
-					<div class="menu-title">Clients</div>
-					</a>
-					<ul>
-					<li><a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a></li>
-					<li><a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures</a></li>
-					<li><a href="clients-modeles.html"><i class="bx bx-right-arrow-alt"></i>Modèles attribués</a></li>
-					<li><a href="clients-photos.html"><i class="bx bx-right-arrow-alt"></i>Photos des clients</a></li>
-					</ul>
-				</li> -->
-
 				<!-- Modèles -->
 				<li>
 					<a href="javascript:;" class="has-arrow">
@@ -115,7 +134,6 @@
 				</li>
 
 			</ul>
-
 			<!--end navigation-->
 		</div>
 		<!--end sidebar wrapper -->
@@ -492,157 +510,208 @@
 		<!--end header -->
 		<!--start page wrapper -->
 		<div class="page-wrapper">
-			<div class="page-content">
-			 <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-            <div class="breadcrumb-title pe-3">Accueil</div>
-            <div class="ps-3">
-              <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0 p-0">
-                  <li class="breadcrumb-item"><a href="javascript:;"><i class="bx bx-home-alt"></i></a>
-                  </li>
-                  <li class="breadcrumb-item active" aria-current="page">Tableau de bord</li>
-                </ol>
-              </nav>
+            <div class="page-content">
+                <div class="page-header">
+                    <div class="container-fluid">
+                        <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+                            <div class="breadcrumb-title pe-3">Paramètres</div>
+                            <div class="ps-3">
+                                <nav aria-label="breadcrumb">
+                                    <ol class="breadcrumb mb-0 p-0">
+                                        <li class="breadcrumb-item"><a href="#"><i class="bx bx-home-alt"></i></a></li>
+                                        <li class="breadcrumb-item active" aria-current="page">Formulaire d'inscription</li>
+                                    </ol>
+                                </nav>
+                            </div>
+                            <div class="ms-auto">
+                              
+                            </div>
+                        </div>
+                    </div>
+                </div>       
+                <div class="row">
+                    <!-- COL-3 : Menu de navigation -->
+                    <div class="col-12 col-lg-3">
+                        <div class="card"> 
+                            <div class="card-header bg-primary">
+                                <h6 class="mb-0 text-center text-white">Menu</h6>
+                            </div>
+                            <div class="card-body">     
+                                <!-- <h5 class="my-3">Menu</h5> -->
+                                <div class="fm-menu">
+                                   <div class="list-group list-group-flush">
+                                        <a href="parametres.html" class="list-group-item py-1 ">
+                                            <i class='bx bx-home-alt me-2'></i><span class="">Atelier</span>
+                                        </a>
+                                        <a href="signup.html" class="list-group-item py-1 active">
+                                            <i class='bx bx-user me-2'></i><span class="">Utilisateur</span>
+                                        </a>
+                                        <a href="profile.html" class="list-group-item py-1">
+                                            <i class='bx bx-id-card me-2'></i><span>Profile</span>
+                                        </a>
+                                        <a href="tailleurs.html" class="list-group-item py-1">
+                                            <i class='bx bx-user-pin me-2'></i><span>Tailleurs</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>     
+                 <!-- COL-9 : Contenu principal -->
+					<div class="col-12 col-lg-9">
+						<div class="card">
+							<div class="card-header bg-primary d-flex justify-content-between align-items-center">
+								<h6 class="mb-0 text-center text-white flex-grow-1"></h6>
+								<!-- Bouton pour ouvrir le modal -->
+									<button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#ajouterUtilisateurModal">
+										Ajouter un utilisateur
+									</button>
+
+							</div>
+							<div class="card-body">
+								<div class="table-responsive">
+									<table class="table table-bordered" id="listeUsersTable">
+										<thead>
+											<tr>
+												<th>N°</th>
+												<th>Prenom</th>
+												<th>Nom</th>
+												<th>Email</th>
+												<th>Actions</th>
+											</tr>
+										</thead>
+										<tbody id="ateliersBody">
+											<tr>
+												<td colspan="6" class="text-center">Chargement en cours...</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+                </div>
+				<!-- Modal Ajouter Utilisateur -->
+					<div class="modal fade" id="ajouterUtilisateurModal" tabindex="-1" aria-labelledby="ajouterUtilisateurModalLabel" aria-hidden="true">
+						<div class="modal-dialog modal-lg">
+							<div class="modal-content">
+							
+							<!-- En-tête -->
+							<div class="modal-header bg-primary">
+								<h5 class="modal-title text-white" id="ajouterUtilisateurModalLabel">Ajouter un utilisateur</h5>
+								<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+							</div>
+
+							<!-- Corps du modal -->
+							<div class="modal-body">
+								<form id="userForm" method="POST">
+								<div class="row g-3">
+									<div class="col-sm-6">
+									<label for="inputNom" class="form-label">Nom</label>
+									<input type="text" class="form-control" id="inputNom" name="nom" placeholder="Nom">
+									</div>
+									<div class="col-sm-6">
+									<label for="inputPrenom" class="form-label">Prénom</label>
+									<input type="text" class="form-control" id="inputPrenom" name="prenom" placeholder="Prénom">
+									</div>
+								</div>
+								<div class="row g-3 mt-2">
+									<div class="col-sm-6">
+									<label for="inputEmail" class="form-label">Adresse e-mail</label>
+									<input type="email" class="form-control" id="inputEmail" name="email" placeholder="exemple@utilisateur.com">
+									</div>
+									<div class="col-sm-6">
+									<label for="inputMotDePasse" class="form-label">Mot de passe</label>
+									<div class="input-group" id="show_hide_password">
+										<input type="password" class="form-control border-end-0" id="inputMotDePasse" name="motdepasse" placeholder="Mot de passe">
+										<a href="javascript:;" class="input-group-text bg-transparent"><i class='bx bx-hide'></i></a>
+									</div>
+									</div>
+								</div>
+								<div class="row g-3 mt-2">
+									<div class="col-sm-6">
+									<label for="inputAtelier" class="form-label">Choisir son atelier</label>
+									<select class="form-select" id="inputAtelier" name="atelier">
+										<option value="">Sélectionner un atelier</option>
+									</select>
+									</div>
+									<div class="col-sm-6">
+									<label for="inputRole" class="form-label">Choisir son rôle</label>
+									<select class="form-select" id="inputRole" name="role">
+										<option value="">Sélectionner un rôle</option>
+										<option value="SUPADMIN">Super Admin</option>
+										<option value="PROPRIETAIRE">Propriétaire</option>
+										<option value="SECRETAIRE">Secrétaire</option>
+										<option value="TAILLEUR">Tailleur</option>
+									</select>
+									</div>
+								</div>
+								</form>
+							</div>
+
+							<!-- Pied du modal -->
+							<div class="modal-footer">
+								<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+								<button type="submit" form="userForm" class="btn btn-primary">Enregistrer</button>
+							</div>
+							</div>
+						</div>
+					</div>
+					<!-- Modal édition utilisateur -->
+					<div class="modal fade" id="editUtilisateurModal" tabindex="-1">
+					<div class="modal-dialog">
+						<div class="modal-content">
+						<form id="editUserForm">
+							<div class="modal-header">
+							<h5 class="modal-title">Modifier utilisateur</h5>
+							<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+							</div>
+							<div class="modal-body">
+							<input type="hidden" id="editId" />
+
+							<div class="mb-3">
+								<label>Nom</label>
+								<input type="text" class="form-control" id="editNom" required />
+							</div>
+
+							<div class="mb-3">
+								<label>Prénom</label>
+								<input type="text" class="form-control" id="editPrenom" required />
+							</div>
+
+							<div class="mb-3">
+								<label>Email</label>
+								<input type="email" class="form-control" id="editEmail" required />
+							</div>
+
+							<div class="mb-3">
+								<label>Mot de passe (laisser vide si inchangé)</label>
+								<input type="password" class="form-control" id="editMotDePasse" />
+							</div>
+
+							<div class="mb-3">
+								<label>Atelier</label>
+								<select class="form-control" id="editAtelier"></select>
+							</div>
+
+							<div class="mb-3">
+								<label>Rôle</label>
+								<select class="form-control" id="editRole">
+								<option value="ADMIN">ADMIN</option>
+								<option value="USER">USER</option>
+								</select>
+							</div>
+							</div>
+							<div class="modal-footer">
+							<button type="submit" class="btn btn-primary">Mettre à jour</button>
+							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+							</div>
+						</form>
+						</div>
+					</div>
+					</div>
             </div>
-            <div class="ms-auto">
-              <div class="btn-group">
-                <button type="button" class="btn btn-primary">Settings</button>
-                <button type="button" class="btn btn-primary split-bg-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">	<span class="visually-hidden">Toggle Dropdown</span>
-                </button>
-                <div class="dropdown-menu dropdown-menu-right dropdown-menu-lg-end">	<a class="dropdown-item" href="javascript:;">Action</a>
-                  <a class="dropdown-item" href="javascript:;">Another action</a>
-                  <a class="dropdown-item" href="javascript:;">Something else here</a>
-                  <div class="dropdown-divider"></div>	<a class="dropdown-item" href="javascript:;">Separated link</a>
-                </div>
-              </div>
-            </div>
-          </div>
-      
-          <!--end row-->
-            <!-- <h6 class="mb-0 text-uppercase">Tableau de bord</h6> -->
-            <hr/>
-            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4">
-              <div class="col">
-                <div class="card radius-10 bg-primary bg-gradient">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-white">Total Orders</p>
-                        <h4 class="my-1 text-white">845</h4>
-                      </div>
-                      <div class="text-white ms-auto font-35"><i class='bx bx-cart-alt'></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-danger bg-gradient">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-white">Total Income</p>
-                        <h4 class="my-1 text-white">$89,245</h4>
-                      </div>
-                      <div class="text-white ms-auto font-35"><i class='bx bx-dollar'></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-warning bg-gradient">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-dark">Total Users</p>
-                        <h4 class="text-dark my-1">24.5K</h4>
-                      </div>
-                      <div class="text-dark ms-auto font-35"><i class='bx bx-user-pin'></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-success bg-gradient">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-white">Comments</p>
-                        <h4 class="my-1 text-white">8569</h4>
-                      </div>
-                      <div class="text-white ms-auto font-35"><i class='bx bx-comment-detail'></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-success">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-white">Revenue</p>
-                        <h4 class="my-1 text-white">$4805</h4>
-                        <p class="mb-0 font-13 text-white"><i class="bx bxs-up-arrow align-middle"></i>$34 from last week</p>
-                      </div>
-                      <div class="widgets-icons bg-white text-success ms-auto"><i class="bx bxs-wallet"></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-info">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-dark">Total Customers</p>
-                        <h4 class="my-1 text-dark">8.4K</h4>
-                        <p class="mb-0 font-13 text-dark"><i class="bx bxs-up-arrow align-middle"></i>$24 from last week</p>
-                      </div>
-                      <div class="widgets-icons bg-white text-dark ms-auto"><i class="bx bxs-group"></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-danger">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-white">Store Visitors</p>
-                        <h4 class="my-1 text-white">59K</h4>
-                        <p class="mb-0 font-13 text-white"><i class="bx bxs-down-arrow align-middle"></i>$34 from last week</p>
-                      </div>
-                      <div class="widgets-icons bg-white text-danger ms-auto"><i class="bx bxs-binoculars"></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-warning">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-dark">Bounce Rate</p>
-                        <h4 class="my-1 text-dark">34.46%</h4>
-                        <p class="mb-0 font-13 text-dark"><i class="bx bxs-down-arrow align-middle"></i>12.2% from last week</p>
-                      </div>
-                      <div class="widgets-icons bg-white text-dark ms-auto"><i class='bx bx-line-chart-down'></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          <!--end row-->
-			 
-			</div>
-		</div>
+        </div>
 		<!--end page wrapper -->
 		<!--start overlay-->
 		<div class="overlay toggle-icon"></div>
@@ -721,7 +790,6 @@
 	<!--end switcher-->
 	<!-- Bootstrap JS -->
 	<script src="assets/js/bootstrap.bundle.min.js"></script>
-	<!--plugins-->
 	<script src="assets/js/jquery.min.js"></script>
 	<script src="assets/plugins/simplebar/js/simplebar.min.js"></script>
 	<script src="assets/plugins/metismenu/js/metisMenu.min.js"></script>
@@ -735,13 +803,15 @@
 	<script src="assets/plugins/highcharts/js/accessibility.js"></script>
 	<script src="assets/plugins/apexcharts-bundle/js/apexcharts.min.js"></script>
 	<script src="assets/js/index.js"></script>
-	<!--app JS-->
+	<script src="assets/plugins/perfect-scrollbar/js/perfect-scrollbar.js"></script>
 	<script src="assets/js/app.js"></script>
+	<!-- SweetAlert2 -->
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<script src="assets/js/user.js"></script>
 	<script>
 		new PerfectScrollbar('.customers-list');
 		new PerfectScrollbar('.store-metrics');
 		new PerfectScrollbar('.product-list');
 	</script>
 </body>
-
 </html>

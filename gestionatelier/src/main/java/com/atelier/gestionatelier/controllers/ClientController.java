@@ -109,7 +109,7 @@ public class ClientController {
         List<Client> clients = clientService.getAllClients();
         
         // Affichage dans le terminal pour debug
-        clients.forEach(c -> System.out.println(c.getNom() + " " + c.getPrenom()));
+        // clients.forEach(c -> System.out.println(c.getNom() + " " + c.getPrenom()));
 
         return ResponseEntity.ok(clients);
     }
