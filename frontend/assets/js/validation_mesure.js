@@ -149,10 +149,22 @@ document.addEventListener("DOMContentLoaded", function () {
    }
 
    try {
-     const response = await fetch("http://localhost:8080/api/clients/ajouter", {
-       method: "POST",
-       body: formData,
-     });
+    //  const response = await fetch("http://localhost:8080/api/clients/ajouter", {
+    //    method: "POST",
+    //    body: formData,
+    //  });
+
+    const token =localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+
+    const response = await fetch("http://localhost:8080/api/clients/ajouter", {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      method: "POST",
+      body: formData,
+    });
+
 
      const result = await response.text();
      alert("✅ Succès : " + result);
@@ -167,3 +179,4 @@ document.addEventListener("DOMContentLoaded", function () {
  });
 
 });
+

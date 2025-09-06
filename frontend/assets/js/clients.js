@@ -6,16 +6,35 @@ document.addEventListener("DOMContentLoaded", () => {
   const mesuresContainer = document.getElementById("mesuresContainer");
   const photoClient = document.getElementById("photoClient");
 
-  async function fetchClients() {
-    try {
-      const response = await fetch("http://localhost:8080/api/clients");
-      if (!response.ok) throw new Error("Erreur HTTP " + response.status);
-      const clients = await response.json();
-      remplirTableau(clients);
-    } catch (error) {
-      console.error("Erreur lors de la récupération des clients:", error);
-    }
+  // async function fetchClients() {
+  //   try {
+  //     const response = await fetch("http://localhost:8080/api/clients");
+  //     if (!response.ok) throw new Error("Erreur HTTP " + response.status);
+  //     const clients = await response.json();
+  //     remplirTableau(clients);
+  //   } catch (error) {
+  //     console.error("Erreur lors de la récupération des clients:", error);
+  //   }
+  // }
+async function fetchClients() {
+  try {
+    const token =
+      localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+
+    const response = await fetch("http://localhost:8080/api/clients", {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`, // 🔑 indispensable
+      },
+    });
+
+    if (!response.ok) throw new Error("Erreur HTTP " + response.status);
+    const clients = await response.json();
+    remplirTableau(clients);
+  } catch (error) {
+    console.error("Erreur lors de la récupération des clients:", error);
   }
+}
 
   function remplirTableau(clients) {
     tableBody.innerHTML = "";
@@ -81,9 +100,23 @@ document.addEventListener("DOMContentLoaded", () => {
   }
     async function afficherDetailClient(clientId) {
       try {
+        // const response = await fetch(
+        //   `http://localhost:8080/api/clients/${clientId}`
+        // );
+        const token =
+          localStorage.getItem("authToken") ||
+          sessionStorage.getItem("authToken");
+
         const response = await fetch(
-          `http://localhost:8080/api/clients/${clientId}`
+          `http://localhost:8080/api/clients/${clientId}`,
+          {
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
+
         if (!response.ok) throw new Error("Erreur HTTP " + response.status);
         const client = await response.json();
 

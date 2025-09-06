@@ -2,7 +2,18 @@ document.querySelectorAll(".btn-modifier").forEach((btn) => {
   btn.addEventListener("click", async (e) => {
     const clientId = e.currentTarget.getAttribute("data-id");
     try {
-      const res = await fetch(`http://localhost:8080/api/clients/${clientId}`);
+      // const res = await fetch(`http://localhost:8080/api/clients/${clientId}`);
+      const token =
+        localStorage.getItem("authToken") ||
+        sessionStorage.getItem("authToken");
+
+      const res = await fetch(`http://localhost:8080/api/clients/${clientId}`, {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       if (!res.ok) throw new Error("Erreur HTTP " + res.status);
       const client = await res.json();
 

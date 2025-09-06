@@ -25,7 +25,10 @@ public class UtilisateurService {
         this.atelierRepository = atelierRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
     }
-
+  public Utilisateur findByEmail(String email) {
+        return utilisateurRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'email: " + email));
+    }
     // CREATE déjà fait
     public Utilisateur createUtilisateur(UtilisateurDTO dto) throws Exception {
         if (utilisateurRepository.findByEmail(dto.getEmail()).isPresent()) {
@@ -37,7 +40,7 @@ public class UtilisateurService {
         utilisateur.setPrenom(dto.getPrenom());
         utilisateur.setEmail(dto.getEmail());
         utilisateur.setMotDePasse(passwordEncoder.encode(dto.getMotdepasse()));
-
+        
         if (dto.getAtelierId() != null) {
             Atelier atelier = atelierRepository.findById(dto.getAtelierId())
                     .orElseThrow(() -> new Exception("Atelier non trouvé"));

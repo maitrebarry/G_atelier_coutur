@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--favicon-->
+    <link rel="icon" href="assets/images/favicon-32x32.png" type="image/png" />
+    <!--plugins-->
+    <link href="assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
+    <link href="assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css" rel="stylesheet" />
+    <link href="assets/plugins/metismenu/css/metisMenu.min.css" rel="stylesheet" />
+    <!-- Bootstrap CSS -->
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/app.css" rel="stylesheet">
+    <link href="assets/css/icons.css" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <title>Connexion - Gestion d'Atelier</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .split-screen {
+            display: flex;
+            height: 100vh;
+        }
+        .left-half {
+            flex: 1;
+            /* background: rgba(255, 255, 255, 0.95); */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            z-index: 2;
+        }
+        .right-half {
+            flex: 1;
+            background-size: cover;
+            background-position: center;
+            transition: background-image 0.5s ease-in-out;
+            position: relative;
+        }
+        .login-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 450px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .login-separater {
+            position: relative;
+            text-align: center;
+            margin: 25px 0;
+        }
+        .login-separater span {
+            background-color: #fff;
+            padding: 0 15px;
+            position: relative;
+            z-index: 1;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        .login-separater:after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            height: 1px;
+            width: 100%;
+            background: #eaeaea;
+            z-index: 0;
+        }
+        .btn-primary {
+            background: linear-gradient(120deg, #4e73df, #6f42c1);
+            border: none;
+            padding: 12px;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(120deg, #3b5dbd, #5a32a0);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(78, 115, 223, 0.3);
+        }
+        .form-control {
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s;
+        }
+        .form-control:focus {
+            border-color: #4e73df;
+            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+        }
+        .carousel-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+        .carousel-btn {
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .carousel-btn:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: scale(1.1);
+        }
+        .image-counter {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            backdrop-filter: blur(5px);
+        }
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(78, 115, 223, 0.1), rgba(111, 66, 193, 0.1));
+            pointer-events: none;
+        }
+        .logo-text {
+            font-weight: 700;
+            background: linear-gradient(120deg, #4e73df, #6f42c1);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Styles pour mobile */
+        .mobile-carousel {
+            display: none;
+            margin-top: 2rem;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .mobile-carousel-item {
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        .mobile-carousel-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        .mobile-carousel-controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            gap: 10px;
+        }
+        .mobile-carousel-btn {
+            background: rgba(78, 115, 223, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .mobile-carousel-btn:hover {
+            background: rgba(78, 115, 223, 0.8);
+            color: white;
+        }
+        
+        @media (max-width: 992px) {
+            .split-screen {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+            }
+            .right-half {
+                display: none;
+            }
+            .left-half {
+                padding: 1.5rem;
+                background: white;
+                box-shadow: none;
+            }
+            .login-container {
+                box-shadow: none;
+                padding: 2rem 1.5rem;
+                border: none;
+            }
+            .mobile-carousel {
+                display: block;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .login-container {
+                padding: 1.5rem 1rem;
+            }
+            .mobile-carousel-item {
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="split-screen">
+        <!-- Partie gauche - Formulaire de connexion -->
+        <div class="left-half">
+            <div class="login-container">
+                <div class="mb-4 text-center">
+                    <img src="assets/images/logo-img.png" width="180" alt="Logo" />
+                    <h3 class="logo-text">Gestion d'Atelier</h3>
+                </div>
+                <div class="text-center mb-4">
+                    <h3 class="text-dark">Connexion</h3>
+                    <p class="text-muted">Vous n'avez pas de compte? <a href="authentication-signup.html" class="text-primary">Contactez l'administrateur</a>
+                    </p>
+                </div>
+                <div class="login-separater text-center mb-4"> <span>CONNEXION AVEC EMAIL</span>
+                    <hr/>
+                </div>
+                <div class="form-body">
+                    <form class="row g-3" id="loginForm">
+                        <div class="col-12">
+                            <label for="inputEmailAddress" class="form-label">Adresse Email</label>
+                            <input type="email" class="form-control" id="inputEmailAddress" placeholder="Adresse Email" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="inputChoosePassword" class="form-label">Mot de passe</label>
+                            <div class="input-group" id="show_hide_password">
+                                <input type="password" class="form-control border-end-0" id="inputChoosePassword" placeholder="Mot de passe" required>
+                                <a href="javascript:;" class="input-group-text bg-transparent"><i class='bx bx-hide'></i></a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="rememberMe">
+                                <label class="form-check-label" for="rememberMe">Se souvenir de moi</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="authentication-forgot-password.html" class="text-primary">Mot de passe oublié?</a>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary" id="loginButton">
+                                    <i class="bx bxs-lock-open me-2"></i>Se connecter
+                                    <span id="loginSpinner" class="spinner-border spinner-border-sm d-none ms-2" role="status"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Carousel pour mobile -->
+                <div class="mobile-carousel">
+                    <div class="mobile-carousel-item" id="mobileCarouselItem" style="background-image: url('assets/images/jupe0.jpg');">
+                        <div class="mobile-carousel-caption">
+                            <h6 class="mb-0">Collection Jupe</h6>
+                        </div>
+                    </div>
+                    <div class="mobile-carousel-controls">
+                        <button class="mobile-carousel-btn" onclick="prevMobileImage()">
+                            <i class='bx bx-chevron-left'></i>
+                        </button>
+                        <span id="mobileImageCounter" class="align-self-center">1/9</span>
+                        <button class="mobile-carousel-btn" onclick="nextMobileImage()">
+                            <i class='bx bx-chevron-right'></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Partie droite - Image en arrière-plan (Desktop seulement) -->
+        <div class="right-half" id="backgroundImage">
+            <div class="overlay"></div>
+            <div class="carousel-controls">
+                <button class="carousel-btn" onclick="prevImage()">
+                    <i class='bx bx-chevron-left'></i>
+                </button>
+                <button class="carousel-btn" onclick="nextImage()">
+                    <i class='bx bx-chevron-right'></i>
+                </button>
+            </div>
+            <div class="image-counter" id="imageCounter">
+                Image 1/9
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="assets/js/bootstrap.bundle.min.js"></script>
+    <!--plugins-->
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/plugins/simplebar/js/simplebar.min.js"></script>
+    <script src="assets/plugins/metismenu/js/metisMenu.min.js"></script>
+    <script src="assets/plugins/perfect-scrollbar/js/perfect-scrollbar.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="assets/js/login.js"></script>
+    <script src="assets/js/auth.js"></script>
+   
+    
+</body>
+
+</html>

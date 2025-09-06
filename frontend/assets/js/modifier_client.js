@@ -13,9 +13,23 @@ document.addEventListener("DOMContentLoaded", () => {
   async function openEditModal(clientId) {
     try {
       currentClientId = clientId;
+      // const response = await fetch(
+      //   `http://localhost:8080/api/clients/${clientId}`
+      // );
+      const token =
+        localStorage.getItem("authToken") ||
+        sessionStorage.getItem("authToken");
+
       const response = await fetch(
-        `http://localhost:8080/api/clients/${clientId}`
+        `http://localhost:8080/api/clients/${clientId}`,
+        {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
+
       const client = await response.json();
 
       if (!client.mesures || client.mesures.length === 0) {
@@ -39,38 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // function fillEditForm(client, mesure) {
-  //   // Remplir les champs généraux
-  //   document.getElementById("editNom").value = client.nom || "";
-  //   document.getElementById("editPrenom").value = client.prenom || "";
-  //   document.getElementById("editContact").value = client.contact || "";
-  //   document.getElementById("editAdresse").value = client.adresse || "";
-  //   document.getElementById("editSexe").value = mesure.sexe || "Femme";
-
-  //   // Gérer la photo existante
-  //   const avatarEdit = document.getElementById("avatarEdit");
-  //   if (client.photo) {
-  //     avatarEdit.src = `data:image/jpeg;base64,${client.photo}`;
-  //     avatarEdit.style.objectFit = "cover";
-  //     document.getElementById("existingPhoto").value = client.photo;
-  //   } else {
-  //     avatarEdit.src =
-  //       mesure.sexe === "Femme"
-  //         ? "assets/images/model4.jpg"
-  //         : "assets/images/model3.jpg";
-  //   }
-
-  //   // Gérer le genre dans le preview
-  //   document.querySelector(
-  //     `input[name="genderPreviewEdit"][value="${mesure.sexe}"]`
-  //   ).checked = true;
-
-  //   // Afficher les sections appropriées
-  //   toggleMeasurementSections(mesure.sexe, mesure.typeVetement);
-
-  //   // Remplir les mesures
-  //   fillMeasurements(mesure);
-  // }
+ 
     function fillEditForm(client, mesure) {
       console.log("Remplissage du formulaire avec:", { client, mesure });
 
@@ -271,10 +254,24 @@ document.addEventListener("DOMContentLoaded", () => {
     formData.append("id", currentClientId);
 
     try {
+      // const response = await fetch(
+      //   `http://localhost:8080/api/clients/${currentClientId}`,
+      //   {
+      //     method: "PUT",
+      //     body: formData,
+      //   }
+      // );
+      const token =
+        localStorage.getItem("authToken") ||
+        sessionStorage.getItem("authToken");
+
       const response = await fetch(
         `http://localhost:8080/api/clients/${currentClientId}`,
         {
           method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
           body: formData,
         }
       );

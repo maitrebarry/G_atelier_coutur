@@ -20,13 +20,14 @@ function successMessage(message) {
     icon: "success",
     title: "Succès",
     text: message,
+    toast: true,
+    position: "top-end",
+    timer: 2500,
+    timerProgressBar: true,
     showConfirmButton: false,
-    timer: 1200, // disparaît après 1.2s
   });
-  setTimeout(() => {
-    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-  }, 300);
 }
+
 
 // ✅ Erreur avec SweetAlert
 function errorMessage(message) {
@@ -35,6 +36,8 @@ function errorMessage(message) {
     title: "Erreur",
     text: message,
     confirmButtonColor: "#d33",
+    showConfirmButton: true,
+    position: "center",
   });
 }
 
@@ -55,14 +58,22 @@ document
 
     const res = await fetch(apiUtilisateurs, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+
       body: JSON.stringify(utilisateur),
     });
-
     if (res.ok) {
       successMessage("Utilisateur enregistré avec succès !");
       document.getElementById("userForm").reset();
       loadUtilisateurs();
+      // Fermer le modal si présent
+      const addModal = document.getElementById("ajouterUtilisateurModal");
+      if (addModal) {
+        bootstrap.Modal.getInstance(addModal).hide();
+      }
     } else {
       const error = await res.json();
       if (error.error) {
@@ -90,20 +101,27 @@ async function loadUtilisateurs() {
         <td>${u.nom}</td>
         <td>${u.email}</td>
         <td>
-          <button class="btn btn-sm btn-warning" onclick="editUser('${
-            u.id
-          }')">Modifier</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteUser('${
-            u.id
-          }')">Supprimer</button>
+          <button class="btn btn-sm btn-warning me-1 btn-modifier" title="Modifier" data-id="${u.id}">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-danger btn-supprimer" title="Supprimer" data-id="${u.id}">
+            <i class="bi bi-trash"></i>
+          </button>
         </td>
       </tr>
     `;
   });
 
-  tbody.innerHTML =
-    rows ||
-    `<tr><td colspan="5" class="text-center">Aucun utilisateur trouvé</td></tr>`;
+  tbody.innerHTML = rows || `<tr><td colspan="5" class="text-center">Aucun utilisateur trouvé</td></tr>`;
+
+  // Attacher événements après injection
+  document.querySelectorAll(".btn-modifier").forEach((btn) => {
+    btn.addEventListener("click", () => editUser(btn.dataset.id));
+  });
+
+  document.querySelectorAll(".btn-supprimer").forEach((btn) => {
+    btn.addEventListener("click", () => deleteUser(btn.dataset.id));
+  });
 }
 
 // ➡️ Supprimer utilisateur avec SweetAlert
@@ -145,10 +163,10 @@ async function editUser(id) {
   new bootstrap.Modal(document.getElementById("editUtilisateurModal")).show();
 }
 
-// ➡️ Soumission du formulaire UPDATE
-document
-  .getElementById("editUserForm")
-  .addEventListener("submit", async function (e) {
+  // ➡️ Soumission du formulaire UPDATE
+  document
+    .getElementById("editUserForm")
+    .addEventListener("submit", async function (e) {
     e.preventDefault();
 
     const id = document.getElementById("editId").value;
@@ -163,7 +181,11 @@ document
 
     const res = await fetch(`${apiUtilisateurs}/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+     headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+
       body: JSON.stringify(utilisateur),
     });
 

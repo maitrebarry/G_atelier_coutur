@@ -41,8 +41,7 @@ function deleteClient(clientId) {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
-      // Si vous utilisez l'authentification :
-      // "Authorization": `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     },
   })
     .then((response) => {

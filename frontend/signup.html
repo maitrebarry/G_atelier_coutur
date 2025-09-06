@@ -13,7 +13,8 @@
 	<link href="assets/plugins/highcharts/css/highcharts.css" rel="stylesheet" />
 	<link href="assets/plugins/vectormap/jquery-jvectormap-2.0.2.css" rel="stylesheet" />
 	<link href="assets/plugins/metismenu/css/metisMenu.min.css" rel="stylesheet" />
-	  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 	<!-- loader-->
 	<link href="assets/css/pace.min.css" rel="stylesheet" />
      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -697,8 +698,11 @@
 							<div class="mb-3">
 								<label>Rôle</label>
 								<select class="form-control" id="editRole">
-								<option value="ADMIN">ADMIN</option>
-								<option value="USER">USER</option>
+								<option value="">Sélectionner un rôle</option>
+										<option value="SUPADMIN">Super Admin</option>
+										<option value="PROPRIETAIRE">Propriétaire</option>
+										<option value="SECRETAIRE">Secrétaire</option>
+										<option value="TAILLEUR">Tailleur</option>
 								</select>
 							</div>
 							</div>
@@ -813,5 +817,20 @@
 		new PerfectScrollbar('.store-metrics');
 		new PerfectScrollbar('.product-list');
 	</script>
+	    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier l'authentification sur chaque page
+            if (!isAuthenticated()) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Afficher les infos utilisateur de base
+            const userData = getUserData();
+            if (userData) {
+                $('#userName').text(userData.prenom + ' ' + userData.nom);
+            }
+        });
+    </script>
 </body>
 </html>

@@ -27,14 +27,6 @@ public class UtilisateurController {
     }
 
     // ✅ CREATE
-    // @PostMapping
-    // public ResponseEntity<?> createUtilisateur(@RequestBody UtilisateurDTO dto) {
-    //     try {
-    //         return ResponseEntity.ok(utilisateurService.createUtilisateur(dto));
-    //     } catch (Exception e) {
-    //         return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-    //     }
-    // }
     @PostMapping
     public ResponseEntity<?> createUtilisateur(@Valid @RequestBody UtilisateurDTO dto, BindingResult result) {
         if (result.hasErrors()) {

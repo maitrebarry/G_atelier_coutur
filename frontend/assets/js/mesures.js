@@ -111,8 +111,13 @@ document.addEventListener("DOMContentLoaded", function () {
     if (photoInput.files.length > 0) {
       formData.append("photo", photoInput.files[0]);
     }
+    const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
     fetch("http://localhost:8080/api/clients/ajouter", {
+     headers: {
+       "Accept": "application/json",
+       "Authorization": `Bearer ${token}`,
+     },
       method: "POST",
       body: formData,
     })

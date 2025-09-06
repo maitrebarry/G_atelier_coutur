@@ -793,5 +793,21 @@
 		new PerfectScrollbar('.store-metrics');
 		new PerfectScrollbar('.product-list');
 	</script>
+	<script src="js/auth.js"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			// Vérifier l'authentification sur chaque page
+			if (!isAuthenticated()) {
+				window.location.href = 'index.html';
+				return;
+			}
+			
+			// Afficher les infos utilisateur de base
+			const userData = getUserData();
+			if (userData) {
+				$('#userName').text(userData.prenom + ' ' + userData.nom);
+			}
+		});
+	</script>
 </body>
 </html>

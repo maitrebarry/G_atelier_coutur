@@ -4,7 +4,8 @@ async function loadAteliers() {
     const response = await fetch("http://localhost:8080/api/ateliers", {
       method: "GET",
       headers: {
-        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
       },
     });
 
