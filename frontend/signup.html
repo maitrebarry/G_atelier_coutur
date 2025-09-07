@@ -28,6 +28,7 @@
 	<link rel="stylesheet" href="assets/css/dark-theme.css" />
 	<link rel="stylesheet" href="assets/css/semi-dark.css" />
 	<link rel="stylesheet" href="assets/css/header-colors.css" />
+	<script src="assets/js/auth.js"></script>
 	<title>Dashkote - Bootstrap5 Admin Template</title>
     <style>
     body {
@@ -563,11 +564,10 @@
 						<div class="card">
 							<div class="card-header bg-primary d-flex justify-content-between align-items-center">
 								<h6 class="mb-0 text-center text-white flex-grow-1"></h6>
-								<!-- Bouton pour ouvrir le modal -->
-									<button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#ajouterUtilisateurModal">
-										Ajouter un utilisateur
-									</button>
-
+								<!-- Bouton pour ouvrir le modal - Caché pour non-SUPERADMIN -->
+								<button type="button" class="btn btn-light btn-sm superadmin-only" data-bs-toggle="modal" data-bs-target="#ajouterUtilisateurModal">
+									Ajouter un utilisateur
+								</button>
 							</div>
 							<div class="card-body">
 								<div class="table-responsive">
@@ -630,21 +630,25 @@
 									</div>
 								</div>
 								<div class="row g-3 mt-2">
-									<div class="col-sm-6">
-									<label for="inputAtelier" class="form-label">Choisir son atelier</label>
-									<select class="form-select" id="inputAtelier" name="atelier">
-										<option value="">Sélectionner un atelier</option>
-									</select>
+									<!-- Champ atelier réservé au SUPERADMIN -->
+									<div class="col-sm-6 superadmin-only">
+										<label for="inputAtelier" class="form-label">Choisir son atelier</label>
+										<select class="form-select" id="inputAtelier" name="atelier">
+											<option value="">Sélectionner un atelier</option>
+										</select>
 									</div>
+									
 									<div class="col-sm-6">
-									<label for="inputRole" class="form-label">Choisir son rôle</label>
-									<select class="form-select" id="inputRole" name="role">
-										<option value="">Sélectionner un rôle</option>
-										<option value="SUPADMIN">Super Admin</option>
-										<option value="PROPRIETAIRE">Propriétaire</option>
-										<option value="SECRETAIRE">Secrétaire</option>
-										<option value="TAILLEUR">Tailleur</option>
-									</select>
+										<label for="inputRole" class="form-label">Choisir son rôle</label>
+										<select class="form-select" id="inputRole" name="role" required>
+											<option value="">Sélectionner un rôle</option>
+											<!-- SUPERADMIN seulement -->
+											<option value="SUPERADMIN" class="superadmin-only">Super Admin</option>
+											<option value="PROPRIETAIRE" class="superadmin-only">Propriétaire</option>
+											<!-- Visible pour tous -->
+											<option value="SECRETAIRE">Secrétaire</option>
+											<option value="TAILLEUR">Tailleur</option>
+										</select>
 									</div>
 								</div>
 								</form>
@@ -660,59 +664,59 @@
 					</div>
 					<!-- Modal édition utilisateur -->
 					<div class="modal fade" id="editUtilisateurModal" tabindex="-1">
-					<div class="modal-dialog">
-						<div class="modal-content">
-						<form id="editUserForm">
-							<div class="modal-header">
-							<h5 class="modal-title">Modifier utilisateur</h5>
-							<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-							</div>
-							<div class="modal-body">
-							<input type="hidden" id="editId" />
+						<div class="modal-dialog">
+							<div class="modal-content">
+							<form id="editUserForm">
+								<div class="modal-header">
+								<h5 class="modal-title">Modifier utilisateur</h5>
+								<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+								</div>
+								<div class="modal-body">
+								<input type="hidden" id="editId" />
 
-							<div class="mb-3">
-								<label>Nom</label>
-								<input type="text" class="form-control" id="editNom" required />
-							</div>
+								<div class="mb-3">
+									<label>Nom</label>
+									<input type="text" class="form-control" id="editNom" required />
+								</div>
 
-							<div class="mb-3">
-								<label>Prénom</label>
-								<input type="text" class="form-control" id="editPrenom" required />
-							</div>
+								<div class="mb-3">
+									<label>Prénom</label>
+									<input type="text" class="form-control" id="editPrenom" required />
+								</div>
 
-							<div class="mb-3">
-								<label>Email</label>
-								<input type="email" class="form-control" id="editEmail" required />
-							</div>
+								<div class="mb-3">
+									<label>Email</label>
+									<input type="email" class="form-control" id="editEmail" required />
+								</div>
 
-							<div class="mb-3">
-								<label>Mot de passe (laisser vide si inchangé)</label>
-								<input type="password" class="form-control" id="editMotDePasse" />
-							</div>
+								<div class="mb-3">
+									<label>Mot de passe (laisser vide si inchangé)</label>
+									<input type="password" class="form-control" id="editMotDePasse" />
+								</div>
 
-							<div class="mb-3">
-								<label>Atelier</label>
-								<select class="form-control" id="editAtelier"></select>
-							</div>
+									<div class="mb-3 superadmin-only">
+										<label>Atelier</label>
+										<select class="form-control" id="editAtelier"></select>
+									</div>
 
-							<div class="mb-3">
-								<label>Rôle</label>
-								<select class="form-control" id="editRole">
-								<option value="">Sélectionner un rôle</option>
-										<option value="SUPADMIN">Super Admin</option>
-										<option value="PROPRIETAIRE">Propriétaire</option>
-										<option value="SECRETAIRE">Secrétaire</option>
-										<option value="TAILLEUR">Tailleur</option>
-								</select>
+									<div class="mb-3">
+										<label>Rôle</label>
+										<select class="form-control" id="editRole">
+											<option value="">Sélectionner un rôle</option>
+											<option value="SUPERADMIN" class="superadmin-only">Super Admin</option>
+											<option value="PROPRIETAIRE" class="superadmin-only">Propriétaire</option>
+											<option value="SECRETAIRE">Secrétaire</option>
+											<option value="TAILLEUR">Tailleur</option>
+										</select>
+									</div>
+								</div>
+								<div class="modal-footer">
+								<button type="submit" class="btn btn-primary">Mettre à jour</button>
+								<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+								</div>
+							</form>
 							</div>
-							</div>
-							<div class="modal-footer">
-							<button type="submit" class="btn btn-primary">Mettre à jour</button>
-							<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-							</div>
-						</form>
 						</div>
-					</div>
 					</div>
             </div>
         </div>
@@ -817,20 +821,6 @@
 		new PerfectScrollbar('.store-metrics');
 		new PerfectScrollbar('.product-list');
 	</script>
-	    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Vérifier l'authentification sur chaque page
-            if (!isAuthenticated()) {
-                window.location.href = 'index.html';
-                return;
-            }
-            
-            // Afficher les infos utilisateur de base
-            const userData = getUserData();
-            if (userData) {
-                $('#userName').text(userData.prenom + ' ' + userData.nom);
-            }
-        });
-    </script>
+	   
 </body>
 </html>

@@ -26,22 +26,52 @@
 	<link rel="stylesheet" href="assets/css/header-colors.css" />
 	<script src="assets/js/auth.js"></script>
 
-	<title>Dashkote - Bootstrap5 Admin Template</title>
+	<title></title>
 </head>
 
 <body>
+	<style>
+	.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.branding {
+  display: flex;
+  align-items: center;
+  /* gap: 5px; espace entre logo et texte */
+  overflow: hidden;
+  flex: 1;
+}
+
+.logo-icon {
+  width: 40px; /* taille réduite pour s’adapter à la sidebar */
+  height: auto;
+  object-fit: contain;
+}
+
+.logo-text {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #343a40;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+	</style>
 	<!--wrapper-->
 	<div class="wrapper">
 		<!--sidebar wrapper -->
 		<div class="sidebar-wrapper" data-simplebar="true">
 			<div class="sidebar-header">
-				<div>
-					<img src="assets/images/logo-icon.png" class="logo-icon" alt="logo icon">
+				<div class="branding">
+					<img src="assets/images/logo2_atelierCouture.jpeg" class="logo-icon" alt="logo icon">
+					<h6 class="logo-text">STITCH MANAGER</h6>
 				</div>
-				<div>
-					<h4 class="logo-text">Atelier Couture</h4>
-				</div>
-				<div class="toggle-icon ms-auto"><i class='bx bx-arrow-to-left'></i>
+				<div class="toggle-icon ms-auto">
+					<i class='bx bx-arrow-to-left'></i>
 				</div>
 			</div>
 			<!--navigation-->

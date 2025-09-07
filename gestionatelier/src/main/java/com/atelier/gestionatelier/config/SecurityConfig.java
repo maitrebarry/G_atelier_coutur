@@ -32,16 +32,22 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
-    @Bean
+     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/utilisateurs/create").permitAll()
-                        .requestMatchers("/api/**").authenticated()
+                        .requestMatchers("/api/utilisateurs/create").permitAll() // Inscription publique
                         .requestMatchers("/model_photo/**").permitAll()
+                        
+                        // Tous les utilisateurs authentifiés peuvent accéder aux endpoints
+                        // La logique métier gère les permissions fine-grained
+                        .requestMatchers("/api/utilisateurs/**").authenticated()
+                        .requestMatchers("/api/ateliers/**").authenticated()
+                        
+                        .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

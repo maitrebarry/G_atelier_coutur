@@ -38,7 +38,16 @@ public class Utilisateur {
 
     @Enumerated(EnumType.STRING)
     private Role role;
-
+    @Column(name = "actif")
+    private Boolean actif = true; // Par défaut actif
+    
+    public Boolean getActif() {
+        return actif;
+    }
+    
+    public void setActif(Boolean actif) {
+        this.actif = actif;
+    }
     @ManyToOne
     private Atelier atelier;
 }

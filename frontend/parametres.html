@@ -29,6 +29,7 @@
 	<link rel="stylesheet" href="assets/css/header-colors.css" />
      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+	<script src="assets/js/auth.js"></script>
 	<title>Dashkote - Bootstrap5 Admin Template</title>
     <style>
     body {
@@ -771,20 +772,20 @@
 		new PerfectScrollbar('.store-metrics');
 		new PerfectScrollbar('.product-list');
 	</script>
-	    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Vérifier l'authentification sur chaque page
-            if (!isAuthenticated()) {
-                window.location.href = 'index.html';
-                return;
-            }
-            
-            // Afficher les infos utilisateur de base
-            const userData = getUserData();
-            if (userData) {
-                $('#userName').text(userData.prenom + ' ' + userData.nom);
-            }
-        });
-    </script>
+	<!-- <script>
+			document.addEventListener('DOMContentLoaded', function() {
+				// Vérifier l'authentification sur chaque page
+				if (!isAuthenticated()) {
+					window.location.href = 'index.html';
+					return;
+				}
+				
+				// Afficher les infos utilisateur de base
+				const userData = getUserData();
+				if (userData) {
+					$('#userName').text(userData.prenom + ' ' + userData.nom);
+				}
+			});
+    </script> -->
 </body>
 </html>

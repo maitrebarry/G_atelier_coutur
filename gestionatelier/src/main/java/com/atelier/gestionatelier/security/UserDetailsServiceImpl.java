@@ -2,16 +2,15 @@ package com.atelier.gestionatelier.security;
 
 import com.atelier.gestionatelier.entities.Utilisateur;
 import com.atelier.gestionatelier.repositories.UtilisateurRepository;
-import org.springframework.security.core.GrantedAuthority;
+
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
-import java.util.List;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
@@ -25,16 +24,17 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé avec l'email: " + email));
+            .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé avec l'email: " + email));
         
-        List<GrantedAuthority> authorities = Collections.singletonList(
-            new SimpleGrantedAuthority("ROLE_" + utilisateur.getRole().name())
-        );
+        // Vérifier si l'utilisateur est actif
+        if (utilisateur.getActif() != null && !utilisateur.getActif()) {
+            throw new DisabledException("Utilisateur désactivé");
+        }
         
-        return new User(
+        return new org.springframework.security.core.userdetails.User(
             utilisateur.getEmail(),
             utilisateur.getMotDePasse(),
-            authorities
+            Collections.singletonList(new SimpleGrantedAuthority(utilisateur.getRole().name()))
         );
     }
 }

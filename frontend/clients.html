@@ -41,6 +41,7 @@
         <link rel="stylesheet" href="assets/css/dark-theme.css" />
         <link rel="stylesheet" href="assets/css/semi-dark.css" />
         <link rel="stylesheet" href="assets/css/header-colors.css" />
+        <script src="assets/js/auth.js"></script>
         <title>Dashkote - Bootstrap5 Admin Template</title>
     </head>
 
@@ -970,22 +971,6 @@
         new PerfectScrollbar('.customers-list');
         new PerfectScrollbar('.store-metrics');
         new PerfectScrollbar('.product-list');
-    </script>
-    <script src="js/auth.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Vérifier l'authentification sur chaque page
-            if (!isAuthenticated()) {
-                window.location.href = 'index.html';
-                return;
-            }
-            
-            // Afficher les infos utilisateur de base
-            const userData = getUserData();
-            if (userData) {
-                $('#userName').text(userData.prenom + ' ' + userData.nom);
-            }
-        });
     </script>
 
 </body>

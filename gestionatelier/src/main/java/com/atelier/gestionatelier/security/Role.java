@@ -1,7 +1,7 @@
 package com.atelier.gestionatelier.security;
 
 public enum Role {
-    SUPADMIN,
+    SUPERADMIN,
     PROPRIETAIRE,
     SECRETAIRE,
     TAILLEUR
