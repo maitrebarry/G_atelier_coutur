@@ -31,35 +31,35 @@
 	<script src="assets/js/auth.js"></script>
 	<title>Dashkote - Bootstrap5 Admin Template</title>
     <style>
-    body {
-        background-color: #f8f9fa;
-        padding: 20px;
-    }
+		body {
+			background-color: #f8f9fa;
+			padding: 20px;
+		}
 
-    .card {
-        margin-bottom: 20px;
-        border: none;
-        border-radius: 0.35rem;
-        box-shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
-    }
+		.card {
+			margin-bottom: 20px;
+			border: none;
+			border-radius: 0.35rem;
+			box-shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
+		}
 
-    .fm-menu .list-group-item {
-        border: none;
-        color: #5a5c69;
-        transition: 0.15s;
-    }
+		.fm-menu .list-group-item {
+			border: none;
+			color: #5a5c69;
+			transition: 0.15s;
+		}
 
-    .fm-menu .list-group-item:hover,
-    .fm-menu .list-group-item.active {
-        background-color: #eaecf4 !important;
-        color: #4e73df !important;
-        font-weight: bold;
-    }
+		.fm-menu .list-group-item:hover,
+		.fm-menu .list-group-item.active {
+			background-color: #eaecf4 !important;
+			color: #4e73df !important;
+			font-weight: bold;
+		}
 
-    .fm-menu .list-group-item i {
-        width: 20px;
-        text-align: center;
-    }
+		.fm-menu .list-group-item i {
+			width: 20px;
+			text-align: center;
+		}
 
     </style>
 </head>
@@ -542,7 +542,7 @@
                                 <!-- <h5 class="my-3">Menu</h5> -->
                                 <div class="fm-menu">
                                    <div class="list-group list-group-flush">
-                                        <a href="parametres.html" class="list-group-item py-1 ">
+                                        <a href="parametres.html" class="list-group-item py-1 superadmin-only">
                                             <i class='bx bx-home-alt me-2'></i><span class="">Atelier</span>
                                         </a>
                                         <a href="signup.html" class="list-group-item py-1 active">
@@ -565,7 +565,7 @@
 							<div class="card-header bg-primary d-flex justify-content-between align-items-center">
 								<h6 class="mb-0 text-center text-white flex-grow-1"></h6>
 								<!-- Bouton pour ouvrir le modal - Caché pour non-SUPERADMIN -->
-								<button type="button" class="btn btn-light btn-sm superadmin-only" data-bs-toggle="modal" data-bs-target="#ajouterUtilisateurModal">
+								<button type="button" class="btn btn-light btn-sm proprietaire-only" data-bs-toggle="modal" data-bs-target="#ajouterUtilisateurModal">
 									Ajouter un utilisateur
 								</button>
 							</div>
@@ -663,43 +663,44 @@
 						</div>
 					</div>
 					<!-- Modal édition utilisateur -->
-					<div class="modal fade" id="editUtilisateurModal" tabindex="-1">
-						<div class="modal-dialog">
-							<div class="modal-content">
+				<div class="modal fade" id="editUtilisateurModal" tabindex="-1">
+					<div class="modal-dialog">
+						<div class="modal-content">
 							<form id="editUserForm">
 								<div class="modal-header">
-								<h5 class="modal-title">Modifier utilisateur</h5>
-								<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+									<h5 class="modal-title">Modifier utilisateur</h5>
+									<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 								</div>
 								<div class="modal-body">
-								<input type="hidden" id="editId" />
+									<input type="hidden" id="editId" />
+									<input type="hidden" id="editUserRole" />
 
-								<div class="mb-3">
-									<label>Nom</label>
-									<input type="text" class="form-control" id="editNom" required />
-								</div>
+									<div class="mb-3">
+										<label>Nom</label>
+										<input type="text" class="form-control" id="editNom" required />
+									</div>
 
-								<div class="mb-3">
-									<label>Prénom</label>
-									<input type="text" class="form-control" id="editPrenom" required />
-								</div>
+									<div class="mb-3">
+										<label>Prénom</label>
+										<input type="text" class="form-control" id="editPrenom" required />
+									</div>
 
-								<div class="mb-3">
-									<label>Email</label>
-									<input type="email" class="form-control" id="editEmail" required />
-								</div>
+									<div class="mb-3">
+										<label>Email</label>
+										<input type="email" class="form-control" id="editEmail" required />
+									</div>
 
-								<div class="mb-3">
-									<label>Mot de passe (laisser vide si inchangé)</label>
-									<input type="password" class="form-control" id="editMotDePasse" />
-								</div>
+									<div class="mb-3">
+										<label>Mot de passe (laisser vide si inchangé)</label>
+										<input type="password" class="form-control" id="editMotDePasse" />
+									</div>
 
-									<div class="mb-3 superadmin-only">
+									<div class="mb-3 superadmin-only proprietaire-only">
 										<label>Atelier</label>
 										<select class="form-control" id="editAtelier"></select>
 									</div>
 
-									<div class="mb-3">
+									<div class="mb-3 superadmin-only proprietaire-only">
 										<label>Rôle</label>
 										<select class="form-control" id="editRole">
 											<option value="">Sélectionner un rôle</option>
@@ -711,13 +712,13 @@
 									</div>
 								</div>
 								<div class="modal-footer">
-								<button type="submit" class="btn btn-primary">Mettre à jour</button>
-								<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+									<button type="submit" class="btn btn-primary">Mettre à jour</button>
+									<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
 								</div>
 							</form>
-							</div>
 						</div>
 					</div>
+				</div>
             </div>
         </div>
 		<!--end page wrapper -->
