@@ -30,38 +30,155 @@
      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 	<script src="assets/js/auth.js"></script>
-	<title>Dashkote - Bootstrap5 Admin Template</title>
-    <style>
-    body {
-        background-color: #f8f9fa;
-        padding: 20px;
-    }
-
-    .card {
-        margin-bottom: 20px;
-        border: none;
-        border-radius: 0.35rem;
-        box-shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
-    }
-
-    .fm-menu .list-group-item {
-        border: none;
-        color: #5a5c69;
-        transition: 0.15s;
-    }
-
-    .fm-menu .list-group-item:hover,
-    .fm-menu .list-group-item.active {
-        background-color: #eaecf4 !important;
-        color: #4e73df !important;
-        font-weight: bold;
-    }
-
-    .fm-menu .list-group-item i {
-        width: 20px;
-        text-align: center;
-    }
-
+	 <title>Gestion des Permissions - Administration</title>
+   <style>
+        :root {
+            --primary-color: #4e73df;
+            --success-color: #1cc88a;
+            --danger-color: #e74a3b;
+            --warning-color: #f6c23e;
+            --dark-color: #5a5c69;
+        }
+        
+        body {
+            background-color: #f8f9fc;
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid #e3e6f0;
+            font-weight: 700;
+            color: var(--dark-color);
+        }
+        
+        .card-header.bg-primary {
+            background-color: var(--primary-color) !important;
+            color: white;
+        }
+        
+        .permission-card {
+            transition: all 0.2s;
+        }
+        
+        .permission-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+        }
+        
+        .module-title {
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-top: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        
+        .custom-toast {
+            background-color: white;
+            border-left: 4px solid;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            border-radius: 4px;
+            max-width: 350px;
+        }
+        
+        .toast-success {
+            border-left-color: var(--success-color);
+        }
+        
+        .toast-error {
+            border-left-color: var(--danger-color);
+        }
+        
+        .toast-icon {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #3a5fc8;
+            border-color: #3a5fc8;
+        }
+        
+        .user-card {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .user-card:hover, .user-card.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(78, 115, 223, 0.05);
+        }
+        
+        .loading-spinner {
+            display: none;
+            width: 2rem;
+            height: 2rem;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden-by-permission {
+            display: none !important;
+        }
+        
+        .list-group-item.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .fm-menu .list-group-item {
+            border: none;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .fm-menu .list-group-item:hover {
+            background-color: rgba(78, 115, 223, 0.1);
+        }
+        
+        .superadmin-only {
+            display: none;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -530,7 +647,7 @@
 						</div>
 				</div> 
 				<div class="row">
-					<!-- COL-3 : Menu de navigation -->
+					 <!-- COL-3 : Menu de navigation -->
 					<div class="col-12 col-lg-3">
 						<div class="card"> 
 							<div class="card-header bg-primary">
@@ -539,7 +656,7 @@
 							<div class="card-body">     
 								<div class="fm-menu">
 									<div class="list-group list-group-flush">
-										<a href="#" class="list-group-item py-1 active superadmin-only">
+										<a href="#" class="list-group-item py-1 superadmin-only">
 											<i class='bx bx-home-alt me-2'></i><span class="">Atelier</span>
 										</a>
 										<a href="signup.html" class="list-group-item py-1">
@@ -548,7 +665,7 @@
 										<a href="profile.html" class="list-group-item py-1">
 											<i class='bx bx-id-card me-2'></i><span>Profile</span>
 										</a>
-										<a href="permission.html" class="list-group-item py-1">
+										<a href="permission.html" class="list-group-item py-1 active superadmin-only">
 											<i class='bx bx-user-pin me-2'></i><span>Permissions</span>
 										</a>
 									</div>
@@ -556,120 +673,98 @@
 							</div>
 						</div>
 					</div>     
+					
 					<!-- COL-9 : Contenu principal -->
 					<div class="col-12 col-lg-9">
 						<div class="card">
 							<div class="card-header bg-primary d-flex justify-content-between align-items-center">
-								<h6 class="mb-0 text-center text-white flex-grow-1"></h6>
+								<h6 class="mb-0 text-center text-white flex-grow-1">Gestion des Permissions</h6>
 								<!-- Bouton pour ouvrir le modal -->
-								<button type="button" class="btn btn-light btn-sm superadmin-only" data-bs-toggle="modal" data-bs-target="#ajouterAtelierModal">
-									Ajouter un atelier
+								<button type="button" class="btn btn-light btn-sm " data-bs-toggle="modal" data-bs-target="#ajouterPermissionModal">
+									<i class="fas fa-plus me-1"></i>Ajouter une permission
 								</button>
 							</div>
 							<div class="card-body">
-								<div class="table-responsive">
-									<table class="table table-bordered" id="ateliersTable">
-										<thead>
-											<tr>
-												<th>N°</th>
-												<th>Nom</th>
-												<th>Adresse</th>
-												<th>Téléphone</th>
-												<th>Date de création</th>
-												<th>Actions</th>
-											</tr>
-										</thead>
-										<tbody id="ateliersBody">
-											<tr>
-												<td colspan="6" class="text-center">Chargement en cours...</td>
-											</tr>
-										</tbody>
-									</table>
+								<div class="row">
+									<div class="col-md-6 mb-4">
+										<div class="card">
+											<div class="card-header py-3">
+												<h6 class="m-0 font-weight-bold text-primary">Utilisateurs</h6>
+											</div>
+											<div class="card-body">
+												<div class="input-group mb-3">
+													<span class="input-group-text"><i class="fas fa-search"></i></span>
+													<input type="text" id="userSearch" class="form-control" placeholder="Rechercher un utilisateur...">
+												</div>
+												<div id="usersList" class="list-group" style="max-height: 400px; overflow-y: auto;">
+													<!-- Les utilisateurs seront chargés ici -->
+												</div>
+											</div>
+										</div>
+									</div>
+									
+									<div class="col-md-6">
+										<div class="card">
+											<div class="card-header py-3 d-flex justify-content-between align-items-center">
+												<h6 class="m-0 font-weight-bold text-primary">Permissions de <span id="selectedUserName">[Sélectionnez un utilisateur]</span></h6>
+												<div id="saveButtonContainer" style="display: none;">
+													<button id="savePermissions" class="btn btn-primary btn-sm">
+														<div class="loading-spinner" id="saveSpinner"></div>
+														<i class="fas fa-save me-1"></i>Enregistrer
+													</button>
+												</div>
+											</div>
+											<div class="card-body">
+												<div id="permissionsContainer">
+													<div id="permissionsList" class="row">
+														<!-- Les permissions seront chargées ici -->
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
 				</div>
-				<!-- Modal Ajouter Atelier -->
-				<div class="modal fade" id="ajouterAtelierModal" tabindex="-1" aria-labelledby="ajouterAtelierModalLabel" aria-hidden="true">
+    
+				<!-- Modal pour créer une nouvelle permission -->
+				<div class="modal fade" id="ajouterPermissionModal" tabindex="-1" aria-hidden="true">
 					<div class="modal-dialog">
-						<form class="modal-content" id="formAtelier">
-							<div class="modal-header bg-primary">
-								<h5 class="modal-title" style="color: white; text-align: center;">Ajouter un atelier</h5>
-								<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title">Créer une nouvelle permission</h5>
+								<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 							</div>
 							<div class="modal-body">
-								<div class="mb-3">
-									<label for="nomAtelier" class="form-label">Nom de l'atelier <span class="text-danger">*</span></label>
-									<input type="text" class="form-control" id="nomAtelier" name="nom" required>
-								</div>
-								<div class="mb-3">
-									<label for="adresseAtelier" class="form-label">Adresse <span class="text-danger">*</span></label>
-									<input type="text" class="form-control" id="adresseAtelier" name="adresse" required>
-								</div>
-								<div class="mb-3">
-									<label for="telephoneAtelier" class="form-label">Téléphone <span class="text-danger">*</span></label>
-									<input type="tel" class="form-control" id="telephoneAtelier" name="telephone" required>
-								</div>
-								<div class="mb-3">
-									<label for="dateCreationAtelier" class="form-label">Date de création</label>
-									<input type="date" class="form-control" id="dateCreationAtelier" name="dateCreation">
-									<div class="form-text">Optionnel - La date actuelle sera utilisée si vide</div>
-								</div>
+								<form id="createPermissionForm">
+									<div class="mb-3">
+										<label for="permissionCode" class="form-label">Code de la permission</label>
+										<input type="text" class="form-control" id="permissionCode" required 
+											placeholder="Ex: USER_CREATE, PRODUCT_DELETE">
+										<div class="form-text">Le code doit être unique et en majuscules avec des underscores</div>
+									</div>
+									<div class="mb-3">
+										<label for="permissionDescription" class="form-label">Description</label>
+										<textarea class="form-control" id="permissionDescription" rows="3" required
+												placeholder="Décrivez l'action autorisée par cette permission"></textarea>
+									</div>
+								</form>
 							</div>
 							<div class="modal-footer">
 								<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-								<button type="submit" class="btn btn-primary">Ajouter</button>
+								<button type="button" class="btn btn-primary" id="submitCreatePermission">
+									<div class="loading-spinner" id="createSpinner"></div>
+									Créer la permission
+								</button>
 							</div>
-						</form>
-					</div>
-				</div>
-
-				<!-- Modal de modification -->
-				<div class="modal fade" id="editAtelierModal" tabindex="-1" aria-labelledby="editAtelierModalLabel" aria-hidden="true">
-					<div class="modal-dialog">
-						<div class="modal-content">
-							<form id="editAtelierForm">
-								<div class="modal-header bg-primary">
-									<h5 class="modal-title" style="color: white;">
-										<i class="bi bi-pencil"></i> Modifier l'atelier
-									</h5>
-									<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-								</div>
-								<div class="modal-body">
-									<!-- Champ caché pour l'ID -->
-									<input type="hidden" id="editAtelierId" name="id">
-									
-									<div class="mb-3">
-										<label for="editNomAtelier" class="form-label">Nom de l'atelier <span class="text-danger">*</span></label>
-										<input type="text" class="form-control" id="editNomAtelier" name="nom" required>
-									</div>
-									<div class="mb-3">
-										<label for="editAdresseAtelier" class="form-label">Adresse <span class="text-danger">*</span></label>
-										<input type="text" class="form-control" id="editAdresseAtelier" name="adresse" required>
-									</div>
-									<div class="mb-3">
-										<label for="editTelephoneAtelier" class="form-label">Téléphone <span class="text-danger">*</span></label>
-										<input type="tel" class="form-control" id="editTelephoneAtelier" name="telephone" required>
-									</div>
-									<div class="mb-3">
-										<label for="editDateCreationAtelier" class="form-label">Date de création</label>
-										<input type="datetime-local" class="form-control" id="editDateCreationAtelier" name="dateCreation">
-										<div class="form-text">Format: AAAA-MM-JJ HH:MM</div>
-									</div>
-								</div>
-								<div class="modal-footer">
-									<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-										<i class="bi bi-x"></i> Annuler
-									</button>
-									<button type="submit" class="btn btn-primary">
-										<i class="bi bi-check"></i> Enregistrer
-									</button>
-								</div>
-							</form>
 						</div>
 					</div>
 				</div>
+    
+					<!-- Container pour les toasts -->
+					<div class="toast-container" id="toastContainer"></div>
 			</div>
 		</div>
 		<!--end page wrapper -->
@@ -772,20 +867,421 @@
 		new PerfectScrollbar('.store-metrics');
 		new PerfectScrollbar('.product-list');
 	</script>
-	<!-- <script>
-			document.addEventListener('DOMContentLoaded', function() {
-				// Vérifier l'authentification sur chaque page
-				if (!isAuthenticated()) {
-					window.location.href = 'index.html';
-					return;
-				}
-				
-				// Afficher les infos utilisateur de base
-				const userData = getUserData();
-				if (userData) {
-					$('#userName').text(userData.prenom + ' ' + userData.nom);
-				}
-			});
-    </script> -->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const API_BASE_URL = "http://localhost:8080";
+    const API_PERMISSIONS = `${API_BASE_URL}/api/admin/permissions`;
+    const API_USER_PERMISSIONS = `${API_BASE_URL}/api/admin/utilisateurs`;
+
+    // Fonction pour récupérer le token
+    function getToken() {
+        return localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+    }
+
+    // Fonction pour récupérer les données utilisateur
+    function getUserData() {
+        const userData = JSON.parse(
+            localStorage.getItem("userData") ||
+            sessionStorage.getItem("userData") ||
+            "{}"
+        );
+
+        return {
+            userId: userData.id || userData.userId,
+            role: userData.role || "",
+            atelierId: userData.atelierId || (userData.atelier ? userData.atelier.id : null),
+        };
+    }
+
+    // Fonction pour vérifier les permissions (seul SUPERADMIN peut accéder)
+    function checkPermission() {
+        const userData = getUserData();
+        if (userData.role !== 'SUPERADMIN') {
+            Swal.fire({
+                icon: "error",
+                title: "Accès refusé",
+                text: "Cette fonctionnalité est réservée aux administrateurs.",
+                confirmButtonColor: "#d33",
+            }).then(() => {
+                window.location.href = 'dashboard.html'; // Rediriger vers le tableau de bord
+            });
+            return false;
+        }
+        return true;
+    }
+
+    // Fonction pour afficher les messages de succès
+    function successMessage(message) {
+        Swal.fire({
+            icon: "success",
+            title: "Succès",
+            text: message,
+            toast: true,
+            position: "top-end",
+            timer: 2500,
+            timerProgressBar: true,
+            showConfirmButton: false,
+        });
+    }
+
+    // Fonction pour afficher les messages d'erreur
+    function errorMessage(message) {
+        Swal.fire({
+            icon: "error",
+            title: "Erreur",
+            text: message,
+            confirmButtonColor: "#d33",
+        });
+    }
+
+    // Fonction pour gérer les erreurs d'API
+    async function handleApiError(response, context) {
+        if (response.status === 401) {
+            logout();
+            return true;
+        }
+
+        if (response.status === 403) {
+            errorMessage("Accès refusé. Vous n'avez pas les permissions nécessaires.");
+            return true;
+        }
+
+        if (response.status >= 500) {
+            errorMessage("Erreur serveur. Veuillez réessayer plus tard.");
+            return true;
+        }
+
+        return false;
+    }
+
+    // Fonction de déconnexion
+    function logout() {
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("userData");
+        sessionStorage.removeItem("authToken");
+        sessionStorage.removeItem("userData");
+        window.location.href = "index.html";
+    }
+
+    // Variables globales
+    let allPermissions = [];
+    let allUsers = [];
+    let selectedUserId = null;
+    let selectedUserPermissions = new Set();
+
+    // Charger les utilisateurs
+    async function loadUsers() {
+        try {
+            const token = getToken();
+            if (!token) {
+                errorMessage("Token non disponible. Veuillez vous reconnecter.");
+                return;
+            }
+
+            const response = await fetch(`${API_BASE_URL}/api/utilisateurs`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                allUsers = await response.json();
+                displayUsers(allUsers);
+            } else {
+                if (await handleApiError(response, "chargement utilisateurs")) return;
+                errorMessage("Erreur lors du chargement des utilisateurs");
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            errorMessage('Une erreur est survenue lors du chargement des utilisateurs');
+        }
+    }
+
+    // Afficher la liste des utilisateurs
+    function displayUsers(users) {
+        const usersList = document.getElementById('usersList');
+        usersList.innerHTML = '';
+
+        users.forEach(user => {
+            const userElement = document.createElement('div');
+            userElement.className = 'list-group-item user-card p-3';
+            userElement.dataset.userId = user.id;
+            userElement.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="user-avatar">
+                            ${user.prenom.charAt(0)}${user.nom.charAt(0)}
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="user-name fw-bold">${user.prenom} ${user.nom}</div>
+                        <div class="user-email small text-muted">${user.email}</div>
+                        <span class="badge bg-secondary">${user.role}</span>
+                    </div>
+                </div>
+            `;
+
+            userElement.addEventListener('click', () => selectUser(user.id));
+            usersList.appendChild(userElement);
+        });
+    }
+
+    // Charger toutes les permissions
+    async function loadAllPermissions() {
+        try {
+            const token = getToken();
+            if (!token) {
+                errorMessage("Token non disponible. Veuillez vous reconnecter.");
+                return;
+            }
+
+            const response = await fetch(`${API_BASE_URL}/api/admin/permissions`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                allPermissions = await response.json();
+            } else {
+                if (await handleApiError(response, "chargement permissions")) return;
+                errorMessage("Erreur lors du chargement des permissions");
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            errorMessage('Une erreur est survenue lors du chargement des permissions');
+        }
+    }
+
+    // Sélectionner un utilisateur
+    async function selectUser(userId) {
+        selectedUserId = userId;
+
+        // Mettre en évidence l'utilisateur sélectionné
+        document.querySelectorAll('.user-card').forEach(card => {
+            if (card.dataset.userId === userId) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        });
+
+        // Afficher le nom de l'utilisateur sélectionné
+        const selectedUser = allUsers.find(u => u.id == userId);
+        document.getElementById('selectedUserName').textContent = `${selectedUser.prenom} ${selectedUser.nom}`;
+
+        // Afficher le bouton d'enregistrement
+        document.getElementById('saveButtonContainer').style.display = 'block';
+
+        // Charger les permissions de cet utilisateur
+        await loadUserPermissions(userId);
+    }
+
+    // Charger les permissions d'un utilisateur
+    async function loadUserPermissions(userId) {
+        try {
+            const token = getToken();
+            if (!token) {
+                errorMessage("Token non disponible. Veuillez vous reconnecter.");
+                return;
+            }
+
+            const response = await fetch(`${API_BASE_URL}/api/admin/utilisateurs/${userId}/permissions`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const userPermissions = await response.json();
+                selectedUserPermissions = new Set(userPermissions.map(p => p.id));
+                renderPermissions(userPermissions);
+            } else {
+                if (await handleApiError(response, "chargement permissions utilisateur")) return;
+                errorMessage("Erreur lors du chargement des permissions de l'utilisateur");
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            errorMessage('Une erreur est survenue lors du chargement des permissions');
+        }
+    }
+
+    // Afficher les permissions avec cases à cocher
+    function renderPermissions(userPermissions) {
+        const container = document.getElementById('permissionsList');
+        container.innerHTML = '';
+
+        // Grouper les permissions par module
+        const permissionsByModule = {};
+        allPermissions.forEach(permission => {
+            const module = permission.code.split('_')[0];
+            if (!permissionsByModule[module]) {
+                permissionsByModule[module] = [];
+            }
+            permissionsByModule[module].push(permission);
+        });
+
+        // Créer les éléments pour chaque module
+        for (const module in permissionsByModule) {
+            // Titre du module
+            const moduleTitle = document.createElement('div');
+            moduleTitle.className = 'module-title';
+            moduleTitle.textContent = `Module ${module}`;
+            container.appendChild(moduleTitle);
+
+            // Permissions du module
+            permissionsByModule[module].forEach(permission => {
+                const isChecked = Array.from(selectedUserPermissions).some(id => id === permission.id);
+
+                const permissionItem = document.createElement('div');
+                permissionItem.className = 'permission-item';
+                permissionItem.innerHTML = `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" 
+                               value="${permission.id}" 
+                               id="perm-${permission.id}" 
+                               ${isChecked ? 'checked' : ''}>
+                        <label class="form-check-label" for="perm-${permission.id}">
+                            ${permission.code} - ${permission.description}
+                        </label>
+                    </div>
+                `;
+
+                container.appendChild(permissionItem);
+            });
+        }
+    }
+
+    // Enregistrer les permissions modifiées
+    async function savePermissions() {
+        if (!selectedUserId) {
+            errorMessage("Veuillez sélectionner un utilisateur");
+            return;
+        }
+
+        const token = getToken();
+        if (!token) {
+            errorMessage("Token non disponible. Veuillez vous reconnecter.");
+            return;
+        }
+
+       // Récupérer les IDs des permissions cochées
+		const selectedPermissionIds = new Set();
+		document.querySelectorAll('#permissionsList input[type="checkbox"]:checked').forEach(checkbox => {
+			selectedPermissionIds.add(checkbox.value); // garder en string (UUID)
+		});
+
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/admin/utilisateurs/${selectedUserId}/permissions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(Array.from(selectedPermissionIds))
+            });
+
+            if (response.ok) {
+                successMessage('Les permissions ont été mises à jour avec succès');
+            } else {
+                if (await handleApiError(response, "sauvegarde permissions")) return;
+                errorMessage("Erreur lors de la mise à jour des permissions");
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            errorMessage('Une erreur est survenue lors de la mise à jour des permissions');
+        }
+    }
+
+   // Créer une nouvelle permission
+async function createPermission() {
+    const token = getToken();
+    if (!token) {
+        errorMessage("Token non disponible. Veuillez vous reconnecter.");
+        return;
+    }
+
+    const code = document.getElementById('permissionCode').value.trim();
+    const description = document.getElementById('permissionDescription').value.trim();
+
+    if (!code) {
+        errorMessage("Le code de la permission est obligatoire");
+        return;
+    }
+
+    if (!description) {
+        errorMessage("La description de la permission est obligatoire");
+        return;
+    }
+
+    // Valider le format du code
+    if (!/^[A-Z_]+$/.test(code)) {
+        errorMessage("Le code doit contenir uniquement des lettres majuscules et des underscores");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/admin/permissions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ code, description })
+        });
+
+        if (response.ok) {
+            successMessage('La permission a été créée avec succès');
+            // Fermer le modal
+            bootstrap.Modal.getInstance(document.getElementById('ajouterPermissionModal')).hide();
+            // Réinitialiser le formulaire
+            document.getElementById('createPermissionForm').reset();
+            // Recharger la liste des permissions
+            loadAllPermissions();
+        } else {
+            const errorData = await response.json();
+            if (await handleApiError(response, "création permission")) return;
+            errorMessage(errorData.error || "Erreur lors de la création de la permission");
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        errorMessage('Une erreur est survenue lors de la création de la permission');
+    }
+}
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+        // Vérifier les permissions
+        if (!checkPermission()) {
+            return;
+        }
+
+        // Charger les données
+        loadUsers();
+        loadAllPermissions();
+
+        // Événements
+        document.getElementById('savePermissions').addEventListener('click', savePermissions);
+        document.getElementById('submitCreatePermission').addEventListener('click', createPermission);
+
+        // Recherche d'utilisateurs
+        document.getElementById('userSearch').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const userElements = document.querySelectorAll('.user-card');
+            
+            userElements.forEach(element => {
+                const userName = element.querySelector('.user-name').textContent.toLowerCase();
+                const userEmail = element.querySelector('.user-email').textContent.toLowerCase();
+                
+                if (userName.includes(searchTerm) || userEmail.includes(searchTerm)) {
+                    element.style.display = 'flex';
+                } else {
+                    element.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
 </body>
 </html>

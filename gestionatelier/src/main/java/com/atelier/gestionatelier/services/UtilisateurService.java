@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
-
+import java.util.Optional;
 @Service
 public class UtilisateurService {
 
@@ -238,5 +238,8 @@ public class UtilisateurService {
                 .orElseThrow(() -> new Exception("Utilisateur non trouvé"));
         utilisateur.setActif(false);
         return utilisateurRepository.save(utilisateur);
+    }
+    public Optional<Utilisateur> findById(UUID id) {
+        return utilisateurRepository.findById(id);
     }
 }

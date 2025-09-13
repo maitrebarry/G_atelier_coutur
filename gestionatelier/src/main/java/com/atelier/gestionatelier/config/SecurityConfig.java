@@ -3,6 +3,7 @@ package com.atelier.gestionatelier.config;
 import com.atelier.gestionatelier.security.JwtUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -32,22 +33,28 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
-     @Bean
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(auth -> auth
+                .authorizeHttpRequests(authz -> authz
+                        // Autoriser les requêtes OPTIONS (préflight)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        
+                        // Routes publiques
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/utilisateurs/create").permitAll() // Inscription publique
                         .requestMatchers("/model_photo/**").permitAll()
                         
-                        // Tous les utilisateurs authentifiés peuvent accéder aux endpoints
-                        // La logique métier gère les permissions fine-grained
+                        // Routes d'administration - utiliser hasAuthority au lieu de hasAnyRole
+                        .requestMatchers("/api/admin/**").hasAnyAuthority("ROLE_SUPERADMIN", "ROLE_PROPRIETAIRE")
+                        
+                        // Routes authentifiées
                         .requestMatchers("/api/utilisateurs/**").authenticated()
                         .requestMatchers("/api/ateliers/**").authenticated()
-                        
                         .requestMatchers("/api/**").authenticated()
+                        
+                        // Toutes les autres requêtes
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
@@ -68,14 +75,16 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of(
             "http://127.0.0.1:5500",
             "http://localhost:5500",
-            "http://localhost:8080"
+            "http://localhost:8080",
+            "http://localhost:3000"
         ));
         
         configuration.addAllowedOriginPattern("*");
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept"));
         configuration.setAllowCredentials(true);
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Disposition"));
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

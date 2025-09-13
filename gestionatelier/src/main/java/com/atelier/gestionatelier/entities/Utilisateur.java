@@ -3,8 +3,11 @@ package com.atelier.gestionatelier.entities;
 import lombok.*;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+
+import java.util.HashSet;
 import java.util.UUID;
 import com.atelier.gestionatelier.security.Role;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -12,9 +15,8 @@ import com.atelier.gestionatelier.security.Role;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Utilisateur {
-
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
    @NotBlank(message = "Le prénom est obligatoire")
@@ -40,7 +42,13 @@ public class Utilisateur {
     private Role role;
     @Column(name = "actif")
     private Boolean actif = true; // Par défaut actif
-    
+      @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "utilisateur_permissions",
+        joinColumns = @JoinColumn(name = "utilisateur_id"),
+        inverseJoinColumns = @JoinColumn(name = "permission_id")
+    )
+    private Set<Permission> permissions = new HashSet<>();
     public Boolean getActif() {
         return actif;
     }
