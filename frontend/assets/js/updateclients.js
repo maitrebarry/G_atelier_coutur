@@ -7,7 +7,7 @@ document.querySelectorAll(".btn-modifier").forEach((btn) => {
         localStorage.getItem("authToken") ||
         sessionStorage.getItem("authToken");
 
-      const res = await fetch(`http://localhost:8080/api/clients/${clientId}`, {
+      const res = await fetch(`http://localhost:8081/api/clients/${clientId}`, {
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
@@ -63,7 +63,7 @@ document.querySelectorAll(".btn-modifier").forEach((btn) => {
           photoPath = photoPath.substring("model_photo/".length);
         }
         document.getElementById("editPhotoPreview").src = photoPath
-          ? `http://localhost:8080/model_photo/${photoPath}`
+          ? `http://localhost:8081/model_photo/${photoPath}`
           : "default_femme.png";
       } else {
         document.getElementById("editMesureId").value = "";

@@ -1,5 +1,5 @@
-const apiAteliers = "http://localhost:8080/api/ateliers";
-const apiUtilisateurs = "http://localhost:8080/api/utilisateurs";
+const apiAteliers = "http://localhost:8081/api/ateliers";
+const apiUtilisateurs = "http://localhost:8081/api/utilisateurs";
 
 // Fonction pour récupérer le token
 function getToken() {
@@ -7,8 +7,6 @@ function getToken() {
     localStorage.getItem("authToken") || sessionStorage.getItem("authToken")
   );
 }
-
-// Fonction pour récupérer les données utilisateur
 // Fonction pour récupérer les données utilisateur
 function getUserData() {
   const userData = JSON.parse(
@@ -153,11 +151,11 @@ async function loadAteliers() {
       throw new Error("Token non disponible. Veuillez vous reconnecter.");
     }
 
-    let apiUrl = "http://localhost:8080/api/ateliers";
+    let apiUrl = "http://localhost:8081/api/ateliers";
     
     // Si c'est un propriétaire, charger seulement son atelier
     if (currentUserRole === "PROPRIETAIRE" && currentUserAtelierId) {
-      apiUrl = `http://localhost:8080/api/ateliers/${currentUserAtelierId}`;
+      apiUrl = `http://localhost:8081/api/ateliers/${currentUserAtelierId}`;
     }
 
     const response = await fetch(apiUrl, {
@@ -281,45 +279,269 @@ document
       errorMessage("Erreur lors de la création de l'utilisateur");
     }
   });
-// ➡️ Charger les utilisateurs (version corrigée)
+
 // ➡️ Charger les utilisateurs avec gestion des permissions
+// async function loadUtilisateurs() {
+//   const token = getToken();
+//   if (!token) {
+//     errorMessage("Token non disponible. Veuillez vous reconnecter.");
+//     return;
+//   }
+
+//   try {
+//     const res = await fetch(apiUtilisateurs, {
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//       },
+//     });
+
+//     if (!res.ok) {
+//       if (await handleApiError(res, "chargement utilisateurs")) return;
+//       throw new Error(`Erreur HTTP: ${res.status}`);
+//     }
+
+//     const users = await res.json();
+//     const tbody = document.getElementById("ateliersBody");
+//     if (!tbody) return;
+
+//     const currentUser = getUserData();
+//     const currentUserId = currentUser.userId;
+//     const currentUserRole = currentUser.role;
+//     const currentUserAtelierId = currentUser.atelierId;
+
+//     let rows = "";
+
+//     users.forEach((u, index) => {
+//       const isActive = u.actif === true || u.actif === 1;
+//       const statusClass = isActive ? "success" : "danger";
+//       const statusText = isActive ? "Actif" : "Inactif";
+
+//       const isCurrentUser = u.id === currentUserId;
+//       const isSameAtelier = u.atelier?.id === currentUserAtelierId;
+
+//       // LOGIQUE DES PERMISSIONS
+//       let canEdit = false;
+//       let canDelete = false;
+//       let canToggleActivation = false;
+
+//       // SUPERADMIN peut tout faire sur tous les utilisateurs (sauf lui-même)
+//       if (currentUserRole === "SUPERADMIN") {
+//         canEdit = !isCurrentUser;
+//         canDelete = !isCurrentUser;
+//         canToggleActivation = !isCurrentUser;
+//       }
+//       // PROPRIETAIRE peut modifier son compte et gérer ses subordonnés
+//       else if (currentUserRole === "PROPRIETAIRE") {
+//         // Peut modifier son propre compte
+//         canEdit = isCurrentUser;
+//         // Peut gérer les subordonnés (SECRETAIRE, TAILLEUR) de son atelier
+//         const isSubordinate =
+//           (u.role === "SECRETAIRE" || u.role === "TAILLEUR") && isSameAtelier;
+//         canEdit = canEdit || isSubordinate;
+//         canToggleActivation = isSubordinate;
+//         // Propriétaire ne peut jamais supprimer
+//         canDelete = false;
+//       }
+//       // TAILLEUR peut seulement modifier son propre compte
+//       else if (currentUserRole === "TAILLEUR") {
+//         canEdit = isCurrentUser;
+//         canDelete = false;
+//         canToggleActivation = false;
+//       }
+//       // SECRETAIRE peut seulement modifier son propre compte
+//       else if (currentUserRole === "SECRETAIRE") {
+//         canEdit = isCurrentUser;
+//         canDelete = false;
+//         canToggleActivation = false;
+//       }
+
+//       rows += `
+//         <tr>
+//           <td>${index + 1}</td>
+//           <td>${u.prenom || "N/A"}</td>
+//           <td>${u.nom || "N/A"}</td>
+//           <td>${u.email || "N/A"}</td>
+//           <td>${u.role || "N/A"}</td>
+//           <td>${u.atelier?.nom || "N/A"}</td>
+//           <td>
+//             <span class="badge bg-${statusClass}">${statusText}</span>
+//           </td>
+//           <td>
+//             ${
+//               canEdit
+//                 ? `
+//               <button class="btn btn-sm btn-warning me-1 btn-modifier" title="Modifier" data-id="${u.id}">
+//                 <i class="bi bi-pencil"></i> 
+//               </button>
+//             `
+//                 : ""
+//             }
+            
+//             ${
+//               canDelete
+//                 ? `
+//               <button class="btn btn-sm btn-danger me-1 btn-supprimer" title="Supprimer" data-id="${u.id}">
+//                 <i class="bi bi-trash"></i> 
+//               </button>
+//             `
+//                 : ""
+//             }
+            
+//             ${
+//               canToggleActivation
+//                 ? isActive
+//                   ? `<button class="btn btn-sm btn-danger btn-desactiver" title="Désactiver" data-id="${u.id}">
+//                   <i class="bi bi-person-x"></i> 
+//                 </button>`
+//                   : `<button class="btn btn-sm btn-success btn-activer" title="Activer" data-id="${u.id}">
+//                   <i class="bi bi-person-check"></i> 
+//                 </button>`
+//                 : ""
+//             }
+//           </td>
+//         </tr>
+//       `;
+//     });
+
+//     tbody.innerHTML =
+//       rows ||
+//       `<tr><td colspan="8" class="text-center">Aucun utilisateur trouvé</td></tr>`;
+
+//     // Attacher événements après injection
+//     document.querySelectorAll(".btn-modifier").forEach((btn) => {
+//       btn.addEventListener("click", () => editUser(btn.dataset.id));
+//     });
+
+//     document.querySelectorAll(".btn-supprimer").forEach((btn) => {
+//       btn.addEventListener("click", () => deleteUser(btn.dataset.id));
+//     });
+
+//     document.querySelectorAll(".btn-activer").forEach((btn) => {
+//       btn.addEventListener("click", () => activerUser(btn.dataset.id));
+//     });
+
+//     document.querySelectorAll(".btn-desactiver").forEach((btn) => {
+//       btn.addEventListener("click", () => desactiverUser(btn.dataset.id));
+//     });
+//   } catch (error) {
+//     console.error("Erreur chargement utilisateurs:", error);
+//     errorMessage("Erreur lors du chargement des utilisateurs");
+//   }
+// }
 async function loadUtilisateurs() {
+  console.log("🚀 DEBUT - loadUtilisateurs()");
+  
   const token = getToken();
   if (!token) {
+    console.error("❌ Token non disponible");
     errorMessage("Token non disponible. Veuillez vous reconnecter.");
     return;
   }
 
   try {
+    console.log("📡 Tentative de fetch vers:", apiUtilisateurs);
+    console.log("🔑 Token utilisé:", token.substring(0, 20) + "...");
+    
     const res = await fetch(apiUtilisateurs, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
+    console.log("📊 Statut HTTP:", res.status, res.statusText);
+    console.log("✅ Headers:", Object.fromEntries(res.headers.entries()));
+
     if (!res.ok) {
+      console.error("❌ Erreur HTTP:", res.status, res.statusText);
       if (await handleApiError(res, "chargement utilisateurs")) return;
-      throw new Error(`Erreur HTTP: ${res.status}`);
+      throw new Error(`Erreur HTTP: ${res.status} - ${res.statusText}`);
     }
 
-    const users = await res.json();
-    const tbody = document.getElementById("ateliersBody");
-    if (!tbody) return;
+    // DEBUG: Lire d'abord la réponse en texte
+    const responseText = await res.text();
+    console.log("📦 Réponse brute:", responseText);
+    console.log("📏 Longueur réponse:", responseText.length);
 
+    // Vérifier si la réponse est vide
+    if (!responseText.trim()) {
+      console.warn("⚠️ Réponse vide du serveur");
+      const tbody = document.getElementById("ateliersBody");
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-warning">Aucune donnée reçue du serveur</td></tr>`;
+      }
+      return;
+    }
+
+    let users;
+    try {
+      users = JSON.parse(responseText);
+      console.log("✅ JSON parsé avec succès:", users);
+      console.log("📋 Type de données:", typeof users);
+      console.log("🔢 Nombre d'utilisateurs:", Array.isArray(users) ? users.length : "N/A");
+    } catch (parseError) {
+      console.error("❌ ERREUR CRITIQUE - JSON invalide:", parseError);
+      console.error("🔍 Réponse problématique:", responseText);
+      
+      // Essayer de trouver où est l'erreur
+      const problematicIndex = responseText.indexOf(']}]}]}]}]}"');
+      if (problematicIndex !== -1) {
+        console.error("📍 Erreur détectée autour de l'index:", problematicIndex);
+        console.error("📄 Contexte erreur:", responseText.substring(problematicIndex - 50, problematicIndex + 50));
+      }
+      
+      errorMessage("Erreur dans les données du serveur. Contactez l'administrateur.");
+      
+      const tbody = document.getElementById("ateliersBody");
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">
+          <i class="bi bi-exclamation-triangle"></i> Erreur de données serveur
+        </td></tr>`;
+      }
+      return;
+    }
+
+    // Vérifier que c'est un tableau
+    if (!Array.isArray(users)) {
+      console.warn("⚠️ Les données ne sont pas un tableau:", typeof users, users);
+      const tbody = document.getElementById("ateliersBody");
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-warning">
+          Format de données inattendu: ${typeof users}
+        </td></tr>`;
+      }
+      return;
+    }
+
+    const tbody = document.getElementById("ateliersBody");
+    if (!tbody) {
+      console.error("❌ Élément 'ateliersBody' non trouvé dans le DOM");
+      return;
+    }
+
+    console.log("👥 Données utilisateurs à afficher:", users);
+    
     const currentUser = getUserData();
+    console.log("👤 Utilisateur connecté:", currentUser);
+    
     const currentUserId = currentUser.userId;
     const currentUserRole = currentUser.role;
     const currentUserAtelierId = currentUser.atelierId;
 
     let rows = "";
+    let userCount = 0;
 
     users.forEach((u, index) => {
+      userCount++;
+      console.log(`📝 Traitement utilisateur ${index + 1}:`, u);
+      
       const isActive = u.actif === true || u.actif === 1;
       const statusClass = isActive ? "success" : "danger";
       const statusText = isActive ? "Actif" : "Inactif";
 
       const isCurrentUser = u.id === currentUserId;
       const isSameAtelier = u.atelier?.id === currentUserAtelierId;
+
+      console.log(`   - Actif: ${isActive}, Même atelier: ${isSameAtelier}, Utilisateur courant: ${isCurrentUser}`);
 
       // LOGIQUE DES PERMISSIONS
       let canEdit = false;
@@ -331,43 +553,42 @@ async function loadUtilisateurs() {
         canEdit = !isCurrentUser;
         canDelete = !isCurrentUser;
         canToggleActivation = !isCurrentUser;
+        console.log(`   - SUPERADMIN: Edit=${canEdit}, Delete=${canDelete}, Toggle=${canToggleActivation}`);
       }
       // PROPRIETAIRE peut modifier son compte et gérer ses subordonnés
       else if (currentUserRole === "PROPRIETAIRE") {
         // Peut modifier son propre compte
         canEdit = isCurrentUser;
         // Peut gérer les subordonnés (SECRETAIRE, TAILLEUR) de son atelier
-        const isSubordinate =
-          (u.role === "SECRETAIRE" || u.role === "TAILLEUR") && isSameAtelier;
+        const isSubordinate = (u.role === "SECRETAIRE" || u.role === "TAILLEUR") && isSameAtelier;
         canEdit = canEdit || isSubordinate;
         canToggleActivation = isSubordinate;
         // Propriétaire ne peut jamais supprimer
         canDelete = false;
+        console.log(`   - PROPRIETAIRE: Subordonné=${isSubordinate}, Edit=${canEdit}, Toggle=${canToggleActivation}`);
       }
       // TAILLEUR peut seulement modifier son propre compte
       else if (currentUserRole === "TAILLEUR") {
         canEdit = isCurrentUser;
         canDelete = false;
         canToggleActivation = false;
+        console.log(`   - TAILLEUR: Edit=${canEdit}`);
       }
       // SECRETAIRE peut seulement modifier son propre compte
       else if (currentUserRole === "SECRETAIRE") {
         canEdit = isCurrentUser;
         canDelete = false;
         canToggleActivation = false;
+        console.log(`   - SECRETAIRE: Edit=${canEdit}`);
       }
 
+      // CORRECTION : Générer seulement 5 colonnes comme dans l'en-tête
       rows += `
         <tr>
           <td>${index + 1}</td>
           <td>${u.prenom || "N/A"}</td>
           <td>${u.nom || "N/A"}</td>
           <td>${u.email || "N/A"}</td>
-          <td>${u.role || "N/A"}</td>
-          <td>${u.atelier?.nom || "N/A"}</td>
-          <td>
-            <span class="badge bg-${statusClass}">${statusText}</span>
-          </td>
           <td>
             ${
               canEdit
@@ -405,32 +626,132 @@ async function loadUtilisateurs() {
       `;
     });
 
-    tbody.innerHTML =
-      rows ||
-      `<tr><td colspan="8" class="text-center">Aucun utilisateur trouvé</td></tr>`;
+    console.log(`✅ ${userCount} utilisateurs traités, ${rows.split('</tr>').length - 1} lignes générées`);
+
+    // CORRECTION : colspan="5" au lieu de "8"
+    tbody.innerHTML = rows || `<tr><td colspan="5" class="text-center">Aucun utilisateur trouvé</td></tr>`;
+
+    console.log("🎯 Attachement des événements...");
 
     // Attacher événements après injection
-    document.querySelectorAll(".btn-modifier").forEach((btn) => {
-      btn.addEventListener("click", () => editUser(btn.dataset.id));
+    const editButtons = document.querySelectorAll(".btn-modifier");
+    console.log(`🔘 Boutons modification: ${editButtons.length}`);
+    editButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        console.log("✏️ Clic modification utilisateur:", btn.dataset.id);
+        editUser(btn.dataset.id);
+      });
     });
 
-    document.querySelectorAll(".btn-supprimer").forEach((btn) => {
-      btn.addEventListener("click", () => deleteUser(btn.dataset.id));
+    const deleteButtons = document.querySelectorAll(".btn-supprimer");
+    console.log(`🗑️ Boutons suppression: ${deleteButtons.length}`);
+    deleteButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        console.log("❌ Clic suppression utilisateur:", btn.dataset.id);
+        deleteUser(btn.dataset.id);
+      });
     });
 
-    document.querySelectorAll(".btn-activer").forEach((btn) => {
-      btn.addEventListener("click", () => activerUser(btn.dataset.id));
+    const activateButtons = document.querySelectorAll(".btn-activer");
+    console.log(`✅ Boutons activation: ${activateButtons.length}`);
+    activateButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        console.log("🟢 Clic activation utilisateur:", btn.dataset.id);
+        activerUser(btn.dataset.id);
+      });
     });
 
-    document.querySelectorAll(".btn-desactiver").forEach((btn) => {
-      btn.addEventListener("click", () => desactiverUser(btn.dataset.id));
+    const deactivateButtons = document.querySelectorAll(".btn-desactiver");
+    console.log(`❌ Boutons désactivation: ${deactivateButtons.length}`);
+    deactivateButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        console.log("🔴 Clic désactivation utilisateur:", btn.dataset.id);
+        desactiverUser(btn.dataset.id);
+      });
     });
+
+    console.log("🎉 FIN - loadUtilisateurs() - Succès");
+
   } catch (error) {
-    console.error("Erreur chargement utilisateurs:", error);
-    errorMessage("Erreur lors du chargement des utilisateurs");
+    console.error("💥 ERREUR GLOBALE - loadUtilisateurs():", error);
+    console.error("Stack trace:", error.stack);
+    
+    const tbody = document.getElementById("ateliersBody");
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center text-danger">
+            <i class="bi bi-exclamation-triangle-fill"></i><br>
+            Erreur de chargement<br>
+            <small>${error.message}</small>
+          </td>
+        </tr>`;
+    }
+    
+    errorMessage("Erreur lors du chargement des utilisateurs: " + error.message);
+  }
+}
+// ➡️ Fonction pour charger les ateliers dans le select du modal
+async function loadAteliersForSelect() {
+  try {
+    const token = getToken();
+    const currentUser = getUserData();
+    
+    if (!token) return;
+
+    let apiUrl = "http://localhost:8081/api/ateliers";
+    
+    // Si c'est un propriétaire, charger seulement son atelier
+    if (currentUser.role === "PROPRIETAIRE" && currentUser.atelierId) {
+      apiUrl = `http://localhost:8081/api/ateliers/${currentUser.atelierId}`;
+    }
+
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) return;
+
+    let ateliers;
+    if (currentUser.role === "PROPRIETAIRE" && currentUser.atelierId) {
+      const atelier = await response.json();
+      ateliers = [atelier];
+    } else {
+      ateliers = await response.json();
+    }
+
+    const select = document.getElementById("inputAtelier");
+    if (!select) return;
+
+    // Vider les options existantes (garder la première option "Sélectionner")
+    while (select.options.length > 1) {
+      select.remove(1);
+    }
+
+    // Ajouter les ateliers
+    ateliers.forEach(atelier => {
+      const option = document.createElement("option");
+      option.value = atelier.id;
+      option.textContent = atelier.nom || "Atelier sans nom";
+      select.appendChild(option);
+    });
+
+  } catch (error) {
+    console.error("Erreur chargement ateliers:", error);
   }
 }
 
+// ➡️ Recharger les ateliers quand le modal s'ouvre
+document.getElementById('ajouterUtilisateurModal')?.addEventListener('show.bs.modal', function() {
+  const userRole = checkUserRole();
+  if (userRole === 'SUPERADMIN' || userRole === 'PROPRIETAIRE') {
+    loadAteliersForSelect();
+  }
+});
 // ➡️ Supprimer utilisateur avec SweetAlert
 async function deleteUser(id) {
   const token = getToken();
@@ -754,22 +1075,71 @@ function adaptUsersUIByRole() {
     btn.style.display = userRole === "SUPERADMIN" ? "" : "none";
   });
 }
+// ➡️ Fonction pour charger les ateliers dans le select
+async function loadAteliersForSelect() {
+  try {
+    const token = getToken();
+    const currentUser = getUserData();
+    
+    if (!token) return;
 
+    let apiUrl = "http://localhost:8081/api/ateliers";
+    
+    // Si c'est un propriétaire, charger seulement son atelier
+    if (currentUser.role === "PROPRIETAIRE" && currentUser.atelierId) {
+      apiUrl = `http://localhost:8081/api/ateliers/${currentUser.atelierId}`;
+    }
+
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) return;
+
+    let ateliers;
+    if (currentUser.role === "PROPRIETAIRE" && currentUser.atelierId) {
+      const atelier = await response.json();
+      ateliers = [atelier];
+    } else {
+      ateliers = await response.json();
+    }
+
+    const select = document.getElementById("inputAtelier");
+    if (!select) return;
+
+    // Vider les options existantes (garder la première option)
+    while (select.options.length > 1) {
+      select.remove(1);
+    }
+
+    // Ajouter les ateliers
+    ateliers.forEach(atelier => {
+      const option = document.createElement("option");
+      option.value = atelier.id;
+      option.textContent = atelier.nom || "Atelier sans nom";
+      select.appendChild(option);
+    });
+
+  } catch (error) {
+    console.error("Erreur chargement ateliers:", error);
+  }
+}
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
-  // Vérifier l'authentification avant de charger
   if (typeof isAuthenticated === 'function' && isAuthenticated()) {
     const userRole = checkUserRole();
     
-    // Adapter l'UI IMMÉDIATEMENT selon le rôle
     toggleUIByRole();
+    loadUtilisateurs(); // Charger les utilisateurs
     
-    // Charger les ateliers seulement pour SUPERADMIN et PROPRIETAIRE
+    // Charger les ateliers pour le modal
     if (userRole === 'SUPERADMIN' || userRole === 'PROPRIETAIRE') {
-      loadAteliers();
+      loadAteliersForSelect();
     }
-    
-    loadUtilisateurs();
   } else {
     window.location.href = 'index.html';
   }

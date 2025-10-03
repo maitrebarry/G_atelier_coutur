@@ -37,7 +37,7 @@ function confirmAndDelete(clientId) {
   });
 }
 function deleteClient(clientId) {
-  fetch(`http://localhost:8080/api/clients/${clientId}`, {
+  fetch(`http://localhost:8081/api/clients/${clientId}`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",

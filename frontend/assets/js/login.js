@@ -123,7 +123,7 @@
 
            // Appel à l'API de login
            $.ajax({
-             url: "http://localhost:8080/api/auth/login",
+             url: "http://localhost:8081/api/auth/login",
              type: "POST",
              contentType: "application/json",
              data: JSON.stringify({

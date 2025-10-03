@@ -16,7 +16,7 @@ async function loadAteliers() {
       throw new Error("Token non disponible. Veuillez vous reconnecter.");
     }
 
-    const response = await fetch("http://localhost:8080/api/ateliers", {
+    const response = await fetch("http://localhost:8081/api/ateliers", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -153,7 +153,7 @@ async function editAtelier(id) {
     const currentUser = getUserData();
     const currentUserRole = currentUser.role;
 
-    const response = await fetch(`http://localhost:8080/api/ateliers/${id}`, {
+    const response = await fetch(`http://localhost:8081/api/ateliers/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -220,7 +220,7 @@ document
 
     // Vérifier les permissions
     if (currentUserRole === 'PROPRIETAIRE') {
-      const response = await fetch(`http://localhost:8080/api/ateliers/${atelierId}`, {
+      const response = await fetch(`http://localhost:8081/api/ateliers/${atelierId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -249,7 +249,7 @@ document
 
     try {
       const response = await fetch(
-        `http://localhost:8080/api/ateliers/${formData.id}`,
+        `http://localhost:8081/api/ateliers/${formData.id}`,
         {
           method: "PUT",
           headers: {
@@ -322,7 +322,7 @@ async function deleteAtelier(id) {
     try {
       const token = getToken();
 
-      const response = await fetch(`http://localhost:8080/api/ateliers/${id}`, {
+      const response = await fetch(`http://localhost:8081/api/ateliers/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

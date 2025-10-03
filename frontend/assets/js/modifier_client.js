@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
         sessionStorage.getItem("authToken");
 
       const response = await fetch(
-        `http://localhost:8080/api/clients/${clientId}`,
+        `http://localhost:8081/api/clients/${clientId}`,
         {
           headers: {
             Accept: "application/json",
@@ -84,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
           .replace(/^\/+/, "")
           .replace("model_photo/", "");
 
-        photoUrl = `http://localhost:8080/model_photo/${cleanPath}`;
+        photoUrl = `http://localhost:8081/model_photo/${cleanPath}`;
 
         // Stocker le chemin original pour la soumission
         if (existingPhotoInput) {
@@ -266,7 +266,7 @@ document.addEventListener("DOMContentLoaded", () => {
         sessionStorage.getItem("authToken");
 
       const response = await fetch(
-        `http://localhost:8080/api/clients/${currentClientId}`,
+        `http://localhost:8081/api/clients/${currentClientId}`,
         {
           method: "PUT",
           headers: {

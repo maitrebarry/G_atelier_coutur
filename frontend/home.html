@@ -31,35 +31,36 @@
 
 <body>
 	<style>
-	.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px;
-}
+		.sidebar-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 10px;
+		}
 
-.branding {
-  display: flex;
-  align-items: center;
-  /* gap: 5px; espace entre logo et texte */
-  overflow: hidden;
-  flex: 1;
-}
+		.branding {
+			display: flex;
+			align-items: center;
+			/* gap: 5px; espace entre logo et texte */
+			overflow: hidden;
+			flex: 1;
+		}
 
-.logo-icon {
-  width: 40px; /* taille réduite pour s’adapter à la sidebar */
-  height: auto;
-  object-fit: contain;
-}
+		.logo-icon {
+			width: 40px;
+			/* taille réduite pour s’adapter à la sidebar */
+			height: auto;
+			object-fit: contain;
+		}
 
-.logo-text {
-  font-size: 1rem;
-  font-weight: bold;
-  color: #343a40;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+		.logo-text {
+			font-size: 1rem;
+			font-weight: bold;
+			color: #343a40;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
 	</style>
 	<!--wrapper-->
 	<div class="wrapper">
@@ -76,61 +77,67 @@
 			</div>
 			<!--navigation-->
 			<ul class="metismenu" id="menu">
-
-				<!-- Tableau de bord -->
+				<!-- Tableau de bord - Visible pour tous -->
 				<li>
 					<a href="home.html">
-					<div class="parent-icon"><i class='bx bx-home-circle'></i></div>
-					<div class="menu-title">Tableau de bord</div>
+						<div class="parent-icon"><i class='bx bx-home-circle'></i></div>
+						<div class="menu-title">Tableau de bord</div>
 					</a>
 				</li>
-				<!-- Modèles -->
-				<li>
+
+				<!-- Modèles - Permissions: PROPRIETAIRE, SECRETAIRE, TAILLEUR -->
+				<li class="permission-required" data-permissions="MODELE_VIEW">
 					<a href="javascript:;" class="has-arrow">
-					<div class="parent-icon"><i class='bx bx-cut'></i></div>
-					<div class="menu-title">Modèles</div>
+						<div class="parent-icon"><i class='bx bx-cut'></i></div>
+						<div class="menu-title">Modèles</div>
 					</a>
 					<ul>
-					<li><a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures</a></li>
-					<li><a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a></li>
-					<li><a href="modeles.html"><i class="bx bx-right-arrow-alt"></i>Liste des modèles</a></li>
-					<li><a href="affectations.html"><i class="bx bx-right-arrow-alt"></i>Affectations</a></li>
-					<!-- <li><a href="ajouter-modele.html"><i class="bx bx-right-arrow-alt"></i>Ajouter un modèle</a></li> -->
+						<li class="permission-required" data-permissions="CLIENT_VIEW">
+							<a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures clients</a>
+						</li>
+						<li class="permission-required" data-permissions="CLIENT_VIEW">
+							<a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a>
+						</li>
+						<li class="permission-required" data-permissions="MODELE_VIEW">
+							<a href="modeles.html"><i class="bx bx-right-arrow-alt"></i>Modèles en cours</a>
+						</li>
+						<li class="permission-required" data-permissions="AFFECTATION_VIEW">
+							<a href="affectations.html"><i class="bx bx-right-arrow-alt"></i>Affectations</a>
+						</li>
 					</ul>
 				</li>
 
-				<!-- Tailleurs -->
-				<li>
+				<!-- Tailleurs - Permissions: PROPRIETAIRE, SECRETAIRE -->
+				<li class="permission-required" data-permissions="TAILLEUR_VIEW">
 					<a href="tailleurs.html">
-					<div class="parent-icon"><i class='bx bx-user-pin'></i></div>
-					<div class="menu-title">Tailleurs</div>
+						<div class="parent-icon"><i class='bx bx-user-pin'></i></div>
+						<div class="menu-title">Tailleurs</div>
 					</a>
 				</li>
 
-				<!-- Rendez-vous -->
-				<li>
+				<!-- Rendez-vous - Permissions: PROPRIETAIRE, SECRETAIRE -->
+				<li class="permission-required" data-permissions="RENDEZVOUS_VIEW">
 					<a href="rendezvous.html">
-					<div class="parent-icon"><i class='bx bx-calendar'></i></div>
-					<div class="menu-title">Rendez-vous</div>
+						<div class="parent-icon"><i class='bx bx-calendar'></i></div>
+						<div class="menu-title">Rendez-vous</div>
 					</a>
 				</li>
 
-				<!-- Paiements -->
-				<li>
+				<!-- Paiements - Permissions: PROPRIETAIRE, SECRETAIRE -->
+				<li class="permission-required" data-permissions="PAIEMENT_VIEW">
 					<a href="paiements.html">
-					<div class="parent-icon"><i class='bx bx-wallet'></i></div>
-					<div class="menu-title">Paiements</div>
+						<div class="parent-icon"><i class='bx bx-wallet'></i></div>
+						<div class="menu-title">Paiements</div>
 					</a>
 				</li>
 
-				<!-- Paramètres -->
-				<li>
+				<!-- Paramètres - Permissions: PROPRIETAIRE uniquement -->
+				<li class="permission-required" data-permissions="PARAMETRES_VIEW">
 					<a href="parametres.html">
-					<div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
-					<div class="menu-title">Paramètres</div>
+						<div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
+						<div class="menu-title">Paramètres</div>
 					</a>
 				</li>
-
 			</ul>
 
 			<!--end navigation-->
@@ -143,9 +150,11 @@
 					<div class="mobile-toggle-menu"><i class='bx bx-menu'></i>
 					</div>
 					<div class="top-menu ms-auto">
-						<ul class="navbar-nav align-items-center">		
+						<ul class="navbar-nav align-items-center">
 							<li class="nav-item dropdown dropdown-large">
-								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"> <span class="alert-count">7</span>
+								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
+									role="button" data-bs-toggle="dropdown" aria-expanded="false"> <span
+										class="alert-count">7</span>
 									<i class='bx bx-bell'></i>
 								</a>
 								<div class="dropdown-menu dropdown-menu-end">
@@ -156,8 +165,8 @@
 										</div>
 									</a>
 									<div class="header-notifications-list">
-										
-										
+
+
 									</div>
 									<a href="javascript:;">
 										<div class="text-center msg-footer">View All Notifications</div>
@@ -165,21 +174,23 @@
 								</div>
 							</li>
 							<li class="nav-item dropdown dropdown-large">
-								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
+									role="button" data-bs-toggle="dropdown" aria-expanded="false">
 								</a>
 								<div class="dropdown-menu dropdown-menu-end">
 									<a href="javascript:;">
-										
+
 									</a>
 									<div class="header-message-list">
 									</div>
-									
+
 								</div>
 							</li>
 						</ul>
 					</div>
 					<div class="user-box dropdown">
-						<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+						<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#"
+							role="button" data-bs-toggle="dropdown" aria-expanded="false">
 							<img src="https://via.placeholder.com/110x110" class="user-img" alt="user avatar">
 							<div class="user-info ps-3">
 								<p class="user-name mb-0" id="user-name">Chargement...</p>
@@ -187,9 +198,11 @@
 							</div>
 						</a>
 						<ul class="dropdown-menu dropdown-menu-end">
-							<li><a class="dropdown-item" href="javascript:;"><i class="bx bx-user"></i><span>Profile</span></a>
+							<li><a class="dropdown-item" href="javascript:;"><i
+										class="bx bx-user"></i><span>Profile</span></a>
 							</li>
-							<li><a class="dropdown-item" href="javascript:;"><i class="bx bx-cog"></i><span>Paramètres</span></a>
+							<li><a class="dropdown-item" href="javascript:;"><i
+										class="bx bx-cog"></i><span>Paramètres</span></a>
 							</li>
 							<li>
 								<div class="dropdown-divider mb-0"></div>
@@ -228,161 +241,213 @@
 		<!--start page wrapper -->
 		<div class="page-wrapper">
 			<div class="page-content">
-			 <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-            <div class="breadcrumb-title pe-3">Accueil</div>
-            <div class="ps-3">
-              <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0 p-0">
-                  <li class="breadcrumb-item"><a href="javascript:;"><i class="bx bx-home-alt"></i></a>
-                  </li>
-                  <li class="breadcrumb-item active" aria-current="page">Tableau de bord</li>
-                </ol>
-              </nav>
-            </div>
-            <div class="ms-auto">
-              <div class="btn-group">
-                <button type="button" class="btn btn-primary">Settings</button>
-                <button type="button" class="btn btn-primary split-bg-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">	<span class="visually-hidden">Toggle Dropdown</span>
-                </button>
-                <div class="dropdown-menu dropdown-menu-right dropdown-menu-lg-end">	<a class="dropdown-item" href="javascript:;">Action</a>
-                  <a class="dropdown-item" href="javascript:;">Another action</a>
-                  <a class="dropdown-item" href="javascript:;">Something else here</a>
-                  <div class="dropdown-divider"></div>	<a class="dropdown-item" href="javascript:;">Separated link</a>
-                </div>
-              </div>
-            </div>
-          </div>
-      
-          <!--end row-->
-            <!-- <h6 class="mb-0 text-uppercase">Tableau de bord</h6> -->
-            <hr/>
-            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4">
-              <div class="col">
-                <div class="card radius-10 bg-primary bg-gradient">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-white">Total Orders</p>
-                        <h4 class="my-1 text-white">845</h4>
-                      </div>
-                      <div class="text-white ms-auto font-35"><i class='bx bx-cart-alt'></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-danger bg-gradient">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-white">Total Income</p>
-                        <h4 class="my-1 text-white">$89,245</h4>
-                      </div>
-                      <div class="text-white ms-auto font-35"><i class='bx bx-dollar'></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-warning bg-gradient">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-dark">Total Users</p>
-                        <h4 class="text-dark my-1">24.5K</h4>
-                      </div>
-                      <div class="text-dark ms-auto font-35"><i class='bx bx-user-pin'></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-success bg-gradient">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-white">Comments</p>
-                        <h4 class="my-1 text-white">8569</h4>
-                      </div>
-                      <div class="text-white ms-auto font-35"><i class='bx bx-comment-detail'></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-success">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-white">Revenue</p>
-                        <h4 class="my-1 text-white">$4805</h4>
-                        <p class="mb-0 font-13 text-white"><i class="bx bxs-up-arrow align-middle"></i>$34 from last week</p>
-                      </div>
-                      <div class="widgets-icons bg-white text-success ms-auto"><i class="bx bxs-wallet"></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-info">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-dark">Total Customers</p>
-                        <h4 class="my-1 text-dark">8.4K</h4>
-                        <p class="mb-0 font-13 text-dark"><i class="bx bxs-up-arrow align-middle"></i>$24 from last week</p>
-                      </div>
-                      <div class="widgets-icons bg-white text-dark ms-auto"><i class="bx bxs-group"></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-danger">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-white">Store Visitors</p>
-                        <h4 class="my-1 text-white">59K</h4>
-                        <p class="mb-0 font-13 text-white"><i class="bx bxs-down-arrow align-middle"></i>$34 from last week</p>
-                      </div>
-                      <div class="widgets-icons bg-white text-danger ms-auto"><i class="bx bxs-binoculars"></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="col">
-                <div class="card radius-10 bg-warning">
-                  <div class="card-body">
-                    <div class="d-flex align-items-center">
-                      <div>
-                        <p class="mb-0 text-dark">Bounce Rate</p>
-                        <h4 class="my-1 text-dark">34.46%</h4>
-                        <p class="mb-0 font-13 text-dark"><i class="bx bxs-down-arrow align-middle"></i>12.2% from last week</p>
-                      </div>
-                      <div class="widgets-icons bg-white text-dark ms-auto"><i class='bx bx-line-chart-down'></i>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          <!--end row-->
-			 
+				<div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+					<div class="breadcrumb-title pe-3">Accueil</div>
+					<div class="ps-3">
+						<nav aria-label="breadcrumb">
+							<ol class="breadcrumb mb-0 p-0">
+								<li class="breadcrumb-item"><a href="javascript:;"><i class="bx bx-home-alt"></i></a>
+								</li>
+								<li class="breadcrumb-item active" aria-current="page">Tableau de bord</li>
+							</ol>
+						</nav>
+					</div>
+				</div>
+
+				<hr />
+
+				<!-- Statistiques principales -->
+				<div class="row row-cols-1 row-cols-md-2 row-cols-xl-4">
+					<!-- Commandes en cours - Permission: MODELE_VIEW -->
+					<div class="col data-section" data-permission="MODELE_VIEW">
+						<div class="card radius-10 bg-primary bg-gradient">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-white">Commandes en cours</p>
+										<h4 class="my-1 text-white" id="commandesEnCours">0</h4>
+										<p class="mb-0 text-white"><small>Cette semaine</small></p>
+									</div>
+									<div class="text-white ms-auto font-35"><i class='bx bx-t-shirt'></i></div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Revenus du mois - Permission: PAIEMENT_VIEW -->
+					<div class="col data-section" data-permission="PAIEMENT_VIEW">
+						<div class="card radius-10 bg-success bg-gradient">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-white">Revenus du mois</p>
+										<h4 class="my-1 text-white" id="revenusMois">0 FCFA</h4>
+										<p class="mb-0 text-white"><small>+12% vs mois dernier</small></p>
+									</div>
+									<div class="text-white ms-auto font-35"><i class='bx bx-wallet'></i></div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Clients actifs - Permission: CLIENT_VIEW -->
+					<div class="col data-section" data-permission="CLIENT_VIEW">
+						<div class="card radius-10 bg-info bg-gradient">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-white">Clients actifs</p>
+										<h4 class="my-1 text-white" id="clientsActifs">0</h4>
+										<p class="mb-0 text-white"><small>Total clients</small></p>
+									</div>
+									<div class="text-white ms-auto font-35"><i class='bx bx-group'></i></div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Tailleurs disponibles - Permission: TAILLEUR_VIEW -->
+					<div class="col data-section" data-permission="TAILLEUR_VIEW">
+						<div class="card radius-10 bg-warning bg-gradient">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-dark">Tailleurs actifs</p>
+										<h4 class="text-dark my-1" id="tailleursActifs">0</h4>
+										<p class="mb-0 text-dark"><small>Sur site</small></p>
+									</div>
+									<div class="text-dark ms-auto font-35"><i class='bx bx-user-check'></i></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Deuxième ligne de statistiques -->
+				<div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 mt-3">
+					<!-- Modèles terminés - Permission: MODELE_VIEW -->
+					<div class="col data-section" data-permission="MODELE_VIEW">
+						<div class="card radius-10 bg-success">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-white">Modèles terminés</p>
+										<h4 class="my-1 text-white" id="modelesTermines">0</h4>
+										<p class="mb-0 font-13 text-white"><i class="bx bxs-up-arrow align-middle"></i>5
+											cette semaine</p>
+									</div>
+									<div class="widgets-icons bg-white text-success ms-auto"><i
+											class="bx bx-check-circle"></i></div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Rendez-vous aujourd'hui - Permission: RENDEZVOUS_VIEW -->
+					<div class="col data-section" data-permission="RENDEZVOUS_VIEW">
+						<div class="card radius-10 bg-purple">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-white">Rendez-vous Aujourd'hui</p>
+										<h4 class="my-1 text-white" id="rdvAujourdhui">0</h4>
+										<p class="mb-0 font-13 text-white"><i
+												class="bx bxs-calendar align-middle"></i>Prochain: 14:00</p>
+									</div>
+									<div class="widgets-icons bg-white text-purple ms-auto"><i
+											class="bx bx-calendar-event"></i></div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Paiements en attente - Permission: PAIEMENT_VIEW -->
+					<div class="col data-section" data-permission="PAIEMENT_VIEW">
+						<div class="card radius-10 bg-danger">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-white">Paiements en attente</p>
+										<h4 class="my-1 text-white" id="paiementsAttente">0</h4>
+										<p class="mb-0 font-13 text-white"><i
+												class="bx bxs-time align-middle"></i>Total: 0 FCFA</p>
+									</div>
+									<div class="widgets-icons bg-white text-danger ms-auto"><i
+											class="bx bx-time-five"></i></div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Satisfaction clients - Permission: CLIENT_VIEW -->
+					<div class="col data-section" data-permission="CLIENT_VIEW">
+						<div class="card radius-10 bg-orange">
+							<div class="card-body">
+								<div class="d-flex align-items-center">
+									<div>
+										<p class="mb-0 text-white">Satisfaction clients</p>
+										<h4 class="my-1 text-white" id="satisfactionClients">0%</h4>
+										<p class="mb-0 font-13 text-white"><i class="bx bxs-star align-middle"></i>4.5/5
+											étoiles</p>
+									</div>
+									<div class="widgets-icons bg-white text-orange ms-auto"><i class="bx bxs-star"></i>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Sections avec permissions -->
+				<div class="row mt-4">
+					<!-- Commandes récentes - Permission: MODELE_VIEW -->
+					<div class="col-12 col-lg-6 permission-required" data-permissions="MODELE_VIEW">
+						<div class="card">
+							<div class="card-header bg-primary">
+								<h6 class="mb-0 text-white">Commandes récentes</h6>
+							</div>
+							<div class="card-body">
+								<div class="table-responsive">
+									<table class="table table-striped">
+										<thead>
+											<tr>
+												<th>Client</th>
+												<th>Modèle</th>
+												<th>Date livraison</th>
+												<th>Statut</th>
+											</tr>
+										</thead>
+										<tbody id="commandesRecentes">
+											<!-- Rempli dynamiquement -->
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Tâches du jour - Permission: MODELE_VIEW + rôle TAILLEUR -->
+					<div class="col-12 col-lg-6 permission-required" data-permissions="MODELE_VIEW">
+						<div class="card">
+							<div class="card-header bg-warning">
+								<h6 class="mb-0 text-dark">Mes tâches aujourd'hui</h6>
+							</div>
+							<div class="card-body">
+								<div id="tachesTailleur">
+									<!-- Rempli dynamiquement -->
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 		<!--end page wrapper -->
 		<!--start overlay-->
 		<div class="overlay toggle-icon"></div>
 		<!--end overlay-->
-		<!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
+		<!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i
+				class='bx bxs-up-arrow-alt'></i></a>
 		<!--End Back To Top Button-->
 		<footer class="page-footer">
 			<p class="mb-0">Copyright © 2021. All right reserved.</p>
@@ -398,9 +463,9 @@
 				<h5 class="mb-0 text-uppercase">Theme Customizer</h5>
 				<button type="button" class="btn-close ms-auto close-switcher" aria-label="Close"></button>
 			</div>
-			<hr/>
+			<hr />
 			<h6 class="mb-0">Theme Styles</h6>
-			<hr/>
+			<hr />
 			<div class="d-flex align-items-center justify-content-between">
 				<div class="form-check">
 					<input class="form-check-input" type="radio" name="flexRadioDefault" id="lightmode" checked>
@@ -415,14 +480,14 @@
 					<label class="form-check-label" for="semidark">Semi Dark</label>
 				</div>
 			</div>
-			<hr/>
+			<hr />
 			<div class="form-check">
 				<input class="form-check-input" type="radio" id="minimaltheme" name="flexRadioDefault">
 				<label class="form-check-label" for="minimaltheme">Minimal Theme</label>
 			</div>
-			<hr/>
+			<hr />
 			<h6 class="mb-0">Header Colors</h6>
-			<hr/>
+			<hr />
 			<div class="header-colors-indigators">
 				<div class="row row-cols-auto g-3">
 					<div class="col">
@@ -477,6 +542,8 @@
 		new PerfectScrollbar('.store-metrics');
 		new PerfectScrollbar('.product-list');
 	</script>
+	<script src="assets/js/home_permission.js"></script>
+	
 </body>
 
 </html>

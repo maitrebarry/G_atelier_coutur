@@ -3,12 +3,16 @@ package com.atelier.gestionatelier.entities;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import org.springframework.security.core.GrantedAuthority;
 import java.util.UUID;
 import java.util.Set;
 
 @Entity
 @Table(name = "permissions")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // Ajout pour éviter les problèmes de sérialisation
 public class Permission implements GrantedAuthority {
 
     @Id
@@ -23,6 +27,7 @@ public class Permission implements GrantedAuthority {
     private String description;
 
     @ManyToMany(mappedBy = "permissions")
+    @JsonIgnore // CORRECTION CRITIQUE : Ignore complètement les utilisateurs dans le JSON
     private Set<Utilisateur> utilisateurs;
 
     public Permission() {}
@@ -68,5 +73,15 @@ public class Permission implements GrantedAuthority {
 
     public void setUtilisateurs(Set<Utilisateur> utilisateurs) {
         this.utilisateurs = utilisateurs;
+    }
+
+    // Éviter la récursion dans toString()
+    @Override
+    public String toString() {
+        return "Permission{" +
+                "id=" + id +
+                ", code='" + code + '\'' +
+                ", description='" + description + '\'' +
+                '}';
     }
 }

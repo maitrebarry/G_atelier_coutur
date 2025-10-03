@@ -21,7 +21,7 @@ async function fetchClients() {
     const token =
       localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
-    const response = await fetch("http://localhost:8080/api/clients", {
+    const response = await fetch("http://localhost:8081/api/clients", {
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${token}`, // 🔑 indispensable
@@ -108,7 +108,7 @@ async function fetchClients() {
           sessionStorage.getItem("authToken");
 
         const response = await fetch(
-          `http://localhost:8080/api/clients/${clientId}`,
+          `http://localhost:8081/api/clients/${clientId}`,
           {
             headers: {
               Accept: "application/json",
@@ -135,7 +135,7 @@ async function fetchClients() {
             let cleanPath = mesure.photoPath
               .replace(/^\/+/, "")
               .replace("model_photo/", "");
-            photoPath = `http://localhost:8080/model_photo/${cleanPath}`;
+            photoPath = `http://localhost:8081/model_photo/${cleanPath}`;
           }
         }
         photoClient.src = photoPath;

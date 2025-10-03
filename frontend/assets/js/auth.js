@@ -28,7 +28,7 @@ function fetchUserData() {
   }
 
   $.ajax({
-    url: "http://localhost:8080/api/auth/me", // CHANGÉ: utilisez /api/auth/me
+    url: "http://localhost:8081/api/auth/me", // CHANGÉ: utilisez /api/auth/me
     type: "GET",
     headers: {
       Authorization: "Bearer " + token,
@@ -81,7 +81,7 @@ function logout() {
   const token = getToken();
   if (token) {
     $.ajax({
-      url: "http://localhost:8080/api/auth/logout",
+      url: "http://localhost:8081/api/auth/logout",
       type: "POST",
       headers: {
         Authorization: "Bearer " + token,
