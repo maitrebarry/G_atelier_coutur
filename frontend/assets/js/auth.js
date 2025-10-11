@@ -1,5 +1,5 @@
 // ==================================================
-// GESTIONNAIRE D'AUTHENTIFICATION
+// GESTIONNAIRE D'AUTHENTIFICATION - VERSION CORRIGÉE
 // ==================================================
 
 /**
@@ -28,36 +28,40 @@ function fetchUserData() {
   }
 
   $.ajax({
-    url: "http://localhost:8081/api/auth/me", // CHANGÉ: utilisez /api/auth/me
+    url: "http://localhost:8081/api/auth/me",
     type: "GET",
     headers: {
       Authorization: "Bearer " + token,
     },
     success: function (userData) {
-      console.log("Données utilisateur:", userData);
+      console.log("Données utilisateur reçues:", userData);
       updateUserUI(userData);
     },
     error: function (xhr) {
+      console.error("Erreur détaillée fetching user data:", xhr);
       if (xhr.status === 401) {
         logout();
       } else {
-        console.error("Erreur fetching user data:", xhr);
+        console.error("Erreur lors du chargement des données utilisateur:", xhr.responseText);
       }
     },
   });
 }
 
 /**
- * Met à jour l'interface avec les données utilisateur
+ * Met à jour l'interface avec les données utilisateur - CORRIGÉ
  */
 function updateUserUI(userData) {
-  $("#userName").text(userData.prenom + " " + userData.nom);
-  $("#userEmail").text(userData.email);
-  $("#userRole").text(userData.role);
-
-  if (userData.atelierId) {
-    $("#atelierInfo").text("Atelier: " + userData.atelierId);
-  }
+  console.log("Mise à jour de l'UI avec:", userData);
+  
+  // CORRECTION : IDs avec traits d'union comme dans le HTML
+  $("#user-name").text(userData.prenom + " " + userData.nom);
+  $("#user-role").text(userData.role);
+  
+  console.log("Éléments mis à jour:");
+  console.log("- Nom complet:", userData.prenom + " " + userData.nom);
+  console.log("- Rôle:", userData.role);
+  
   toggleRoleBasedElements(userData.role);
 }
 
@@ -65,7 +69,8 @@ function updateUserUI(userData) {
  * Affiche/masque les éléments selon le rôle
  */
 function toggleRoleBasedElements(role) {
-  if (role === "PROPRIETAIRE" || role === "ADMIN") {
+  console.log("Rôle détecté pour éléments UI:", role);
+  if (role === "SUPERADMIN" || role === "PROPRIETAIRE") {
     $(".admin-only").show();
     $(".user-only").show();
   } else {
@@ -132,7 +137,8 @@ function getUserData() {
  */
 function isAuthenticated() {
   const token = getToken();
-  return token && !isTokenExpired(token);
+  if (!token) return false;
+  return !isTokenExpired(token);
 }
 
 /**
@@ -150,6 +156,7 @@ function setupAuthInterceptors() {
 
   $(document).ajaxError(function (event, xhr) {
     if (xhr.status === 401) {
+      console.log("Token expiré ou invalide, déconnexion...");
       logout();
     }
   });
@@ -158,12 +165,12 @@ function setupAuthInterceptors() {
 /**
  * Gestionnaire de déconnexion
  */
-
 function initLogoutHandler() {
   const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", function (e) {
       e.preventDefault();
+      console.log("Déconnexion demandée");
       logout();
     });
   }
@@ -188,14 +195,12 @@ function handleAuthentication() {
   console.log("Authentifié:", authenticated, "Sur page login:", onLoginPage);
   
   if (authenticated && onLoginPage) {
-    // Déjà connecté sur la page de login → rediriger vers home
     console.log("Déjà connecté, redirection vers home.html");
     setTimeout(() => window.location.href = "home.html", 100);
     return false;
   }
   
   if (!authenticated && !onLoginPage) {
-    // Non connecté sur une page protégée → rediriger vers login
     console.log("Non authentifié, redirection vers index.html");
     setTimeout(() => window.location.href = "index.html", 100);
     return false;
@@ -224,7 +229,7 @@ document.addEventListener("DOMContentLoaded", function () {
   
   // Si authentifié et sur une page protégée, charger les données
   if (isAuthenticated() && !isLoginPage()) {
-    console.log("Chargement des données utilisateur");
+    console.log("Utilisateur authentifié, chargement des données...");
     fetchUserData();
   }
   

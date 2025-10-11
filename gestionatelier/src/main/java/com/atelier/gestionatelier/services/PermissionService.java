@@ -50,6 +50,99 @@ public class PermissionService {
         }
     }
 
+
+
+    /**
+     * Mettre à jour une permission existante
+     */
+    @Transactional
+    public Permission updatePermission(UUID permissionId, String code, String description) {
+        try {
+            logger.info("Tentative de modification de la permission: {}", permissionId);
+
+            Permission permission = permissionRepository.findById(permissionId)
+                    .orElseThrow(() -> {
+                        String errorMsg = "Permission non trouvée avec l'ID: " + permissionId;
+                        logger.error(errorMsg);
+                        return new RuntimeException(errorMsg);
+                    });
+
+            // Vérifier si le code est déjà utilisé par une autre permission
+            if (!permission.getCode().equals(code) && permissionRepository.existsByCode(code)) {
+                String errorMsg = "Une permission avec le code '" + code + "' existe déjà";
+                logger.error(errorMsg);
+                throw new RuntimeException(errorMsg);
+            }
+
+            // Mettre à jour les champs
+            permission.setCode(code);
+            permission.setDescription(description);
+
+            Permission updatedPermission = permissionRepository.save(permission);
+
+            logger.info("Permission modifiée avec succès: {} -> {}", permissionId, code);
+            return updatedPermission;
+
+        } catch (Exception e) {
+            logger.error("Erreur lors de la modification de la permission: {}", permissionId, e);
+            throw new RuntimeException("Erreur lors de la modification de la permission: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Supprimer une permission
+     */
+    @Transactional
+    public void deletePermission(UUID permissionId) {
+        try {
+            logger.info("Tentative de suppression de la permission: {}", permissionId);
+
+            Permission permission = permissionRepository.findById(permissionId)
+                    .orElseThrow(() -> {
+                        String errorMsg = "Permission non trouvée avec l'ID: " + permissionId;
+                        logger.error(errorMsg);
+                        return new RuntimeException(errorMsg);
+                    });
+
+            // Vérifier si la permission est utilisée par des utilisateurs
+            long userCount = utilisateurRepository.countByPermissionsContaining(permission);
+            if (userCount > 0) {
+                String errorMsg = "Impossible de supprimer la permission '" + permission.getCode() +
+                        "' car elle est assignée à " + userCount + " utilisateur(s)";
+                logger.error(errorMsg);
+                throw new RuntimeException(errorMsg);
+            }
+
+            permissionRepository.delete(permission);
+
+            logger.info("Permission supprimée avec succès: {}", permissionId);
+
+        } catch (Exception e) {
+            logger.error("Erreur lors de la suppression de la permission: {}", permissionId, e);
+            throw new RuntimeException("Erreur lors de la suppression de la permission: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Récupérer une permission par son ID
+     */
+    public Permission getPermissionById(UUID permissionId) {
+        try {
+            logger.debug("Récupération de la permission: {}", permissionId);
+
+            return permissionRepository.findById(permissionId)
+                    .orElseThrow(() -> {
+                        String errorMsg = "Permission non trouvée avec l'ID: " + permissionId;
+                        logger.error(errorMsg);
+                        return new RuntimeException(errorMsg);
+                    });
+
+        } catch (Exception e) {
+            logger.error("Erreur lors de la récupération de la permission: {}", permissionId, e);
+            throw new RuntimeException("Erreur lors de la récupération de la permission: " + e.getMessage());
+        }
+    }
+
     public Set<Permission> getUserPermissions(UUID userId) {
         try {
             logger.debug("Récupération des permissions pour l'utilisateur: {}", userId);
@@ -121,7 +214,7 @@ public class PermissionService {
             defaultPermissions.put("ATELIER_UPDATE", "Modifier un atelier");
             defaultPermissions.put("ATELIER_DELETE", "Supprimer un atelier");
             defaultPermissions.put("ATELIER_VIEW", "Voir les ateliers");
-            
+
             defaultPermissions.put("ACCESS_DASHBOARD", "Accéder au tableau de bord");
             defaultPermissions.put("ACCESS_REPORTS", "Accéder aux rapports");
             defaultPermissions.put("EXPORT_DATA", "Exporter des données");

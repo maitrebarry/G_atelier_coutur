@@ -62,88 +62,83 @@
             </div>
             <!--navigation-->
             <ul class="metismenu" id="menu">
+				<!-- Tableau de bord - Visible pour tous -->
+				<li>
+					<a href="home.html">
+						<div class="parent-icon"><i class='bx bx-home-circle'></i></div>
+						<div class="menu-title">Tableau de bord</div>
+					</a>
+				</li>
 
-                <!-- Tableau de bord -->
-                <li>
-                    <a href="home.html">
-                        <div class="parent-icon"><i class='bx bx-home-circle'></i></div>
-                        <div class="menu-title">Tableau de bord</div>
-                    </a>
-                </li>
+				<!-- Modèles - Permissions: PROPRIETAIRE, SECRETAIRE, TAILLEUR -->
+				<li class="permission-required" data-permissions="MODELE_VIEW">
+					<a href="javascript:;" class="has-arrow">
+						<div class="parent-icon"><i class='bx bx-cut'></i></div>
+						<div class="menu-title">Modèles</div>
+					</a>
+					<ul>
+						<li class="permission-required" data-permissions="CLIENT_VIEW">
+							<a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures clients</a>
+						</li>
+						<li class="permission-required" data-permissions="CLIENT_VIEW">
+							<a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a>
+						</li>
+						<li class="permission-required" data-permissions="MODELE_VIEW">
+							<a href="modeles.html"><i class="bx bx-right-arrow-alt"></i>Modèles en cours</a>
+						</li>
+						<li class="permission-required" data-permissions="AFFECTATION_VIEW">
+							<a href="affectations.html"><i class="bx bx-right-arrow-alt"></i>Affectations</a>
+						</li>
+					</ul>
+				</li>
 
-                <!-- Clients -->
-                <!-- <li>
-                        <a href="javascript:;" class="has-arrow">
-                        <div class="parent-icon"><i class='bx bx-user'></i></div>
-                        <div class="menu-title">Clients</div>
-                        </a>
-                        <ul>
-                        <li><a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a></li>
-                        <li><a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures</a></li>
-                        <li><a href="clients-modeles.html"><i class="bx bx-right-arrow-alt"></i>Modèles attribués</a></li>
-                        <li><a href="clients-photos.html"><i class="bx bx-right-arrow-alt"></i>Photos des clients</a></li>
-                        </ul>
-                    </li> -->
+				<!-- Tailleurs - Permissions: PROPRIETAIRE, SECRETAIRE -->
+				<li class="permission-required" data-permissions="TAILLEUR_VIEW">
+					<a href="tailleurs.html">
+						<div class="parent-icon"><i class='bx bx-user-pin'></i></div>
+						<div class="menu-title">Tailleurs</div>
+					</a>
+				</li>
 
-                <!-- Modèles -->
-                <li>
-                    <a href="javascript:;" class="has-arrow">
-                        <div class="parent-icon"><i class='bx bx-cut'></i></div>
-                        <div class="menu-title">Modèles</div>
-                    </a>
-                    <ul>
-                        <li><a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures</a></li>
-                        <li><a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste
-                                des clients</a></li>
-                        <li><a href="modeles.html"><i class="bx bx-right-arrow-alt"></i>Liste
-                                des modèles</a></li>
-                        <li><a href="affectations.html"><i class="bx bx-right-arrow-alt"></i>Affectations</a></li>
-                        <!-- <li><a href="ajouter-modele.html"><i class="bx bx-right-arrow-alt"></i>Ajouter un modèle</a></li> -->
-                    </ul>
-                </li>
+				<!-- Rendez-vous - Permissions: PROPRIETAIRE, SECRETAIRE -->
+				<li class="permission-required" data-permissions="RENDEZVOUS_VIEW">
+					<a href="rendezvous.html">
+						<div class="parent-icon"><i class='bx bx-calendar'></i></div>
+						<div class="menu-title">Rendez-vous</div>
+					</a>
+				</li>
 
-                <!-- Tailleurs -->
-                <li>
-                    <a href="tailleurs.html">
-                        <div class="parent-icon"><i class='bx bx-user-pin'></i></div>
-                        <div class="menu-title">Tailleurs</div>
-                    </a>
-                </li>
-                <!-- Rendez-vous -->
-                <li>
-                    <a href="rendezvous.html">
-                        <div class="parent-icon"><i class='bx bx-calendar'></i></div>
-                        <div class="menu-title">Rendez-vous</div>
-                    </a>
-                </li>
-                <!-- Paiements -->
-                <li>
-                    <a href="paiements.html">
-                        <div class="parent-icon"><i class='bx bx-wallet'></i></div>
-                        <div class="menu-title">Paiements</div>
-                    </a>
-                </li>
-                <!-- Paramètres -->
-                <li>
-                    <a href="parametres.html">
-                        <div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
-                        <div class="menu-title">Paramètres</div>
-                    </a>
-                </li>
-            </ul>
+				<!-- Paiements - Permissions: PROPRIETAIRE, SECRETAIRE -->
+				<li class="permission-required" data-permissions="PAIEMENT_VIEW">
+					<a href="paiements.html">
+						<div class="parent-icon"><i class='bx bx-wallet'></i></div>
+						<div class="menu-title">Paiements</div>
+					</a>
+				</li>
+
+				<!-- Paramètres - Permissions: PROPRIETAIRE uniquement -->
+				<li class="permission-required" data-permissions="PARAMETRES_VIEW">
+					<a href="parametres.html">
+						<div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
+						<div class="menu-title">Paramètres</div>
+					</a>
+				</li>
+			</ul>
             <!--end navigation-->
         </div>
         <!--end sidebar wrapper -->
         <!--start header -->
-       	<header>
+       <header>
 			<div class="topbar d-flex align-items-center">
 				<nav class="navbar navbar-expand">
+					<div class="mobile-toggle-menu"><i class='bx bx-menu'></i>
+					</div>
 					<div class="top-menu ms-auto">
 						<ul class="navbar-nav align-items-center">
-							<!-- Notifications only -->
 							<li class="nav-item dropdown dropdown-large">
-								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-									<span class="alert-count">7</span>
+								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
+									role="button" data-bs-toggle="dropdown" aria-expanded="false"> <span
+										class="alert-count">7</span>
 									<i class='bx bx-bell'></i>
 								</a>
 								<div class="dropdown-menu dropdown-menu-end">
@@ -154,40 +149,75 @@
 										</div>
 									</a>
 									<div class="header-notifications-list">
-										<a class="dropdown-item" href="javascript:;">
-											<div class="d-flex align-items-center">
-												<div class="notify bg-light-primary text-primary"><i class="bx bx-group"></i></div>
-												<div class="flex-grow-1">
-													<h6 class="msg-name">New Customers<span class="msg-time float-end">14 Sec ago</span></h6>
-													<p class="msg-info">5 new user registered</p>
-												</div>
-											</div>
-										</a>
-										<!-- ... (other notifications) ... -->
+
+
 									</div>
 									<a href="javascript:;">
 										<div class="text-center msg-footer">View All Notifications</div>
 									</a>
 								</div>
 							</li>
+							<li class="nav-item dropdown dropdown-large">
+								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
+									role="button" data-bs-toggle="dropdown" aria-expanded="false">
+								</a>
+								<div class="dropdown-menu dropdown-menu-end">
+									<a href="javascript:;">
+
+									</a>
+									<div class="header-message-list">
+									</div>
+
+								</div>
+							</li>
 						</ul>
 					</div>
-					<!-- Profile dropdown with only Profile and Logout -->
 					<div class="user-box dropdown">
-						<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+						<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#"
+							role="button" data-bs-toggle="dropdown" aria-expanded="false">
 							<img src="https://via.placeholder.com/110x110" class="user-img" alt="user avatar">
 							<div class="user-info ps-3">
-								<p class="user-name mb-0">Profil</p>
+								<p class="user-name mb-0" id="user-name">Chargement...</p>
+								<p class="designattion mb-0" id="user-role">Connecté</p>
 							</div>
 						</a>
 						<ul class="dropdown-menu dropdown-menu-end">
-							<li><a class="dropdown-item" href="javascript:;"><i class="bx bx-user"></i><span>Profil</span></a></li>
+							<li><a class="dropdown-item" href="javascript:;"><i
+										class="bx bx-user"></i><span>Profile</span></a>
+							</li>
+							<li><a class="dropdown-item" href="javascript:;"><i
+										class="bx bx-cog"></i><span>Paramètres</span></a>
+							</li>
 							<li>
 								<div class="dropdown-divider mb-0"></div>
 							</li>
-							<li><a class="dropdown-item" href="javascript:;"><i class='bx bx-log-out-circle'></i><span>Déconnexion</span></a></li>
+							<li>
+								<a class="dropdown-item" href="#" id="logoutBtn">
+									<i class='bx bx-log-out-circle'></i><span>Déconnexion</span>
+								</a>
+							</li>
 						</ul>
 					</div>
+					<!-- <div class="user-box dropdown">
+						<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<img src="https://via.placeholder.com/110x110" class="user-img" alt="user avatar">
+							<div class="user-info ps-3">
+								<p class="user-name mb-0">Pauline Seitz</p>
+								<p class="designattion mb-0">Web Designer</p>
+							</div>
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end">
+							<li><a class="dropdown-item" href="javascript:;"><i class="bx bx-user"></i><span>Profile</span></a>
+							</li>
+							<li><a class="dropdown-item" href="javascript:;"><i class="bx bx-cog"></i><span>Paramètres</span></a>
+							</li>
+							<li>
+								<div class="dropdown-divider mb-0"></div>
+							</li>
+							<li><a class="dropdown-item" href="javascript:;"><i class='bx bx-log-out-circle'></i><span>Déconnexion</span></a>
+							</li>
+						</ul>
+					</div> -->
 				</nav>
 			</div>
 		</header>
@@ -964,6 +994,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/index.js"></script>
     <script src="assets/js/clients.js"></script>
+    <script src="assets/js/home_permission.js"></script>
     <script src="assets/js/modifier_client.js"></script>
     <!--app JS-->
     <script src="assets/js/app.js"></script>

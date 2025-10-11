@@ -7,11 +7,11 @@
 			const userData = getUserData();
 			const userRole = userData.role;
 
-			console.log("🔐 Vérification permission:", permissionCode, "pour rôle:", userRole);
+		//	console.log("🔐 Vérification permission:", permissionCode, "pour rôle:", userRole);
 
 			// SUPERADMIN a toutes les permissions
 			if (userRole === 'SUPERADMIN') {
-				console.log("👑 SUPERADMIN - Toutes les permissions accordées");
+			//	console.log("👑 SUPERADMIN - Toutes les permissions accordées");
 				return true;
 			}
 
@@ -20,11 +20,11 @@
 				const hasPerm = userData.permissions.some(perm =>
 					perm.code === permissionCode
 				);
-				console.log("📋 Permission individuelle trouvée:", hasPerm);
+			//	console.log("📋 Permission individuelle trouvée:", hasPerm);
 				return hasPerm;
 			}
 
-			console.log("⚠️ Aucune permission individuelle, utilisation du fallback par rôle");
+		//	console.log("⚠️ Aucune permission individuelle, utilisation du fallback par rôle");
 
 			// Fallback : vérification par rôle (SEULEMENT si pas de permissions individuelles)
 			const rolePermissions = {
@@ -34,13 +34,13 @@
 			};
 
 			const hasRolePermission = rolePermissions[userRole] && rolePermissions[userRole].includes(permissionCode);
-			console.log("🎭 Permission par rôle:", hasRolePermission);
+		//	console.log("🎭 Permission par rôle:", hasRolePermission);
 
 			return hasRolePermission;
 		}
 		// Fonction pour gérer l'affichage des sections de données selon les permissions
 		function applyDataSectionsPermissions() {
-			console.log("📊 Application des permissions aux sections de données...");
+		//	console.log("📊 Application des permissions aux sections de données...");
 
 			// Cacher toutes les sections de données d'abord
 			document.querySelectorAll('.data-section').forEach(section => {
@@ -53,9 +53,9 @@
 
 				if (requiredPermission && hasPermission(requiredPermission)) {
 					section.style.display = '';
-					console.log("✅ Afficher section avec permission:", requiredPermission);
+				//	console.log("✅ Afficher section avec permission:", requiredPermission);
 				} else {
-					console.log("❌ Cacher section - Permission manquante:", requiredPermission);
+				//	console.log("❌ Cacher section - Permission manquante:", requiredPermission);
 				}
 			});
 		}
@@ -64,8 +64,8 @@
 			const userData = getUserData();
 			const userRole = userData.role;
 
-			console.log("🔐 Application des permissions pour:", userRole);
-			console.log("📋 Permissions disponibles:", userData.permissions);
+		//	console.log("🔐 Application des permissions pour:", userRole);
+		//	console.log("📋 Permissions disponibles:", userData.permissions);
 
 			// 1. Cacher tous les éléments avec permissions du menu
 			document.querySelectorAll('.permission-required').forEach(element => {
@@ -78,9 +78,9 @@
 
 				if (requiredPermission && hasPermission(requiredPermission)) {
 					element.style.display = '';
-					console.log("✅ Afficher élément menu avec permission:", requiredPermission);
+				//	console.log("✅ Afficher élément menu avec permission:", requiredPermission);
 				} else {
-					console.log("❌ Cacher élément menu - Permission manquante:", requiredPermission);
+				//	console.log("❌ Cacher élément menu - Permission manquante:", requiredPermission);
 				}
 			});
 
@@ -106,7 +106,7 @@
 				}
 
 				const userData = getUserData();
-				console.log("👤 Chargement permissions pour:", userData.userId);
+			//	console.log("👤 Chargement permissions pour:", userData.userId);
 
 				// Appel API pour récupérer les permissions de l'utilisateur
 				const response = await fetch(`${apiUtilisateurs}/${userData.userId}/permissions`, {
@@ -116,7 +116,7 @@
 					}
 				});
 
-				console.log("📡 Statut réponse permissions:", response.status);
+			//	console.log("📡 Statut réponse permissions:", response.status);
 
 				if (response.ok) {
 					const permissions = await response.json();
@@ -131,7 +131,7 @@
 						sessionStorage.setItem("userData", JSON.stringify(currentUserData));
 					}
 
-					console.log("✅ Permissions utilisateur chargées:", permissions);
+				//	console.log("✅ Permissions utilisateur chargées:", permissions);
 					return permissions;
 				} else {
 					console.warn("⚠️ Impossible de charger les permissions individuelles, statut:", response.status);
@@ -149,30 +149,30 @@
 				const token = getToken();
 				if (!token) return;
 
-				console.log("📊 Chargement des données dashboard...");
+			//	console.log("📊 Chargement des données dashboard...");
 
 				// Commandes en cours - Permission: MODELE_VIEW
 				if (hasPermission('MODELE_VIEW')) {
 					document.getElementById('commandesEnCours').textContent = '12';
-					console.log("✅ Données modèles chargées");
+				//	console.log("✅ Données modèles chargées");
 				}
 
 				// Revenus - Permission: PAIEMENT_VIEW
 				if (hasPermission('PAIEMENT_VIEW')) {
 					document.getElementById('revenusMois').textContent = '285,000 FCFA';
-					console.log("✅ Données paiements chargées");
+				//	console.log("✅ Données paiements chargées");
 				}
 
 				// Clients - Permission: CLIENT_VIEW
 				if (hasPermission('CLIENT_VIEW')) {
 					document.getElementById('clientsActifs').textContent = '45';
-					console.log("✅ Données clients chargées");
+				//	console.log("✅ Données clients chargées");
 				}
 
 				// Tailleurs - Permission: TAILLEUR_VIEW
 				if (hasPermission('TAILLEUR_VIEW')) {
 					document.getElementById('tailleursActifs').textContent = '3';
-					console.log("✅ Données tailleurs chargées");
+				//	console.log("✅ Données tailleurs chargées");
 				}
 
 				// Modèles terminés - Permission: MODELE_VIEW
@@ -221,17 +221,17 @@
 		// Initialisation au chargement de la page
 		document.addEventListener('DOMContentLoaded', async function () {
 			if (typeof isAuthenticated === 'function' && isAuthenticated()) {
-				console.log("🚀 Initialisation de l'application...");
+			//	console.log("🚀 Initialisation de l'application...");
 
 				// Charger les permissions de l'utilisateur
 				const permissions = await loadUserPermissions();
-				console.log("🔐 Permissions disponibles:", permissions);
+			//	console.log("🔐 Permissions disponibles:", permissions);
 
 				// Appliquer les permissions à l'interface
 				applyPermissions();
 
 			} else {
-				console.log("🔒 Non authentifié, redirection...");
+			//	console.log("🔒 Non authentifié, redirection...");
 				window.location.href = 'index.html';
 			}
 		});
