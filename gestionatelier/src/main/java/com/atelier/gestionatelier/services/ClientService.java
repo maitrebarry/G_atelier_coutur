@@ -3,6 +3,7 @@
 package com.atelier.gestionatelier.services;
 
 import com.atelier.gestionatelier.dto.ClientDTO;
+import com.atelier.gestionatelier.dto.ClientRechercheRendezVousDTO;
 import com.atelier.gestionatelier.entities.Atelier;
 import com.atelier.gestionatelier.entities.Client;
 import com.atelier.gestionatelier.entities.Mesure;
@@ -25,6 +26,9 @@ import java.util.UUID;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import com.atelier.gestionatelier.dto.ClientAvecMesuresDTO;
+import com.atelier.gestionatelier.dto.ClientRechercheRendezVousDTO;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,10 +36,12 @@ public class ClientService {
     private final ClientRepository clientRepository;
     private final MesureRepository mesureRepository;
     private final AtelierRepository atelierRepository;
+    private final FileStorageService fileStorageService; // ← AJOUT
     public Client enregistrerClientAvecMesures(ClientDTO dto) {
         // Logs de debug
         System.out.println("=== ENREGISTREMENT CLIENT AVEC MESURES ===");
         System.out.println("Atelier ID reçu: " + dto.getAtelierId());
+        System.out.println("Prix reçu: " + dto.getPrix());
 
         Client client = new Client();
         client.setNom(dto.getNom());
@@ -68,7 +74,13 @@ public class ClientService {
 
         mesure.setDateMesure(LocalDateTime.now());
         mesure.setSexe(dto.getSexe());
-
+        // === NOUVEAU : Ajouter le prix ===
+        Double prix = dto.getPrixAsDouble();
+        if (prix == null || prix <= 0) {
+            throw new IllegalArgumentException("Le prix du modèle est obligatoire et doit être supérieur à 0");
+        }
+        mesure.setPrix(prix);
+        System.out.println("Prix défini: " + prix + " FCFA");
         // Déterminer le type de vêtement
         String type = (dto.getFemme_type() != null) ? dto.getFemme_type().trim().toLowerCase() : null;
         if (type == null || type.isBlank()) {
@@ -129,34 +141,18 @@ public class ClientService {
             mesure.setCorps(toDouble(dto.getHomme_corps()));
         }
 
-        // Gestion de l'upload photo
+        // ====== GESTION UPLOAD PHOTO AVEC SERVICE GLOBAL ======
         MultipartFile photo = dto.getPhoto();
         if (photo != null && !photo.isEmpty()) {
-            System.out.println("Photo reçue : " + photo.getOriginalFilename() + ", taille : " + photo.getSize());
             try {
-                String uploadDir = "C:/dev/gestionatelier/uploads/model_photo/";
-                File uploadDirFile = new File(uploadDir);
-                if (!uploadDirFile.exists()) {
-                    uploadDirFile.mkdirs();
-                    System.out.println("Création dossier upload");
-                }
-
-                String originalFilename = photo.getOriginalFilename();
-                String extension = "";
-                if (originalFilename != null && originalFilename.contains(".")) {
-                    extension = originalFilename.substring(originalFilename.lastIndexOf('.'));
-                }
-                String uniqueFileName = UUID.randomUUID().toString() + extension;
-                Path filePath = Paths.get(uploadDir, uniqueFileName);
-
-                Files.write(filePath, photo.getBytes());
-                System.out.println("Photo enregistrée sous : " + filePath.toString());
-
+                // ✅ UTILISATION DU SERVICE GLOBAL - UNE SEULE LIGNE !
+                String uniqueFileName = fileStorageService.storeFile(photo, "model_photo");
                 mesure.setPhotoPath(uniqueFileName);
+                System.out.println("✅ Photo sauvegardée avec service global: " + uniqueFileName);
 
-            } catch (IOException e) {
-                e.printStackTrace();
-                throw new RuntimeException("Erreur lors de l'upload de la photo");
+            } catch (Exception e) {
+                System.err.println("❌ Erreur upload photo: " + e.getMessage());
+                throw new RuntimeException("Erreur lors de l'upload de la photo: " + e.getMessage());
             }
         } else {
             System.out.println("Aucune photo reçue ou fichier vide");
@@ -167,6 +163,7 @@ public class ClientService {
         Mesure mesureSauvegardee = mesureRepository.save(mesure);
         System.out.println("Mesure sauvegardée avec ID: " + mesureSauvegardee.getId());
         System.out.println("Atelier de la mesure: " + (mesureSauvegardee.getAtelier() != null ? mesureSauvegardee.getAtelier().getId() : "null"));
+        System.out.println("Prix de la mesure: " + mesureSauvegardee.getPrix() + " FCFA");
         System.out.println("=== FIN ENREGISTREMENT ===");
 
         return clientSauvegarde;
@@ -200,7 +197,7 @@ public class ClientService {
     }
     public Client modifierClient(UUID id, ClientDTO dto) {
         System.out.println("=== DÉBUT MODIFICATION CLIENT DANS SERVICE ===");
-
+        System.out.println("Prix reçu pour modification: " + dto.getPrix());
         // 1. Récupérer le client existant
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Client non trouvé"));
@@ -235,7 +232,13 @@ public class ClientService {
         mesure.setAtelier(client.getAtelier()); // ✅ Utiliser l'atelier du client
         mesure.setDateMesure(LocalDateTime.now());
         mesure.setSexe(dto.getSexe());
-
+        // === NOUVEAU : Mettre à jour le prix ===
+        Double nouveauPrix = dto.getPrixAsDouble();
+        if (nouveauPrix == null || nouveauPrix <= 0) {
+            throw new IllegalArgumentException("Le prix du modèle est obligatoire et doit être supérieur à 0");
+        }
+        mesure.setPrix(nouveauPrix);
+        System.out.println("Prix mis à jour: " + nouveauPrix + " FCFA");
         // 5. Déterminer le type de vêtement
         String type = null;
         if (dto.getFemme_type() != null) {
@@ -250,30 +253,24 @@ public class ClientService {
         mesure.setTypeVetement(type);
         System.out.println("Type de vêtement: " + type);
 
-        // 6. Gestion de la photo
+        // 6. Gestion de la photo AVEC SERVICE GLOBAL
         MultipartFile photo = dto.getPhoto();
         if (photo != null && !photo.isEmpty()) {
-            // Nouvelle photo uploadée
             try {
-                String uploadDir = "C:/dev/gestionatelier/uploads/model_photo/";
-                File uploadDirFile = new File(uploadDir);
-                if (!uploadDirFile.exists()) {
-                    uploadDirFile.mkdirs();
+                // Supprimer l'ancienne photo si elle existe
+                if (mesure.getPhotoPath() != null) {
+                    fileStorageService.deleteFile(mesure.getPhotoPath(), "model_photo");
+                    System.out.println("🗑️ Ancienne photo supprimée: " + mesure.getPhotoPath());
                 }
 
-                String originalFilename = photo.getOriginalFilename();
-                String extension = originalFilename != null && originalFilename.contains(".")
-                        ? originalFilename.substring(originalFilename.lastIndexOf('.'))
-                        : "";
-                String uniqueFileName = UUID.randomUUID() + extension;
-                Path filePath = Paths.get(uploadDir, uniqueFileName);
-
-                Files.write(filePath, photo.getBytes());
+                // ✅ UTILISATION DU SERVICE GLOBAL - UNE SEULE LIGNE !
+                String uniqueFileName = fileStorageService.storeFile(photo, "model_photo");
                 mesure.setPhotoPath(uniqueFileName);
-                System.out.println("Nouvelle photo uploadée: " + uniqueFileName);
+                System.out.println("✅ Nouvelle photo sauvegardée: " + uniqueFileName);
 
-            } catch (IOException e) {
-                throw new RuntimeException("Erreur lors de l'upload de la photo", e);
+            } catch (Exception e) {
+                System.err.println("❌ Erreur upload photo: " + e.getMessage());
+                throw new RuntimeException("Erreur lors de l'upload de la photo: " + e.getMessage());
             }
         } else if (dto.getExisting_photo() == null || dto.getExisting_photo().isEmpty()) {
             // Aucune photo fournie et pas de photo existante spécifiée
@@ -284,6 +281,7 @@ public class ClientService {
             mesure.setPhotoPath(dto.getExisting_photo());
             System.out.println("Photo existante conservée: " + dto.getExisting_photo());
         }
+
 
         // 7. Mise à jour des mesures selon le type
         if ("robe".equalsIgnoreCase(type)) {
@@ -368,7 +366,7 @@ public class ClientService {
         System.out.println("Client trouvé: " + client.getNom() + " " + client.getPrenom());
         System.out.println("Nombre de mesures: " + (client.getMesures() != null ? client.getMesures().size() : 0));
 
-        // 2. ✅ CORRECTION : Supprimer les photos des MESURES associées
+        // 2. ✅ CORRECTION : Supprimer les photos des MESURES avec SERVICE GLOBAL
         supprimerPhotosMesures(client);
 
         // 3. ✅ CORRECTION : Supprimer d'abord les mesures manuellement (si orphanRemoval ne fonctionne pas)
@@ -386,48 +384,141 @@ public class ClientService {
         System.out.println("=== FIN SUPPRESSION CLIENT - SUCCÈS ===");
     }
 
-    // ✅ NOUVELLE MÉTHODE : Supprimer les photos des mesures
+    // ✅ NOUVELLE MÉTHODE : Supprimer les photos des mesures avec SERVICE GLOBAL
     private void supprimerPhotosMesures(Client client) {
         if (client.getMesures() != null) {
             for (Mesure mesure : client.getMesures()) {
                 if (mesure.getPhotoPath() != null && !mesure.getPhotoPath().isEmpty()) {
                     try {
-                        String uploadDir = "C:/dev/gestionatelier/uploads/model_photo/";
-                        Path photoPath = Paths.get(uploadDir, mesure.getPhotoPath());
-
-                        boolean deleted = Files.deleteIfExists(photoPath);
+                        // ✅ UTILISATION DU SERVICE GLOBAL - UNE SEULE LIGNE !
+                        boolean deleted = fileStorageService.deleteFile(mesure.getPhotoPath(), "model_photo");
                         if (deleted) {
-                            System.out.println("Photo de mesure supprimée: " + photoPath);
+                            System.out.println("✅ Photo de mesure supprimée: " + mesure.getPhotoPath());
                         } else {
-                            System.out.println("Photo de mesure non trouvée: " + photoPath);
+                            System.out.println("⚠️ Photo de mesure non trouvée: " + mesure.getPhotoPath());
                         }
-                    } catch (IOException e) {
-                        System.err.println("Erreur lors de la suppression de la photo de mesure: " + e.getMessage());
+                    } catch (Exception e) {
+                        System.err.println("❌ Erreur suppression photo mesure: " + e.getMessage());
                     }
                 }
             }
         }
     }
-
-    // Méthode existante pour la photo du client
+    // ✅ MÉTHODE AMÉLIORÉE : Supprimer la photo du client avec SERVICE GLOBAL
     private void supprimerPhotoClient(Client client) {
         if (client.getPhoto() != null && !client.getPhoto().isEmpty()) {
             try {
-                String uploadDir = "C:/dev/gestionatelier/uploads/model_photo/";
-                Path photoPath = Paths.get(uploadDir, client.getPhoto());
-
-                boolean deleted = Files.deleteIfExists(photoPath);
+                // ✅ UTILISATION DU SERVICE GLOBAL - UNE SEULE LIGNE !
+                boolean deleted = fileStorageService.deleteFile(client.getPhoto(), "model_photo");
                 if (deleted) {
-                    System.out.println("Photo du client supprimée: " + photoPath);
+                    System.out.println("✅ Photo du client supprimée: " + client.getPhoto());
                 } else {
-                    System.out.println("Photo du client non trouvée: " + photoPath);
+                    System.out.println("⚠️ Photo du client non trouvée: " + client.getPhoto());
                 }
-            } catch (IOException e) {
-                System.err.println("Erreur lors de la suppression de la photo du client: " + e.getMessage());
+            } catch (Exception e) {
+                System.err.println("❌ Erreur suppression photo client: " + e.getMessage());
             }
         }
     }
+
+    // === MÉTHODES POUR LES RENDEZ-VOUS ===
+    public List<ClientRechercheRendezVousDTO> getClientsPourRendezVous(UUID atelierId) {
+        List<Client> clients = clientRepository.findByAtelierId(atelierId);
+
+        return clients.stream().map(client -> {
+            ClientRechercheRendezVousDTO dto = new ClientRechercheRendezVousDTO();
+            dto.setId(client.getId());
+            dto.setNom(client.getNom());
+            dto.setPrenom(client.getPrenom());
+            dto.setContact(client.getContact());
+            dto.setAdresse(client.getAdresse()); // ✅ Email pour notifications
+            dto.setPhoto(client.getPhoto());
+            dto.setDateCreation(client.getDateCreation());
+
+            // Dernière mesure
+            if (!client.getMesures().isEmpty()) {
+                Mesure derniereMesure = client.getMesures().get(client.getMesures().size() - 1);
+                ClientRechercheRendezVousDTO.MesureResumeDTO mesureResume = new ClientRechercheRendezVousDTO.MesureResumeDTO();
+                mesureResume.setId(derniereMesure.getId());
+                mesureResume.setDateMesure(derniereMesure.getDateMesure());
+                mesureResume.setTypeVetement(derniereMesure.getTypeVetement());
+                mesureResume.setPrix(derniereMesure.getPrix());
+                mesureResume.setSexe(derniereMesure.getSexe());
+                dto.setDerniereMesure(mesureResume);
+            }
+
+            // Compter les "modèles" (mesures avec prix)
+            dto.setNombreModelesEnCours((int) client.getMesures().stream()
+                    .filter(m -> m.getPrix() != null && m.getPrix() > 0)
+                    .count());
+
+            return dto;
+        }).collect(Collectors.toList());
     }
+
+    public ClientAvecMesuresDTO getClientAvecMesuresPourRendezVous(UUID clientId) {
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new EntityNotFoundException("Client non trouvé"));
+
+        return toClientAvecMesuresDTO(client);
+    }
+
+    private ClientAvecMesuresDTO toClientAvecMesuresDTO(Client client) {
+        ClientAvecMesuresDTO dto = new ClientAvecMesuresDTO();
+        dto.setId(client.getId());
+        dto.setNom(client.getNom());
+        dto.setPrenom(client.getPrenom());
+        dto.setContact(client.getContact());
+        dto.setAdresse(client.getAdresse());
+        dto.setPhoto(client.getPhoto());
+        dto.setDateCreation(client.getDateCreation());
+
+        // Convertir les mesures
+        List<ClientAvecMesuresDTO.MesureDTO> mesureDTOs = client.getMesures().stream()
+                .map(this::toMesureDTO)
+                .collect(Collectors.toList());
+        dto.setMesures(mesureDTOs);
+
+        return dto;
+    }
+
+    private ClientAvecMesuresDTO.MesureDTO toMesureDTO(Mesure mesure) {
+        ClientAvecMesuresDTO.MesureDTO dto = new ClientAvecMesuresDTO.MesureDTO();
+        dto.setId(mesure.getId());
+        dto.setDateMesure(mesure.getDateMesure());
+        dto.setTypeVetement(mesure.getTypeVetement());
+        dto.setPrix(mesure.getPrix());
+        dto.setSexe(mesure.getSexe());
+        dto.setPhotoPath(mesure.getPhotoPath());
+
+        // Mesures communes
+        dto.setEpaule(mesure.getEpaule());
+        dto.setManche(mesure.getManche());
+        dto.setPoitrine(mesure.getPoitrine());
+        dto.setTaille(mesure.getTaille());
+        dto.setLongueur(mesure.getLongueur());
+        dto.setFesse(mesure.getFesse());
+        dto.setTourManche(mesure.getTourManche());
+        dto.setLongueurPoitrine(mesure.getLongueurPoitrine());
+        dto.setLongueurTaille(mesure.getLongueurTaille());
+        dto.setLongueurFesse(mesure.getLongueurFesse());
+
+        // Mesures spécifiques
+        dto.setLongueurJupe(mesure.getLongueurJupe());
+        dto.setCeinture(mesure.getCeinture());
+        dto.setLongueurPoitrineRobe(mesure.getLongueurPoitrineRobe());
+        dto.setLongueurTailleRobe(mesure.getLongueurTailleRobe());
+        dto.setLongueurFesseRobe(mesure.getLongueurFesseRobe());
+        dto.setLongueurPantalon(mesure.getLongueurPantalon());
+        dto.setCuisse(mesure.getCuisse());
+        dto.setCorps(mesure.getCorps());
+
+        return dto;
+    }
+
+    }
+
+
 
 
 

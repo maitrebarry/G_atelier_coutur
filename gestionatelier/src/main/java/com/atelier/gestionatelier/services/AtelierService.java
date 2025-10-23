@@ -140,6 +140,7 @@ public class AtelierService {
         Atelier atelier = new Atelier();
         atelier.setNom(dto.getNom());
         atelier.setAdresse(dto.getAdresse());
+        atelier.setEmail(dto.getEmail());
         atelier.setTelephone(dto.getTelephone());
         
         if (dto.getDateCreation() != null) {
@@ -156,6 +157,7 @@ public class AtelierService {
         dto.setId(atelier.getId());
         dto.setNom(atelier.getNom());
         dto.setAdresse(atelier.getAdresse());
+        dto.setEmail(atelier.getEmail());
         dto.setTelephone(atelier.getTelephone());
         dto.setDateCreation(atelier.getDateCreation());
         

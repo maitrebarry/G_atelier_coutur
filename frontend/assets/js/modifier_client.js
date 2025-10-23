@@ -76,7 +76,10 @@ document.addEventListener("DOMContentLoaded", () => {
       // ✅ CORRECTION : Assurer que le sexe est bien défini
       const sexe = mesure.sexe || client.sexe || "Femme";
       document.getElementById("editSexe").value = sexe;
-
+      // ✅ NOUVEAU : Remplir le prix
+      const prix = mesure.prix || 0;
+      document.getElementById("editPrix").value = prix;
+      console.log("💰 Prix défini:", prix + " FCFA");
       // Gestion de la photo
       const avatarEdit = document.getElementById("avatarEdit");
       const existingPhotoInput = document.getElementById("existingPhoto");
@@ -297,7 +300,10 @@ document.addEventListener("DOMContentLoaded", () => {
       formData.append("contact", document.getElementById("editContact").value);
       formData.append("adresse", document.getElementById("editAdresse").value);
       formData.append("sexe", document.getElementById("editSexe").value);
-
+       // ✅ NOUVEAU : Ajouter le prix
+      const prix = document.getElementById("editPrix").value;
+      formData.append("prix", prix);
+      console.log("💰 Prix envoyé:", prix + " FCFA");
       // ✅ CORRECTION : Ajouter genderPreview
       const selectedGender = document.querySelector('input[name="genderPreviewEdit"]:checked');
       if (selectedGender) {
@@ -459,6 +465,7 @@ document.addEventListener("DOMContentLoaded", () => {
       { id: "editPrenom", label: "Prénom" },
       { id: "editContact", label: "Contact" },
       { id: "editSexe", label: "Sexe" },
+        { id: "editPrix", label: "Prix" },
     ];
 
     requiredFields.forEach((field) => {
@@ -467,7 +474,14 @@ document.addEventListener("DOMContentLoaded", () => {
         errors.push(`Le champ ${field.label} est obligatoire.`);
       }
     });
-
+     // ✅ NOUVEAU : Validation spécifique du prix
+    const prixInput = document.getElementById("editPrix");
+    if (prixInput && prixInput.value) {
+      const prix = parseFloat(prixInput.value);
+      if (isNaN(prix) || prix <= 0) {
+        errors.push("Le prix doit être un nombre supérieur à 0.");
+      }
+    }
     // Validation des mesures selon le type
     const sexe = document.getElementById("editSexe").value;
     if (sexe === "Femme") {

@@ -32,6 +32,7 @@ public class Atelier {
 
     private String telephone;
 
+    private String email;
     // CORRECTION : Si vous avez une relation OneToMany avec Utilisateur
     @OneToMany(mappedBy = "atelier", fetch = FetchType.LAZY)
     @JsonIgnore // Important : éviter la récursion

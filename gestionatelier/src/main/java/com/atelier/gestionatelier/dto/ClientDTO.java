@@ -324,7 +324,29 @@ public class ClientDTO implements Serializable {
         this.existing_photo = existing_photo;
     }
 
-    
+    // NOUVEAU : Prix du modèle
+    private String prix;
+
+    // Getters et setters pour le prix
+    public String getPrix() {
+        return prix;
+    }
+
+    public void setPrix(String prix) {
+        this.prix = prix;
+    }
+
+    // Méthode utilitaire pour convertir en Double
+    public Double getPrixAsDouble() {
+        if (prix == null || prix.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(prix.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
     
 }
 

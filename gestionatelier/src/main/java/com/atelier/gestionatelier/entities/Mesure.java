@@ -19,10 +19,11 @@ private UUID id;
 
     @Column(name = "date_mesure")
     private LocalDateTime dateMesure;
-    
     // Type de vêtement (robe, jupe, homme)
     private String typeVetement;
-
+    //  Prix du modèle ===
+    @Column(name = "prix", nullable = false)
+    private Double prix;
     // === Mesures communes ===
     private String sexe;
     private Double epaule;

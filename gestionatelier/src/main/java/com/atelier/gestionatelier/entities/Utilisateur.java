@@ -71,5 +71,15 @@ public class Utilisateur {
         this.actif = actif;
     }
 
+    @Column(name = "photo_path")
+    private String photoPath;
 
+    // getters et setters
+    public String getPhotoPath() {
+        return photoPath;
+    }
+
+    public void setPhotoPath(String photoPath) {
+        this.photoPath = photoPath;
+    }
 }

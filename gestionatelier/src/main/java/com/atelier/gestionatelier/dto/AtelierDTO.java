@@ -11,6 +11,7 @@ public class AtelierDTO implements Serializable {
     // Pour la création
     private String nom;
     private String adresse;
+    private String email;
     private String telephone;
     private LocalDateTime dateCreation;
 
@@ -20,9 +21,10 @@ public class AtelierDTO implements Serializable {
     // Constructeurs
     public AtelierDTO() {}
 
-    public AtelierDTO(String nom, String adresse, String telephone, LocalDateTime dateCreation) {
+    public AtelierDTO(String nom, String adresse,String email, String telephone, LocalDateTime dateCreation) {
         this.nom = nom;
         this.adresse = adresse;
+        this.email = email;
         this.telephone = telephone;
         this.dateCreation = dateCreation;
     }
@@ -56,6 +58,10 @@ public class AtelierDTO implements Serializable {
         this.adresse = adresse;
     }
 
+    public String getEmail() {
+        return email;
+    }
+    public void setEmail(String email) { this.email = email; }
     public String getTelephone() {
         return telephone;
     }

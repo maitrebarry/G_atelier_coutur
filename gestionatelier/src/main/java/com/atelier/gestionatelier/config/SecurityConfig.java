@@ -45,7 +45,12 @@ public class SecurityConfig {
                         // Routes publiques
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/model_photo/**").permitAll()
-                        
+                        .requestMatchers("/user_photo/**").permitAll()
+//                        .requestMatchers("/assets/**").permitAll()  // ← AJOUT IMPORTANT !
+//                        .requestMatchers("/css/**").permitAll()     // ← Au cas où
+//                        .requestMatchers("/js/**").permitAll()      // ← Au cas où
+//                        .requestMatchers("/images/**").permitAll()  // ← Au cas où
+//                        .requestMatchers("/error").permitAll()      // ← Pages d'erreur
                         // Routes d'administration - utiliser hasAuthority au lieu de hasAnyRole
                         .requestMatchers("/api/admin/**").hasAnyAuthority("ROLE_SUPERADMIN", "ROLE_PROPRIETAIRE")
                         

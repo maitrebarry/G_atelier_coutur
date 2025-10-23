@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                              https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
@@ -20,7 +20,7 @@
     <description>Application de gestion d'atelier de couture</description>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
         <jjwt.version>0.11.5</jjwt.version>
         <lombok.version>1.18.30</lombok.version>
     </properties>
@@ -46,6 +46,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- ✅ AJOUT: Dépendance Email (CRITIQUE) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
         <!-- JWT dependencies -->
@@ -108,7 +114,6 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
-                    <!-- On supprime la ligne release pour éviter l'erreur -->
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
@@ -126,5 +131,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

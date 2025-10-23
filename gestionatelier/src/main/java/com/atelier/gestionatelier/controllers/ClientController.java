@@ -1,9 +1,9 @@
 package com.atelier.gestionatelier.controllers;
-
 import com.atelier.gestionatelier.dto.ClientDTO;
 import com.atelier.gestionatelier.entities.Client;
 import com.atelier.gestionatelier.entities.Utilisateur;
 import com.atelier.gestionatelier.services.ClientService;
+import com.atelier.gestionatelier.services.FileStorageService;
 import com.atelier.gestionatelier.services.UtilisateurService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 
@@ -332,7 +333,18 @@ public class ClientController {
             return "L'adresse est obligatoire";
         if (dto.getSexe() == null || dto.getSexe().isBlank())
             return "Le sexe est obligatoire";
+        // === NOUVEAU : Validation du prix ===
+        if (dto.getPrix() == null || dto.getPrix().isBlank())
+            return "Le prix du modèle est obligatoire";
 
+        try {
+            Double prix = Double.parseDouble(dto.getPrix().trim());
+            if (prix <= 0) {
+                return "Le prix doit être supérieur à 0";
+            }
+        } catch (NumberFormatException e) {
+            return "Le prix doit être un nombre valide";
+        }
         // Validation contact : exactement 8 chiffres
         if (dto.getContact() == null || !dto.getContact().matches("\\d{8}"))
             return "Le contact doit contenir exactement 8 chiffres";
@@ -375,6 +387,44 @@ public class ClientController {
             }
         });
     }
+
+    @RestController
+    @RequestMapping("/api/modeles")
+    @CrossOrigin(origins = "*")
+    @RequiredArgsConstructor
+    public class ModeleController {
+
+        private final FileStorageService fileStorageService;
+        @PostMapping("/{id}/photo")
+        public ResponseEntity<?> updateModelePhoto(@PathVariable UUID id,
+                                                   @RequestParam("photo") MultipartFile photo) {
+            try {
+                // 1. Valider le fichier
+                if (!fileStorageService.isImageFile(photo)) {
+                    return ResponseEntity.badRequest().body("Le fichier doit être une image");
+                }
+
+                fileStorageService.validateFileSize(photo, 5 * 1024 * 1024); // 5MB
+
+                // 2. Sauvegarder le fichier - APPEL SIMPLE !
+                String fileName = fileStorageService.storeFile(photo, "model_photo");
+
+                // 3. Ici vous pouvez mettre à jour votre entité Mesure
+                // Mesure mesure = mesureRepository.findById(id).orElseThrow(...);
+                // mesure.setPhotoPath(fileName);
+                // mesureRepository.save(mesure);
+
+                return ResponseEntity.ok(Map.of(
+                        "fileName", fileName,
+                        "message", "Photo du modèle mise à jour avec succès"
+                ));
+
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            }
+        }
+    }
+
 }
 
 //package com.atelier.gestionatelier.controllers;

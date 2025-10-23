@@ -589,6 +589,7 @@ async function loadUtilisateurs() {
           <td>${u.prenom || "N/A"}</td>
           <td>${u.nom || "N/A"}</td>
           <td>${u.email || "N/A"}</td>
+          <td>${u.role || "N/A"}</td>
           <td>
             ${
               canEdit
@@ -795,6 +796,84 @@ async function deleteUser(id) {
 }
 
 // ➡️ Pré-remplir et ouvrir le modal d'édition
+// async function editUser(id) {
+//   const token = getToken();
+//   if (!token) {
+//     errorMessage("Token non disponible. Veuillez vous reconnecter.");
+//     return;
+//   }
+
+//   try {
+//     const res = await fetch(`${apiUtilisateurs}/${id}`, {
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//       },
+//     });
+
+//     if (!res.ok) {
+//       if (await handleApiError(res, "édition utilisateur")) return;
+//       throw new Error(`Erreur HTTP: ${res.status}`);
+//     }
+
+//     const user = await res.json();
+//     const currentUser = getUserData();
+//     const currentUserRole = currentUser.role;
+//     const isCurrentUser = user.id === currentUser.userId;
+
+//     // Remplir les champs du formulaire
+//     document.getElementById("editId").value = user.id;
+//     document.getElementById("editUserRole").value = user.role;
+//     document.getElementById("editNom").value = user.nom;
+//     document.getElementById("editPrenom").value = user.prenom;
+//     document.getElementById("editEmail").value = user.email;
+//     document.getElementById("editRole").value = user.role;
+
+//     // Adapter le formulaire selon le rôle de l'utilisateur connecté
+//     if (
+//       currentUserRole === "SUPERADMIN" ||
+//       currentUserRole === "PROPRIETAIRE"
+//     ) {
+//       // SUPERADMIN et PROPRIETAIRE voient tous les champs
+//       loadAteliers("editAtelier", user.atelier?.id || "");
+
+//       // Activer tous les champs
+//       document.getElementById("editNom").disabled = false;
+//       document.getElementById("editPrenom").disabled = false;
+//       document.getElementById("editEmail").disabled = false;
+//       document.getElementById("editRole").disabled = false;
+//     } else if (
+//       currentUserRole === "TAILLEUR" ||
+//       currentUserRole === "SECRETAIRE"
+//     ) {
+//       // TAILLEUR et SECRETAIRE ne peuvent modifier que leur propre compte
+//       if (isCurrentUser) {
+//         // Ils ne peuvent modifier que nom, prénom et mot de passe
+//         document.getElementById("editEmail").disabled = true;
+//         document.getElementById("editRole").disabled = true;
+
+//         // Cacher les champs atelier et rôle
+//         document.getElementById("editAtelier").closest(".mb-3").style.display =
+//           "none";
+//         document.getElementById("editRole").closest(".mb-3").style.display =
+//           "none";
+//       } else {
+//         // Ils ne devraient pas pouvoir modifier d'autres utilisateurs
+//         errorMessage(
+//           "Vous n'avez pas la permission de modifier cet utilisateur"
+//         );
+//         return;
+//       }
+//     }
+
+//     // Ouvrir le modal
+//     new bootstrap.Modal(document.getElementById("editUtilisateurModal")).show();
+//   } catch (error) {
+//     console.error("Erreur édition utilisateur:", error);
+//     errorMessage("Erreur lors du chargement des données utilisateur");
+//   }
+// }
+
+// ➡️ Pré-remplir et ouvrir le modal d'édition
 async function editUser(id) {
   const token = getToken();
   if (!token) {
@@ -819,31 +898,44 @@ async function editUser(id) {
     const currentUserRole = currentUser.role;
     const isCurrentUser = user.id === currentUser.userId;
 
+    console.log("📋 Données utilisateur chargées:", user);
+    console.log("🏪 Atelier de l'utilisateur:", user.atelier);
+
     // Remplir les champs du formulaire
     document.getElementById("editId").value = user.id;
     document.getElementById("editUserRole").value = user.role;
-    document.getElementById("editNom").value = user.nom;
-    document.getElementById("editPrenom").value = user.prenom;
-    document.getElementById("editEmail").value = user.email;
-    document.getElementById("editRole").value = user.role;
+    document.getElementById("editNom").value = user.nom || "";
+    document.getElementById("editPrenom").value = user.prenom || "";
+    document.getElementById("editEmail").value = user.email || "";
+    document.getElementById("editRole").value = user.role || "";
+
+    // Charger les ateliers dans le select et pré-sélectionner celui de l'utilisateur
+    if (currentUserRole === "SUPERADMIN" || currentUserRole === "PROPRIETAIRE") {
+      const userAtelierId = user.atelier?.id || user.atelierId || "";
+      console.log("🎯 Chargement ateliers avec sélection:", userAtelierId);
+      
+      await loadAteliersForSelect("editAtelier", userAtelierId);
+      
+      // Vérifier que la sélection a bien été appliquée
+      const atelierSelect = document.getElementById("editAtelier");
+      if (atelierSelect) {
+        console.log("✅ Sélection atelier après chargement:", atelierSelect.value);
+      }
+    }
 
     // Adapter le formulaire selon le rôle de l'utilisateur connecté
-    if (
-      currentUserRole === "SUPERADMIN" ||
-      currentUserRole === "PROPRIETAIRE"
-    ) {
-      // SUPERADMIN et PROPRIETAIRE voient tous les champs
-      loadAteliers("editAtelier", user.atelier?.id || "");
-
+    if (currentUserRole === "SUPERADMIN" || currentUserRole === "PROPRIETAIRE") {
       // Activer tous les champs
       document.getElementById("editNom").disabled = false;
       document.getElementById("editPrenom").disabled = false;
       document.getElementById("editEmail").disabled = false;
       document.getElementById("editRole").disabled = false;
-    } else if (
-      currentUserRole === "TAILLEUR" ||
-      currentUserRole === "SECRETAIRE"
-    ) {
+      
+      // Montrer les sections atelier et rôle
+      document.querySelectorAll('.superadmin-only, .proprietaire-only').forEach(el => {
+        el.style.display = '';
+      });
+    } else if (currentUserRole === "TAILLEUR" || currentUserRole === "SECRETAIRE") {
       // TAILLEUR et SECRETAIRE ne peuvent modifier que leur propre compte
       if (isCurrentUser) {
         // Ils ne peuvent modifier que nom, prénom et mot de passe
@@ -851,21 +943,19 @@ async function editUser(id) {
         document.getElementById("editRole").disabled = true;
 
         // Cacher les champs atelier et rôle
-        document.getElementById("editAtelier").closest(".mb-3").style.display =
-          "none";
-        document.getElementById("editRole").closest(".mb-3").style.display =
-          "none";
+        document.getElementById("editAtelier").closest(".mb-3").style.display = "none";
+        document.getElementById("editRole").closest(".mb-3").style.display = "none";
       } else {
         // Ils ne devraient pas pouvoir modifier d'autres utilisateurs
-        errorMessage(
-          "Vous n'avez pas la permission de modifier cet utilisateur"
-        );
+        errorMessage("Vous n'avez pas la permission de modifier cet utilisateur");
         return;
       }
     }
 
     // Ouvrir le modal
-    new bootstrap.Modal(document.getElementById("editUtilisateurModal")).show();
+    const editModal = new bootstrap.Modal(document.getElementById("editUtilisateurModal"));
+    editModal.show();
+
   } catch (error) {
     console.error("Erreur édition utilisateur:", error);
     errorMessage("Erreur lors du chargement des données utilisateur");
@@ -873,103 +963,208 @@ async function editUser(id) {
 }
 
 // ➡️ Soumission du formulaire UPDATE
-document
-  .getElementById("editUserForm")
-  ?.addEventListener("submit", async function (e) {
-    e.preventDefault();
+// document
+//   .getElementById("editUserForm")
+//   ?.addEventListener("submit", async function (e) {
+//     e.preventDefault();
 
-    const token = getToken();
-    if (!token) {
-      errorMessage("Token non disponible. Veuillez vous reconnecter.");
-      return;
-    }
+//     const token = getToken();
+//     if (!token) {
+//       errorMessage("Token non disponible. Veuillez vous reconnecter.");
+//       return;
+//     }
 
-    const id = document.getElementById("editId").value;
-    const currentUser = getUserData();
-    const currentUserRole = currentUser.role;
-    const userRole = document.getElementById("editUserRole").value;
-    const isCurrentUser = id === currentUser.userId;
+//     const id = document.getElementById("editId").value;
+//     const currentUser = getUserData();
+//     const currentUserRole = currentUser.role;
+//     const userRole = document.getElementById("editUserRole").value;
+//     const isCurrentUser = id === currentUser.userId;
 
-    // Préparer les données à envoyer
-    const utilisateur = {
-      nom: document.getElementById("editNom").value.trim(),
-      prenom: document.getElementById("editPrenom").value.trim(),
-      email: document.getElementById("editEmail").value.trim(),
-    };
+//     // Préparer les données à envoyer
+//     const utilisateur = {
+//       nom: document.getElementById("editNom").value.trim(),
+//       prenom: document.getElementById("editPrenom").value.trim(),
+//       email: document.getElementById("editEmail").value.trim(),
+//     };
 
-    // Gestion du mot de passe (seulement si rempli)
-    const motDePasse = document.getElementById("editMotDePasse").value.trim();
-    if (motDePasse) {
-      utilisateur.motdepasse = motDePasse;
-    }
+//     // Gestion du mot de passe (seulement si rempli)
+//     const motDePasse = document.getElementById("editMotDePasse").value.trim();
+//     if (motDePasse) {
+//       utilisateur.motdepasse = motDePasse;
+//     }
 
-    // SUPERADMIN et PROPRIETAIRE peuvent modifier tous les champs
-    if (
-      currentUserRole === "SUPERADMIN" ||
-      currentUserRole === "PROPRIETAIRE"
-    ) {
-      utilisateur.atelierId = document.getElementById("editAtelier").value;
-      utilisateur.role = document.getElementById("editRole").value;
-    }
-    // TAILLEUR et SECRETAIRE ne peuvent modifier que leur propre compte (nom, prénom, mot de passe)
-    else if (
-      (currentUserRole === "TAILLEUR" || currentUserRole === "SECRETAIRE") &&
-      !isCurrentUser
-    ) {
-      errorMessage("Vous n'avez pas la permission de modifier cet utilisateur");
-      return;
-    }
+//     // SUPERADMIN et PROPRIETAIRE peuvent modifier tous les champs
+//     if (
+//       currentUserRole === "SUPERADMIN" ||
+//       currentUserRole === "PROPRIETAIRE"
+//     ) {
+//       utilisateur.atelierId = document.getElementById("editAtelier").value;
+//       utilisateur.role = document.getElementById("editRole").value;
+//     }
+//     // TAILLEUR et SECRETAIRE ne peuvent modifier que leur propre compte (nom, prénom, mot de passe)
+//     else if (
+//       (currentUserRole === "TAILLEUR" || currentUserRole === "SECRETAIRE") &&
+//       !isCurrentUser
+//     ) {
+//       errorMessage("Vous n'avez pas la permission de modifier cet utilisateur");
+//       return;
+//     }
 
-    try {
-      const res = await fetch(`${apiUtilisateurs}/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(utilisateur),
+//     try {
+//       const res = await fetch(`${apiUtilisateurs}/${id}`, {
+//         method: "PUT",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`,
+//         },
+//         body: JSON.stringify(utilisateur),
+//       });
+
+//       if (res.ok) {
+//         successMessage("Utilisateur modifié avec succès !");
+//         loadUtilisateurs();
+//         bootstrap.Modal.getInstance(
+//           document.getElementById("editUtilisateurModal")
+//         ).hide();
+//       } else {
+//         if (await handleApiError(res, "modification utilisateur")) return;
+
+//         const error = await res.json();
+//         if (error.error) {
+//           errorMessage(error.error);
+//         } else {
+//           let messages = Object.values(error).join("\n");
+//           errorMessage(messages);
+//         }
+//       }
+//     } catch (error) {
+//       console.error("Erreur modification utilisateur:", error);
+//       errorMessage("Erreur lors de la modification de l'utilisateur");
+//     }
+//   });
+// ➡️ Soumission du formulaire UPDATE
+  document.getElementById("editUserForm")?.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const token = getToken();
+      if (!token) {
+          errorMessage("Token non disponible. Veuillez vous reconnecter.");
+          return;
+      }
+
+      const id = document.getElementById("editId").value;
+      const currentUser = getUserData();
+      const currentUserRole = currentUser.role;
+      const isCurrentUser = id === currentUser.userId;
+
+      console.log("🔐 Modification utilisateur:", {
+          id,
+          currentUserRole,
+          isCurrentUser
       });
 
-      if (res.ok) {
-        successMessage("Utilisateur modifié avec succès !");
-        loadUtilisateurs();
-        bootstrap.Modal.getInstance(
-          document.getElementById("editUtilisateurModal")
-        ).hide();
-      } else {
-        if (await handleApiError(res, "modification utilisateur")) return;
+      // Préparer les données à envoyer
+      const utilisateur = {
+          nom: document.getElementById("editNom").value.trim(),
+          prenom: document.getElementById("editPrenom").value.trim(),
+          email: document.getElementById("editEmail").value.trim(),
+      };
 
-        const error = await res.json();
-        if (error.error) {
-          errorMessage(error.error);
-        } else {
-          let messages = Object.values(error).join("\n");
-          errorMessage(messages);
-        }
+      // Gestion du mot de passe (seulement si rempli)
+      const motDePasse = document.getElementById("editMotDePasse").value.trim();
+      if (motDePasse) {
+          utilisateur.motdepasse = motDePasse;
       }
-    } catch (error) {
-      console.error("Erreur modification utilisateur:", error);
-      errorMessage("Erreur lors de la modification de l'utilisateur");
-    }
+
+      // Gestion des permissions selon le rôle
+      if (currentUserRole === "SUPERADMIN") {
+          // SUPERADMIN peut tout modifier
+          utilisateur.atelierId = document.getElementById("editAtelier").value;
+          utilisateur.role = document.getElementById("editRole").value;
+      }
+      else if (currentUserRole === "PROPRIETAIRE") {
+          // PROPRIETAIRE modifiant son propre compte
+          if (isCurrentUser) {
+              utilisateur.role = "PROPRIETAIRE"; // Forcer le rôle
+              utilisateur.atelierId = document.getElementById("editAtelier").value;
+          }
+          // PROPRIETAIRE modifiant un subordonné
+          else {
+              utilisateur.atelierId = document.getElementById("editAtelier").value;
+              utilisateur.role = document.getElementById("editRole").value;
+              
+              // Empêcher de donner les rôles PROPRIETAIRE ou SUPERADMIN
+              if (utilisateur.role === "PROPRIETAIRE" || utilisateur.role === "SUPERADMIN") {
+                  errorMessage("Vous ne pouvez pas attribuer ce rôle");
+                  return;
+              }
+          }
+      }
+      else if ((currentUserRole === "TAILLEUR" || currentUserRole === "SECRETAIRE") && isCurrentUser) {
+          // TAILLEUR/SECRETAIRE ne peuvent modifier que leur propre compte
+          // NE PAS inclure atelierId et role dans les données
+          console.log("👤 TAILLEUR/SECRETAIRE modifie son propre compte - champs limités");
+          // utilisateur.atelierId et utilisateur.role ne sont PAS définis
+      }
+      else {
+          errorMessage("Vous n'avez pas la permission de modifier cet utilisateur");
+          return;
+      }
+
+      console.log("📤 Données envoyées au serveur:", utilisateur);
+
+      try {
+          const res = await fetch(`${apiUtilisateurs}/${id}`, {
+              method: "PUT",
+              headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(utilisateur),
+          });
+
+          if (res.ok) {
+              successMessage("Utilisateur modifié avec succès !");
+              loadUtilisateurs();
+              bootstrap.Modal.getInstance(document.getElementById("editUtilisateurModal")).hide();
+          } else {
+              // Récupérer le message d'erreur du serveur
+              const errorText = await res.text();
+              console.error("❌ Erreur serveur:", errorText);
+              
+              let errorMessageText = "Erreur lors de la modification";
+              try {
+                  const errorJson = JSON.parse(errorText);
+                  errorMessageText = errorJson.message || errorJson.error || errorMessageText;
+              } catch (e) {
+                  errorMessageText = errorText || errorMessageText;
+              }
+              
+              errorMessage(errorMessageText);
+          }
+      } catch (error) {
+          console.error("Erreur modification utilisateur:", error);
+          errorMessage("Erreur réseau lors de la modification");
+      }
   });
-// Réinitialiser le modal quand il est fermé
-document
-  .getElementById("editUtilisateurModal")
-  ?.addEventListener("hidden.bs.modal", function () {
-    // Réactiver tous les champs
-    document.getElementById("editNom").disabled = false;
-    document.getElementById("editPrenom").disabled = false;
-    document.getElementById("editEmail").disabled = false;
-    document.getElementById("editRole").disabled = false;
+  // Réinitialiser le modal quand il est fermé
+  document
+    .getElementById("editUtilisateurModal")
+    ?.addEventListener("hidden.bs.modal", function () {
+      // Réactiver tous les champs
+      document.getElementById("editNom").disabled = false;
+      document.getElementById("editPrenom").disabled = false;
+      document.getElementById("editEmail").disabled = false;
+      document.getElementById("editRole").disabled = false;
 
-    // Remontrer tous les champs
-    document.getElementById("editAtelier").closest(".mb-3").style.display =
-      "block";
-    document.getElementById("editRole").closest(".mb-3").style.display =
-      "block";
+      // Remontrer tous les champs
+      document.getElementById("editAtelier").closest(".mb-3").style.display =
+        "block";
+      document.getElementById("editRole").closest(".mb-3").style.display =
+        "block";
 
-    // Réinitialiser le formulaire
-    document.getElementById("editUserForm").reset();
+      // Réinitialiser le formulaire
+      document.getElementById("editUserForm").reset();
   });
 // Fonction de déconnexion
 function logout() {
@@ -1076,7 +1271,60 @@ function adaptUsersUIByRole() {
   });
 }
 // ➡️ Fonction pour charger les ateliers dans le select
-async function loadAteliersForSelect() {
+// async function loadAteliersForSelect() {
+//   try {
+//     const token = getToken();
+//     const currentUser = getUserData();
+    
+//     if (!token) return;
+
+//     let apiUrl = "http://localhost:8081/api/ateliers";
+    
+//     // Si c'est un propriétaire, charger seulement son atelier
+//     if (currentUser.role === "PROPRIETAIRE" && currentUser.atelierId) {
+//       apiUrl = `http://localhost:8081/api/ateliers/${currentUser.atelierId}`;
+//     }
+
+//     const response = await fetch(apiUrl, {
+//       method: "GET",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`,
+//       },
+//     });
+
+//     if (!response.ok) return;
+
+//     let ateliers;
+//     if (currentUser.role === "PROPRIETAIRE" && currentUser.atelierId) {
+//       const atelier = await response.json();
+//       ateliers = [atelier];
+//     } else {
+//       ateliers = await response.json();
+//     }
+
+//     const select = document.getElementById("inputAtelier");
+//     if (!select) return;
+
+//     // Vider les options existantes (garder la première option)
+//     while (select.options.length > 1) {
+//       select.remove(1);
+//     }
+
+//     // Ajouter les ateliers
+//     ateliers.forEach(atelier => {
+//       const option = document.createElement("option");
+//       option.value = atelier.id;
+//       option.textContent = atelier.nom || "Atelier sans nom";
+//       select.appendChild(option);
+//     });
+
+//   } catch (error) {
+//     console.error("Erreur chargement ateliers:", error);
+//   }
+// }
+// ➡️ Fonction pour charger les ateliers dans le select (CREATE et EDIT)
+async function loadAteliersForSelect(selectId = "inputAtelier", selectedAtelierId = "") {
   try {
     const token = getToken();
     const currentUser = getUserData();
@@ -1108,19 +1356,21 @@ async function loadAteliersForSelect() {
       ateliers = await response.json();
     }
 
-    const select = document.getElementById("inputAtelier");
+    const select = document.getElementById(selectId);
     if (!select) return;
 
-    // Vider les options existantes (garder la première option)
-    while (select.options.length > 1) {
-      select.remove(1);
-    }
+    // Sauvegarder la sélection actuelle
+    const currentSelection = selectedAtelierId || select.value;
+
+    // Vider les options existantes
+    select.innerHTML = '<option value="">Sélectionner un atelier</option>';
 
     // Ajouter les ateliers
     ateliers.forEach(atelier => {
       const option = document.createElement("option");
       option.value = atelier.id;
       option.textContent = atelier.nom || "Atelier sans nom";
+      option.selected = (atelier.id == currentSelection); 
       select.appendChild(option);
     });
 
@@ -1128,6 +1378,23 @@ async function loadAteliersForSelect() {
     console.error("Erreur chargement ateliers:", error);
   }
 }
+
+// Initialisation
+// document.addEventListener('DOMContentLoaded', function() {
+//   if (typeof isAuthenticated === 'function' && isAuthenticated()) {
+//     const userRole = checkUserRole();
+    
+//     toggleUIByRole();
+//     loadUtilisateurs(); // Charger les utilisateurs
+    
+//     // Charger les ateliers pour le modal
+//     if (userRole === 'SUPERADMIN' || userRole === 'PROPRIETAIRE') {
+//       loadAteliersForSelect();
+//     }
+//   } else {
+//     window.location.href = 'index.html';
+//   }
+// });
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof isAuthenticated === 'function' && isAuthenticated()) {
@@ -1136,9 +1403,9 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleUIByRole();
     loadUtilisateurs(); // Charger les utilisateurs
     
-    // Charger les ateliers pour le modal
+    // Charger les ateliers pour le modal d'ajout
     if (userRole === 'SUPERADMIN' || userRole === 'PROPRIETAIRE') {
-      loadAteliersForSelect();
+      loadAteliersForSelect("inputAtelier"); // Spécifier l'ID du select
     }
   } else {
     window.location.href = 'index.html';

@@ -1,17 +1,7 @@
-<style>
-    #clientsTable th:last-child,
-    #clientsTable td:last-child {
-        width: 120px;
-        white-space: nowrap;
-    }
-</style>
-
 <!doctype html>
 <html lang="en" class="semi-dark">
-
 <head>
-    <title>Formulaire de Prise de Mesures Client</title>
-
+    <title>Formulaire d'Enregistrer Un tailleur</title>
     <head>
         <!--  meta tags -->
         <meta charset="utf-8">
@@ -41,6 +31,7 @@
         <link rel="stylesheet" href="assets/css/dark-theme.css" />
         <link rel="stylesheet" href="assets/css/semi-dark.css" />
         <link rel="stylesheet" href="assets/css/header-colors.css" />
+        <script src="assets/js/auth.js"></script>
         <title>Dashkote - Bootstrap5 Admin Template</title>
     </head>
 
@@ -54,593 +45,172 @@
                     <img src="assets/images/logo-icon.png" class="logo-icon" alt="logo icon">
                 </div>
                 <div>
-                    <h4 class="logo-text">Atelier Couture</h4>
+                    <h4 class="logo-text">Tailleur</h4>
                 </div>
                 <div class="toggle-icon ms-auto"><i class='bx bx-arrow-to-left'></i>
                 </div>
             </div>
             <!--navigation-->
-            <ul class="metismenu" id="menu">
+           <ul class="metismenu" id="menu">
+				<!-- Tableau de bord - Visible pour tous -->
+				<li>
+					<a href="home.html">
+						<div class="parent-icon"><i class='bx bx-home-circle'></i></div>
+						<div class="menu-title">Tableau de bord</div>
+					</a>
+				</li>
 
-                <!-- Tableau de bord -->
-                <li>
-                    <a href="home.html">
-                        <div class="parent-icon"><i class='bx bx-home-circle'></i></div>
-                        <div class="menu-title">Tableau de bord</div>
-                    </a>
-                </li>
+				<!-- Modèles - Permissions: PROPRIETAIRE, SECRETAIRE, TAILLEUR -->
+				<li class="permission-required" data-permissions="MODELE_VIEW">
+					<a href="javascript:;" class="has-arrow">
+						<div class="parent-icon"><i class='bx bx-cut'></i></div>
+						<div class="menu-title">Modèles</div>
+					</a>
+					<ul>
+						<li class="permission-required" data-permissions="CLIENT_VIEW">
+							<a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures clients</a>
+						</li>
+						<li class="permission-required" data-permissions="CLIENT_VIEW">
+							<a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a>
+						</li>
+						<li class="permission-required" data-permissions="MODELE_VIEW">
+							<a href="modeles.html"><i class="bx bx-right-arrow-alt"></i>Modèles en cours</a>
+						</li>
+						<li class="permission-required" data-permissions="AFFECTATION_VIEW">
+							<a href="affectations.html"><i class="bx bx-right-arrow-alt"></i>Affectations</a>
+						</li>
+					</ul>
+				</li>
 
-                <!-- Clients -->
-                <!-- <li>
-                        <a href="javascript:;" class="has-arrow">
-                        <div class="parent-icon"><i class='bx bx-user'></i></div>
-                        <div class="menu-title">Clients</div>
-                        </a>
-                        <ul>
-                        <li><a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a></li>
-                        <li><a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures</a></li>
-                        <li><a href="clients-modeles.html"><i class="bx bx-right-arrow-alt"></i>Modèles attribués</a></li>
-                        <li><a href="clients-photos.html"><i class="bx bx-right-arrow-alt"></i>Photos des clients</a></li>
-                        </ul>
-                    </li> -->
+				<!-- Tailleurs - Permissions: PROPRIETAIRE, SECRETAIRE -->
+				<li class="permission-required" data-permissions="TAILLEUR_VIEW">
+					<a href="tailleurs.html">
+						<div class="parent-icon"><i class='bx bx-user-pin'></i></div>
+						<div class="menu-title">Tailleurs</div>
+					</a>
+				</li>
 
-                <!-- Modèles -->
-                <li>
-                    <a href="javascript:;" class="has-arrow">
-                        <div class="parent-icon"><i class='bx bx-cut'></i></div>
-                        <div class="menu-title">Modèles</div>
-                    </a>
-                    <ul>
-                        <li><a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures</a></li>
-                        <li><a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste
-                                des clients</a></li>
-                        <li><a href="modeles.html"><i class="bx bx-right-arrow-alt"></i>Liste
-                                des modèles</a></li>
-                        <li><a href="affectations.html"><i class="bx bx-right-arrow-alt"></i>Affectations</a></li>
-                        <!-- <li><a href="ajouter-modele.html"><i class="bx bx-right-arrow-alt"></i>Ajouter un modèle</a></li> -->
-                    </ul>
-                </li>
+				<!-- Rendez-vous - Permissions: PROPRIETAIRE, SECRETAIRE -->
+				<li class="permission-required" data-permissions="RENDEZVOUS_VIEW">
+					<a href="rendezvous.html">
+						<div class="parent-icon"><i class='bx bx-calendar'></i></div>
+						<div class="menu-title">Rendez-vous</div>
+					</a>
+				</li>
 
-                <!-- Tailleurs -->
-                <li>
-                    <a href="tailleurs.html">
-                        <div class="parent-icon"><i class='bx bx-user-pin'></i></div>
-                        <div class="menu-title">Tailleurs</div>
-                    </a>
-                </li>
-                <!-- Rendez-vous -->
-                <li>
-                    <a href="rendezvous.html">
-                        <div class="parent-icon"><i class='bx bx-calendar'></i></div>
-                        <div class="menu-title">Rendez-vous</div>
-                    </a>
-                </li>
-                <!-- Paiements -->
-                <li>
-                    <a href="paiements.html">
-                        <div class="parent-icon"><i class='bx bx-wallet'></i></div>
-                        <div class="menu-title">Paiements</div>
-                    </a>
-                </li>
-                <!-- Paramètres -->
-                <li>
-                    <a href="parametres.html">
-                        <div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
-                        <div class="menu-title">Paramètres</div>
-                    </a>
-                </li>
-            </ul>
+				<!-- Paiements - Permissions: PROPRIETAIRE, SECRETAIRE -->
+				<li class="permission-required" data-permissions="PAIEMENT_VIEW">
+					<a href="paiements.html">
+						<div class="parent-icon"><i class='bx bx-wallet'></i></div>
+						<div class="menu-title">Paiements</div>
+					</a>
+				</li>
+
+				<!-- Paramètres - Permissions: PROPRIETAIRE uniquement -->
+				<li class="permission-required" data-permissions="PARAMETRES_VIEW">
+					<a href="parametres.html">
+						<div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
+						<div class="menu-title">Paramètres</div>
+					</a>
+				</li>
+			</ul>
             <!--end navigation-->
         </div>
         <!--end sidebar wrapper -->
         <!--start header -->
-        <header>
-            <div class="topbar d-flex align-items-center">
-                <nav class="navbar navbar-expand">
-                    <div class="mobile-toggle-menu"><i class='bx bx-menu'></i>
-                    </div>
-                    <div class="top-menu-left d-none d-lg-block">
-                        <ul class="nav">
-                            <li class="nav-item">
-                                <a class="nav-link" href="app-emailbox.html"><i class='bx bx-envelope'></i></a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="app-chat-box.html"><i class='bx bx-message'></i></a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="app-fullcalender.html"><i class='bx bx-calendar'></i></a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="app-to-do.html"><i class='bx bx-check-square'></i></a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="search-bar flex-grow-1">
-                        <div class="position-relative search-bar-box">
-                            <input type="text" class="form-control search-control" placeholder="Type to search...">
-                            <span class="position-absolute top-50 search-show translate-middle-y"><i
-                                    class='bx bx-search'></i></span>
-                            <span class="position-absolute top-50 search-close translate-middle-y"><i
-                                    class='bx bx-x'></i></span>
-                        </div>
-                    </div>
-                    <div class="top-menu ms-auto">
-                        <ul class="navbar-nav align-items-center">
-                            <li class="nav-item mobile-search-icon">
-                                <a class="nav-link" href="#"> <i class='bx bx-search'></i>
-                                </a>
-                            </li>
-                            <li class="nav-item dropdown dropdown-large">
-                                <a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" role="button"
-                                    data-bs-toggle="dropdown" aria-expanded="false"> <i class='bx bx-category'></i>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-end">
-                                    <div class="row row-cols-3 g-3 p-3">
-                                        <div class="col text-center">
-                                            <div class="app-box mx-auto bg-gradient-cosmic text-white"><i
-                                                    class='bx bx-group'></i>
-                                            </div>
-                                            <div class="app-title">Teams</div>
-                                        </div>
-                                        <div class="col text-center">
-                                            <div class="app-box mx-auto bg-gradient-burning text-white"><i
-                                                    class='bx bx-atom'></i>
-                                            </div>
-                                            <div class="app-title">Projects</div>
-                                        </div>
-                                        <div class="col text-center">
-                                            <div class="app-box mx-auto bg-gradient-lush text-white"><i
-                                                    class='bx bx-shield'></i>
-                                            </div>
-                                            <div class="app-title">Tasks</div>
-                                        </div>
-                                        <div class="col text-center">
-                                            <div class="app-box mx-auto bg-gradient-kyoto text-dark"><i
-                                                    class='bx bx-notification'></i>
-                                            </div>
-                                            <div class="app-title">Feeds</div>
-                                        </div>
-                                        <div class="col text-center">
-                                            <div class="app-box mx-auto bg-gradient-blues text-dark"><i
-                                                    class='bx bx-file'></i>
-                                            </div>
-                                            <div class="app-title">Files</div>
-                                        </div>
-                                        <div class="col text-center">
-                                            <div class="app-box mx-auto bg-gradient-moonlit text-white"><i
-                                                    class='bx bx-filter-alt'></i>
-                                            </div>
-                                            <div class="app-title">Alerts</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </li>
-                            <li class="nav-item dropdown dropdown-large">
-                                <a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
-                                    role="button" data-bs-toggle="dropdown" aria-expanded="false"> <span
-                                        class="alert-count">7</span>
-                                    <i class='bx bx-bell'></i>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-end">
-                                    <a href="javascript:;">
-                                        <div class="msg-header">
-                                            <p class="msg-header-title">Notifications</p>
-                                            <p class="msg-header-clear ms-auto">Marks
-                                                all as read</p>
-                                        </div>
-                                    </a>
-                                    <div class="header-notifications-list">
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="notify bg-light-primary text-primary"><i
-                                                        class="bx bx-group"></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">New
-                                                        Customers<span class="msg-time float-end">14
-                                                            Sec
-                                                            ago</span></h6>
-                                                    <p class="msg-info">5
-                                                        new user
-                                                        registered</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="notify bg-light-danger text-danger"><i
-                                                        class="bx bx-cart-alt"></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">New
-                                                        Orders <span class="msg-time float-end">2
-                                                            min
-                                                            ago</span></h6>
-                                                    <p class="msg-info">You
-                                                        have recived new
-                                                        orders</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="notify bg-light-success text-success"><i
-                                                        class="bx bx-file"></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">24
-                                                        PDF File<span class="msg-time float-end">19
-                                                            min
-                                                            ago</span></h6>
-                                                    <p class="msg-info">The
-                                                        pdf files
-                                                        generated</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="notify bg-light-warning text-warning"><i
-                                                        class="bx bx-send"></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">Time
-                                                        Response <span class="msg-time float-end">28
-                                                            min
-                                                            ago</span></h6>
-                                                    <p class="msg-info">5.1
-                                                        min avarage time
-                                                        response</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="notify bg-light-info text-info"><i
-                                                        class="bx bx-home-circle"></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">New
-                                                        Product Approved
-                                                        <span class="msg-time float-end">2
-                                                            hrs
-                                                            ago</span>
-                                                    </h6>
-                                                    <p class="msg-info">Your
-                                                        new product has
-                                                        approved</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="notify bg-light-danger text-danger"><i
-                                                        class="bx bx-message-detail"></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">New
-                                                        Comments <span class="msg-time float-end">4
-                                                            hrs
-                                                            ago</span></h6>
-                                                    <p class="msg-info">New
-                                                        customer
-                                                        comments
-                                                        recived</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="notify bg-light-success text-success"><i
-                                                        class='bx bx-check-square'></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">Your
-                                                        item is shipped
-                                                        <span class="msg-time float-end">5
-                                                            hrs
-                                                            ago</span>
-                                                    </h6>
-                                                    <p class="msg-info">Successfully
-                                                        shipped your
-                                                        item</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="notify bg-light-primary text-primary"><i
-                                                        class='bx bx-user-pin'></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">New
-                                                        24 authors<span class="msg-time float-end">1
-                                                            day
-                                                            ago</span></h6>
-                                                    <p class="msg-info">24
-                                                        new authors
-                                                        joined last
-                                                        week</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="notify bg-light-warning text-warning"><i
-                                                        class='bx bx-door-open'></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">Defense
-                                                        Alerts <span class="msg-time float-end">2
-                                                            weeks
-                                                            ago</span></h6>
-                                                    <p class="msg-info">45%
-                                                        less alerts last
-                                                        4 weeks</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <a href="javascript:;">
-                                        <div class="text-center msg-footer">View
-                                            All Notifications</div>
-                                    </a>
-                                </div>
-                            </li>
-                            <li class="nav-item dropdown dropdown-large">
-                                <a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
-                                    role="button" data-bs-toggle="dropdown" aria-expanded="false"> <span
-                                        class="alert-count">8</span>
-                                    <i class='bx bx-comment'></i>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-end">
-                                    <a href="javascript:;">
-                                        <div class="msg-header">
-                                            <p class="msg-header-title">Messages</p>
-                                            <p class="msg-header-clear ms-auto">Marks
-                                                all as read</p>
-                                        </div>
-                                    </a>
-                                    <div class="header-message-list">
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="user-online">
-                                                    <img src="https://via.placeholder.com/110x110" class="msg-avatar"
-                                                        alt="user avatar">
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">Daisy
-                                                        Anderson <span class="msg-time float-end">5
-                                                            sec
-                                                            ago</span></h6>
-                                                    <p class="msg-info">The
-                                                        standard chunk
-                                                        of lorem</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="user-online">
-                                                    <img src="https://via.placeholder.com/110x110" class="msg-avatar"
-                                                        alt="user avatar">
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">Althea
-                                                        Cabardo <span class="msg-time float-end">14
-                                                            sec
-                                                            ago</span></h6>
-                                                    <p class="msg-info">Many
-                                                        desktop
-                                                        publishing
-                                                        packages</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="user-online">
-                                                    <img src="https://via.placeholder.com/110x110" class="msg-avatar"
-                                                        alt="user avatar">
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">Oscar
-                                                        Garner <span class="msg-time float-end">8
-                                                            min
-                                                            ago</span></h6>
-                                                    <p class="msg-info">Various
-                                                        versions have
-                                                        evolved over</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="user-online">
-                                                    <img src="https://via.placeholder.com/110x110" class="msg-avatar"
-                                                        alt="user avatar">
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">Katherine
-                                                        Pechon <span class="msg-time float-end">15
-                                                            min
-                                                            ago</span></h6>
-                                                    <p class="msg-info">Making
-                                                        this the first
-                                                        true
-                                                        generator</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="user-online">
-                                                    <img src="https://via.placeholder.com/110x110" class="msg-avatar"
-                                                        alt="user avatar">
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">Amelia
-                                                        Doe <span class="msg-time float-end">22
-                                                            min
-                                                            ago</span></h6>
-                                                    <p class="msg-info">Duis
-                                                        aute irure dolor
-                                                        in
-                                                        reprehenderit</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="user-online">
-                                                    <img src="https://via.placeholder.com/110x110" class="msg-avatar"
-                                                        alt="user avatar">
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">Cristina
-                                                        Jhons <span class="msg-time float-end">2
-                                                            hrs
-                                                            ago</span></h6>
-                                                    <p class="msg-info">The
-                                                        passage is
-                                                        attributed to an
-                                                        unknown</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="user-online">
-                                                    <img src="https://via.placeholder.com/110x110" class="msg-avatar"
-                                                        alt="user avatar">
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">James
-                                                        Caviness <span class="msg-time float-end">4
-                                                            hrs
-                                                            ago</span></h6>
-                                                    <p class="msg-info">The
-                                                        point of using
-                                                        Lorem</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="user-online">
-                                                    <img src="https://via.placeholder.com/110x110" class="msg-avatar"
-                                                        alt="user avatar">
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">Peter
-                                                        Costanzo <span class="msg-time float-end">6
-                                                            hrs
-                                                            ago</span></h6>
-                                                    <p class="msg-info">It
-                                                        was popularised
-                                                        in the 1960s</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="user-online">
-                                                    <img src="https://via.placeholder.com/110x110" class="msg-avatar"
-                                                        alt="user avatar">
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">David
-                                                        Buckley <span class="msg-time float-end">2
-                                                            hrs
-                                                            ago</span></h6>
-                                                    <p class="msg-info">Various
-                                                        versions have
-                                                        evolved over</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="user-online">
-                                                    <img src="https://via.placeholder.com/110x110" class="msg-avatar"
-                                                        alt="user avatar">
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">Thomas
-                                                        Wheeler <span class="msg-time float-end">2
-                                                            days
-                                                            ago</span></h6>
-                                                    <p class="msg-info">If
-                                                        you are going to
-                                                        use a
-                                                        passage</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                        <a class="dropdown-item" href="javascript:;">
-                                            <div class="d-flex align-items-center">
-                                                <div class="user-online">
-                                                    <img src="https://via.placeholder.com/110x110" class="msg-avatar"
-                                                        alt="user avatar">
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="msg-name">Johnny
-                                                        Seitz <span class="msg-time float-end">5
-                                                            days
-                                                            ago</span></h6>
-                                                    <p class="msg-info">All
-                                                        the Lorem Ipsum
-                                                        generators</p>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <a href="javascript:;">
-                                        <div class="text-center msg-footer">View
-                                            All Messages</div>
-                                    </a>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="user-box dropdown">
-                        <a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#"
-                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <img src="https://via.placeholder.com/110x110" class="user-img" alt="user avatar">
-                            <div class="user-info ps-3">
-                                <p class="user-name mb-0">Pauline
-                                    Seitz</p>
-                                <p class="designattion mb-0">Web
-                                    Designer</p>
-                            </div>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="javascript:;"><i
-                                        class="bx bx-user"></i><span>Profile</span></a>
-                            </li>
-                            <li><a class="dropdown-item" href="javascript:;"><i
-                                        class="bx bx-cog"></i><span>Settings</span></a>
-                            </li>
-                            <li><a class="dropdown-item" href="javascript:;"><i
-                                        class='bx bx-home-circle'></i><span>Dashboard</span></a>
-                            </li>
-                            <li><a class="dropdown-item" href="javascript:;"><i
-                                        class='bx bx-dollar-circle'></i><span>Earnings</span></a>
-                            </li>
-                            <li><a class="dropdown-item" href="javascript:;"><i
-                                        class='bx bx-download'></i><span>Downloads</span></a>
-                            </li>
-                            <li>
-                                <div class="dropdown-divider mb-0"></div>
-                            </li>
-                            <li><a class="dropdown-item" href="javascript:;"><i
-                                        class='bx bx-log-out-circle'></i><span>Logout</span></a>
-                            </li>
-                        </ul>
-                    </div>
-                </nav>
-            </div>
-        </header>
+       <header>
+			<div class="topbar d-flex align-items-center">
+				<nav class="navbar navbar-expand">
+					<div class="mobile-toggle-menu"><i class='bx bx-menu'></i>
+					</div>
+					<div class="top-menu ms-auto">
+						<ul class="navbar-nav align-items-center">
+							<li class="nav-item dropdown dropdown-large">
+								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
+									role="button" data-bs-toggle="dropdown" aria-expanded="false"> <span
+										class="alert-count">7</span>
+									<i class='bx bx-bell'></i>
+								</a>
+								<div class="dropdown-menu dropdown-menu-end">
+									<a href="javascript:;">
+										<div class="msg-header">
+											<p class="msg-header-title">Notifications</p>
+											<p class="msg-header-clear ms-auto">Marks all as read</p>
+										</div>
+									</a>
+									<div class="header-notifications-list">
+
+
+									</div>
+									<a href="javascript:;">
+										<div class="text-center msg-footer">View All Notifications</div>
+									</a>
+								</div>
+							</li>
+							<li class="nav-item dropdown dropdown-large">
+								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
+									role="button" data-bs-toggle="dropdown" aria-expanded="false">
+								</a>
+								<div class="dropdown-menu dropdown-menu-end">
+									<a href="javascript:;">
+
+									</a>
+									<div class="header-message-list">
+									</div>
+
+								</div>
+							</li>
+						</ul>
+					</div>
+					<div class="user-box dropdown">
+						<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#"
+							role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<img src="https://via.placeholder.com/110x110" class="user-img" alt="user avatar">
+							<div class="user-info ps-3">
+								<p class="user-name mb-0" id="user-name">Chargement...</p>
+								<p class="designattion mb-0" id="user-role">Connecté</p>
+							</div>
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end">
+							<li><a class="dropdown-item" href="javascript:;"><i
+										class="bx bx-user"></i><span>Profile</span></a>
+							</li>
+							<li><a class="dropdown-item" href="javascript:;"><i
+										class="bx bx-cog"></i><span>Paramètres</span></a>
+							</li>
+							<li>
+								<div class="dropdown-divider mb-0"></div>
+							</li>
+							<li>
+								<a class="dropdown-item" href="#" id="logoutBtn">
+									<i class='bx bx-log-out-circle'></i><span>Déconnexion</span>
+								</a>
+							</li>
+						</ul>
+					</div>
+					<!-- <div class="user-box dropdown">
+						<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<img src="https://via.placeholder.com/110x110" class="user-img" alt="user avatar">
+							<div class="user-info ps-3">
+								<p class="user-name mb-0">Pauline Seitz</p>
+								<p class="designattion mb-0">Web Designer</p>
+							</div>
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end">
+							<li><a class="dropdown-item" href="javascript:;"><i class="bx bx-user"></i><span>Profile</span></a>
+							</li>
+							<li><a class="dropdown-item" href="javascript:;"><i class="bx bx-cog"></i><span>Paramètres</span></a>
+							</li>
+							<li>
+								<div class="dropdown-divider mb-0"></div>
+							</li>
+							<li><a class="dropdown-item" href="javascript:;"><i class='bx bx-log-out-circle'></i><span>Déconnexion</span></a>
+							</li>
+						</ul>
+					</div> -->
+				</nav>
+			</div>
+		</header>
         <!--end header -->
         <!--start page wrapper -->
         <div class="page-wrapper">
@@ -811,8 +381,6 @@
     <script src="assets/js/jquery.min.js"></script>
     <!-- <script src="assets/js/validation_mesure.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="assets/js/delete_client.js"></script>
-    <script src="assets/js/clients.js"></script>
     <script src="assets/js/updateclients.js"></script>
     <script src="assets/plugins/simplebar/js/simplebar.min.js"></script>
     <script src="assets/plugins/metismenu/js/metisMenu.min.js"></script>
@@ -836,635 +404,7 @@
         new PerfectScrollbar('.store-metrics');
         new PerfectScrollbar('.product-list');
     </script>
-       <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Vérifier l'authentification sur chaque page
-            if (!isAuthenticated()) {
-                window.location.href = 'index.html';
-                return;
-            }
-            
-            // Afficher les infos utilisateur de base
-            const userData = getUserData();
-            if (userData) {
-                $('#userName').text(userData.prenom + ' ' + userData.nom);
-            }
-        });
-    </script>
-
 </body>
 
 </html>
 
-
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Permissions - Administration</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #4e73df;
-            --success-color: #1cc88a;
-            --danger-color: #e74a3b;
-            --warning-color: #f6c23e;
-            --dark-color: #5a5c69;
-        }
-        
-        body {
-            background-color: #f8f9fc;
-            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding: 20px;
-        }
-        
-        .card {
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-        }
-        
-        .card-header {
-            background-color: white;
-            border-bottom: 1px solid #e3e6f0;
-            font-weight: 700;
-            color: var(--dark-color);
-        }
-        
-        .permission-card {
-            transition: all 0.2s;
-        }
-        
-        .permission-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
-        }
-        
-        .module-title {
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-top: 25px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--primary-color);
-        }
-        
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-        }
-        
-        .custom-toast {
-            background-color: white;
-            border-left: 4px solid;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            border-radius: 4px;
-            max-width: 350px;
-        }
-        
-        .toast-success {
-            border-left-color: var(--success-color);
-        }
-        
-        .toast-error {
-            border-left-color: var(--danger-color);
-        }
-        
-        .toast-icon {
-            font-size: 1.5rem;
-            margin-right: 10px;
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        .btn-primary:hover {
-            background-color: #3a5fc8;
-            border-color: #3a5fc8;
-        }
-        
-        .user-card {
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .user-card:hover, .user-card.selected {
-            border-color: var(--primary-color);
-            background-color: rgba(78, 115, 223, 0.05);
-        }
-        
-        .loading-spinner {
-            display: none;
-            width: 2rem;
-            height: 2rem;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .hidden-by-permission {
-            display: none !important;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h1 class="h3 mb-0 text-gray-800">
-                        <i class="fas fa-lock me-2"></i>Gestion des Permissions
-                    </h1>
-                    <div>
-                        <button class="btn btn-primary" id="reloadBtn">
-                            <i class="fas fa-sync-alt me-1"></i>Actualiser
-                        </button>
-                        <button class="btn btn-success" id="createPermissionBtn" data-bs-toggle="modal" data-bs-target="#createPermissionModal">
-                            <i class="fas fa-plus me-1"></i>Nouvelle Permission
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-4 mb-4">
-                <div class="card">
-                    <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-primary">Utilisateurs</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="input-group mb-3">
-                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                            <input type="text" id="userSearch" class="form-control" placeholder="Rechercher un utilisateur...">
-                        </div>
-                        <div id="usersList" class="list-group">
-                            <!-- Les utilisateurs seront chargés ici -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                        <h6 class="m-0 font-weight-bold text-primary">Permissions de <span id="selectedUserName">[Sélectionnez un utilisateur]</span></h6>
-                        <div id="saveButtonContainer" style="display: none;">
-                            <button id="savePermissions" class="btn btn-primary btn-sm">
-                                <div class="loading-spinner" id="saveSpinner"></div>
-                                <i class="fas fa-save me-1"></i>Enregistrer
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div id="permissionsContainer">
-                            <div id="permissionsList" class="row">
-                                <!-- Les permissions seront chargées ici -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal pour créer une nouvelle permission -->
-    <div class="modal fade" id="createPermissionModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Créer une nouvelle permission</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="createPermissionForm">
-                        <div class="mb-3">
-                            <label for="permissionCode" class="form-label">Code de la permission</label>
-                            <input type="text" class="form-control" id="permissionCode" required 
-                                   placeholder="Ex: USER_CREATE, PRODUCT_DELETE">
-                            <div class="form-text">Le code doit être unique et en majuscules avec des underscores</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="permissionDescription" class="form-label">Description</label>
-                            <textarea class="form-control" id="permissionDescription" rows="3" required
-                                      placeholder="Décrivez l'action autorisée par cette permission"></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary" id="submitCreatePermission">
-                        <div class="loading-spinner" id="createSpinner"></div>
-                        Créer la permission
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Container pour les toasts -->
-    <div class="toast-container" id="toastContainer"></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Variables globales
-        let allPermissions = [];
-        let allUsers = [];
-        let selectedUserId = null;
-        let selectedUserPermissions = new Set();
-        let currentUserPermissions = new Set();
-        
-        // Charger les utilisateurs et permissions au démarrage
-        document.addEventListener('DOMContentLoaded', () => {
-            // Récupérer les permissions de l'utilisateur connecté
-            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-            if (userInfo.authorities) {
-                userInfo.authorities.forEach(auth => {
-                    if (!auth.authority.startsWith('ROLE_')) {
-                        currentUserPermissions.add(auth.authority);
-                    }
-                });
-            }
-            
-            // Vérifier les permissions pour afficher/masquer les boutons
-            checkPermissions();
-            
-            loadUsers();
-            loadAllPermissions();
-            
-            // Événement pour le bouton d'actualisation
-            document.getElementById('reloadBtn').addEventListener('click', () => {
-                loadUsers();
-                loadAllPermissions();
-                showToast('Actualisation effectuée', 'Les données ont été actualisées.', 'success');
-            });
-            
-            // Événement pour la recherche d'utilisateurs
-            document.getElementById('userSearch').addEventListener('input', function(e) {
-                const searchTerm = e.target.value.toLowerCase();
-                const userElements = document.querySelectorAll('.user-card');
-                
-                userElements.forEach(element => {
-                    const userName = element.querySelector('.user-name').textContent.toLowerCase();
-                    const userEmail = element.querySelector('.user-email').textContent.toLowerCase();
-                    
-                    if (userName.includes(searchTerm) || userEmail.includes(searchTerm)) {
-                        element.style.display = 'flex';
-                    } else {
-                        element.style.display = 'none';
-                    }
-                });
-            });
-            
-            // Événement pour créer une nouvelle permission
-            document.getElementById('submitCreatePermission').addEventListener('click', createPermission);
-        });
-        
-        // Vérifier les permissions de l'utilisateur connecté
-        function checkPermissions() {
-            // Masquer le bouton de création si l'utilisateur n'a pas la permission
-            if (!currentUserPermissions.has('PERMISSION_CREATE')) {
-                document.getElementById('createPermissionBtn').classList.add('hidden-by-permission');
-            }
-            
-            // Vous pouvez ajouter d'autres vérifications de permissions ici
-        }
-        
-        // Fonction pour afficher une notification toast
-        function showToast(title, message, type = 'success') {
-            const toastContainer = document.getElementById('toastContainer');
-            const toastId = 'toast-' + Date.now();
-            
-            const toastEl = document.createElement('div');
-            toastEl.className = `custom-toast toast-${type} mb-3`;
-            toastEl.id = toastId;
-            toastEl.innerHTML = `
-                <div class="d-flex align-items-center p-3">
-                    <div class="toast-icon text-${type}">
-                        ${type === 'success' ? '<i class="fas fa-check-circle"></i>' : 
-                          type === 'error' ? '<i class="fas fa-exclamation-circle"></i>' : 
-                          '<i class="fas fa-info-circle"></i>'}
-                    </div>
-                    <div class="flex-grow-1">
-                        <h6 class="mb-0">${title}</h6>
-                        <small>${message}</small>
-                    </div>
-                    <button type="button" class="btn-close ms-2" onclick="document.getElementById('${toastId}').remove()"></button>
-                </div>
-            `;
-            
-            toastContainer.appendChild(toastEl);
-            
-            // Supprimer automatiquement après 5 secondes
-            setTimeout(() => {
-                if (document.getElementById(toastId)) {
-                    document.getElementById(toastId).remove();
-                }
-            }, 5000);
-        }
-        
-        // Charger la liste des utilisateurs
-        async function loadUsers() {
-            try {
-                const token = localStorage.getItem('authToken');
-                const response = await fetch('/api/utilisateurs', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    allUsers = await response.json();
-                    const usersList = document.getElementById('usersList');
-                    
-                    // Vider la liste existante
-                    usersList.innerHTML = '';
-                    
-                    // Ajouter les utilisateurs
-                    allUsers.forEach(user => {
-                        const userElement = document.createElement('div');
-                        userElement.className = 'list-group-item user-card p-3';
-                        userElement.dataset.userId = user.id;
-                        userElement.innerHTML = `
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" 
-                                         style="width: 40px; height: 40px;">
-                                        <span class="text-white fw-bold">${user.prenom.charAt(0)}${user.nom.charAt(0)}</span>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <div class="user-name fw-bold">${user.prenom} ${user.nom}</div>
-                                    <div class="user-email small text-muted">${user.email}</div>
-                                    <span class="badge bg-secondary">${user.role}</span>
-                                </div>
-                            </div>
-                        `;
-                        
-                        userElement.addEventListener('click', () => selectUser(user.id));
-                        usersList.appendChild(userElement);
-                    });
-                } else {
-                    console.error('Erreur lors du chargement des utilisateurs');
-                    showToast('Erreur', 'Impossible de charger la liste des utilisateurs', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur:', error);
-                showToast('Erreur', 'Une erreur est survenue lors du chargement des utilisateurs', 'error');
-            }
-        }
-        
-        // Charger toutes les permissions disponibles
-        async function loadAllPermissions() {
-            try {
-                const token = localStorage.getItem('authToken');
-                const response = await fetch('/api/admin/permissions', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    allPermissions = await response.json();
-                } else {
-                    console.error('Erreur lors du chargement des permissions');
-                    showToast('Erreur', 'Impossible de charger la liste des permissions', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur:', error);
-                showToast('Erreur', 'Une erreur est survenue lors du chargement des permissions', 'error');
-            }
-        }
-        
-        // Sélectionner un utilisateur
-        async function selectUser(userId) {
-            selectedUserId = userId;
-            
-            // Mettre en évidence l'utilisateur sélectionné
-            document.querySelectorAll('.user-card').forEach(card => {
-                if (card.dataset.userId === userId) {
-                    card.classList.add('selected');
-                } else {
-                    card.classList.remove('selected');
-                }
-            });
-            
-            // Afficher le nom de l'utilisateur sélectionné
-            const selectedUser = allUsers.find(u => u.id == userId);
-            document.getElementById('selectedUserName').textContent = `${selectedUser.prenom} ${selectedUser.nom}`;
-            
-            // Afficher le bouton d'enregistrement
-            document.getElementById('saveButtonContainer').style.display = 'block';
-            
-            // Charger les permissions de cet utilisateur
-            await loadUserPermissions(userId);
-        }
-        
-        // Charger les permissions d'un utilisateur spécifique
-        async function loadUserPermissions(userId) {
-            try {
-                const token = localStorage.getItem('authToken');
-                const response = await fetch(`/api/admin/utilisateurs/${userId}/permissions`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    const userPermissions = await response.json();
-                    selectedUserPermissions = new Set(userPermissions.map(p => p.id));
-                    renderPermissions(userPermissions);
-                } else {
-                    console.error('Erreur lors du chargement des permissions utilisateur');
-                    showToast('Erreur', 'Impossible de charger les permissions de l\'utilisateur', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur:', error);
-                showToast('Erreur', 'Une erreur est survenue lors du chargement des permissions', 'error');
-            }
-        }
-        
-        // Afficher les permissions avec cases à cocher
-        function renderPermissions(userPermissions) {
-            const container = document.getElementById('permissionsList');
-            container.innerHTML = '';
-            
-            // Grouper les permissions par module
-            const permissionsByModule = {};
-            allPermissions.forEach(permission => {
-                const module = permission.code.split('_')[0];
-                if (!permissionsByModule[module]) {
-                    permissionsByModule[module] = [];
-                }
-                permissionsByModule[module].push(permission);
-            });
-            
-            // Créer les éléments pour chaque module
-            for (const module in permissionsByModule) {
-                // Titre du module
-                const moduleRow = document.createElement('div');
-                moduleRow.className = 'module-title col-12';
-                moduleRow.textContent = `Module ${module}`;
-                container.appendChild(moduleRow);
-                
-                // Permissions du module
-                const permissionsRow = document.createElement('div');
-                permissionsRow.className = 'row';
-                
-                permissionsByModule[module].forEach(permission => {
-                    const isChecked = Array.from(selectedUserPermissions).some(id => id === permission.id);
-                    
-                    const permissionCol = document.createElement('div');
-                    permissionCol.className = 'col-md-6 col-lg-4 mb-3';
-                    
-                    permissionCol.innerHTML = `
-                        <div class="card permission-card h-100">
-                            <div class="card-body">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" 
-                                           value="${permission.id}" 
-                                           id="perm-${permission.id}" 
-                                           ${isChecked ? 'checked' : ''}>
-                                    <label class="form-check-label fw-bold" for="perm-${permission.id}">
-                                        ${permission.code}
-                                    </label>
-                                </div>
-                                <p class="small text-muted mt-2 mb-0">${permission.description}</p>
-                            </div>
-                        </div>
-                    `;
-                    
-                    permissionsRow.appendChild(permissionCol);
-                });
-                
-                container.appendChild(permissionsRow);
-            }
-        }
-        
-        // Enregistrer les permissions modifiées
-        document.getElementById('savePermissions').addEventListener('click', async function() {
-            if (!selectedUserId) {
-                showToast('Erreur', 'Veuillez sélectionner un utilisateur', 'error');
-                return;
-            }
-            
-            // Afficher l'indicateur de chargement
-            const saveSpinner = document.getElementById('saveSpinner');
-            const saveButton = document.getElementById('savePermissions');
-            saveSpinner.style.display = 'inline-block';
-            saveButton.disabled = true;
-            
-            // Récupérer les IDs des permissions cochées
-            const selectedPermissionIds = new Set();
-            document.querySelectorAll('#permissionsList input[type="checkbox"]:checked').forEach(checkbox => {
-                selectedPermissionIds.add(parseInt(checkbox.value));
-            });
-            
-            try {
-                const token = localStorage.getItem('authToken');
-                const response = await fetch(`/api/admin/utilisateurs/${selectedUserId}/permissions`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(Array.from(selectedPermissionIds))
-                });
-                
-                if (response.ok) {
-                    showToast('Succès', 'Les permissions ont été mises à jour avec succès', 'success');
-                    
-                    // Mettre à jour les permissions sélectionnées
-                    selectedUserPermissions = selectedPermissionIds;
-                } else {
-                    const errorData = await response.json();
-                    showToast('Erreur', errorData.error || 'Erreur lors de la mise à jour des permissions', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur:', error);
-                showToast('Erreur', 'Une erreur est survenue lors de la mise à jour', 'error');
-            } finally {
-                // Masquer l'indicateur de chargement
-                saveSpinner.style.display = 'none';
-                saveButton.disabled = false;
-            }
-        });
-        
-        // Créer une nouvelle permission
-        async function createPermission() {
-            const code = document.getElementById('permissionCode').value.trim();
-            const description = document.getElementById('permissionDescription').value.trim();
-            
-            if (!code) {
-                showToast('Erreur', 'Le code de la permission est obligatoire', 'error');
-                return;
-            }
-            
-            if (!description) {
-                showToast('Erreur', 'La description de la permission est obligatoire', 'error');
-                return;
-            }
-            
-            // Valider le format du code
-            if (!/^[A-Z_]+$/.test(code)) {
-                showToast('Erreur', 'Le code doit contenir uniquement des lettres majuscules et des underscores', 'error');
-                return;
-            }
-            
-            // Afficher l'indicateur de chargement
-            const createSpinner = document.getElementById('createSpinner');
-            const createButton = document.getElementById('submitCreatePermission');
-            createSpinner.style.display = 'inline-block';
-            createButton.disabled = true;
-            
-            try {
-                const token = localStorage.getItem('authToken');
-                const response = await fetch('/api/admin/permissions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ code, description })
-                });
-                
-                if (response.ok) {
-                    showToast('Succès', 'La permission a été créée avec succès', 'success');
-                    
-                    // Fermer le modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('createPermissionModal'));
-                    modal.hide();
-                    
-                    // Réinitialiser le formulaire
-                    document.getElementById('createPermissionForm').reset();
-                    
-                    // Recharger la liste des permissions
-                    loadAllPermissions();
-                } else {
-                    const errorData = await response.json();
-                    showToast('Erreur', errorData.error || 'Erreur lors de la création de la permission', 'error');
-                }
-            } catch (error) {
-                console.error('Erreur:', error);
-                showToast('Erreur', 'Une erreur est survenue lors de la création', 'error');
-            } finally {
-                // Masquer l'indicateur de chargement
-                createSpinner.style.display = 'none';
-                createButton.disabled = false;
-            }
-        }
-    </script>
-</body>
-</html>

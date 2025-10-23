@@ -8,24 +8,37 @@ import com.atelier.gestionatelier.repositories.AtelierRepository;
 import com.atelier.gestionatelier.security.Role;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
+
 @Service
 public class UtilisateurService {
 
     private final UtilisateurRepository utilisateurRepository;
     private final AtelierRepository atelierRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final FileStorageService fileStorageService;
 
+    // Taille max pour les photos (5MB)
+    private static final long MAX_PHOTO_SIZE = 5 * 1024 * 1024;
     public UtilisateurService(UtilisateurRepository utilisateurRepository,
-                              AtelierRepository atelierRepository) {
+                              AtelierRepository atelierRepository,
+                              FileStorageService fileStorageService) {
         this.utilisateurRepository = utilisateurRepository;
         this.atelierRepository = atelierRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
+        this.fileStorageService = fileStorageService;
     }
-
+//    public UtilisateurService(UtilisateurRepository utilisateurRepository,
+//                              AtelierRepository atelierRepository) {
+//        this.utilisateurRepository = utilisateurRepository;
+//        this.atelierRepository = atelierRepository;
+//        this.passwordEncoder = new BCryptPasswordEncoder();
+//    }
     public Utilisateur findByEmail(String email) {
         return utilisateurRepository.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'email: " + email));
@@ -105,41 +118,104 @@ public class UtilisateurService {
         throw new Exception("Accès non autorisé");
     }
 
-    public Utilisateur updateUtilisateurWithPermissions(UUID id, UtilisateurDTO dto, String emailCurrentUser) throws Exception {
-        Utilisateur currentUser = findByEmail(emailCurrentUser);
-        Utilisateur existingUser = getUtilisateurById(id);
-        
-        // SUPERADMIN peut tout modifier
-        if (Role.SUPERADMIN.equals(currentUser.getRole())) {
-            return updateUtilisateur(id, dto);
-        }
-        
-        // PROPRIETAIRE peut modifier les employés de son atelier
-        if (Role.PROPRIETAIRE.equals(currentUser.getRole())) {
-            if (currentUser.getAtelier() != null && 
-                currentUser.getAtelier().getId().equals(existingUser.getAtelier().getId())) {
-                
-                // Empêcher de changer le rôle en PROPRIETAIRE ou SUPERADMIN
-                if (dto.getRole() != null && 
-                    List.of("PROPRIETAIRE", "SUPERADMIN").contains(dto.getRole().toUpperCase())) {
-                    throw new Exception("Vous ne pouvez pas attribuer ce rôle");
-                }
-                
-                return updateUtilisateur(id, dto);
-            }
-        }
-        
-        // Chacun peut modifier son propre compte (sauf son rôle)
-        if (currentUser.getId().equals(id)) {
-            if (dto.getRole() != null && !dto.getRole().equalsIgnoreCase(currentUser.getRole().name())) {
-                throw new Exception("Vous ne pouvez pas modifier votre propre rôle");
-            }
-            return updateUtilisateur(id, dto);
-        }
-        
-        throw new Exception("Permission refusée");
+//    public Utilisateur updateUtilisateurWithPermissions(UUID id, UtilisateurDTO dto, String emailCurrentUser) throws Exception {
+//        Utilisateur currentUser = findByEmail(emailCurrentUser);
+//        Utilisateur existingUser = getUtilisateurById(id);
+//
+//        // SUPERADMIN peut tout modifier
+//        if (Role.SUPERADMIN.equals(currentUser.getRole())) {
+//            return updateUtilisateur(id, dto);
+//        }
+//
+//        // PROPRIETAIRE peut modifier les employés de son atelier
+//        if (Role.PROPRIETAIRE.equals(currentUser.getRole())) {
+//            if (currentUser.getAtelier() != null &&
+//                currentUser.getAtelier().getId().equals(existingUser.getAtelier().getId())) {
+//
+//                // Empêcher de changer le rôle en PROPRIETAIRE ou SUPERADMIN
+//                if (dto.getRole() != null &&
+//                    List.of("PROPRIETAIRE", "SUPERADMIN").contains(dto.getRole().toUpperCase())) {
+//                    throw new Exception("Vous ne pouvez pas attribuer ce rôle");
+//                }
+//
+//                return updateUtilisateur(id, dto);
+//            }
+//        }
+//
+//        // Chacun peut modifier son propre compte (sauf son rôle)
+//        if (currentUser.getId().equals(id)) {
+//            if (dto.getRole() != null && !dto.getRole().equalsIgnoreCase(currentUser.getRole().name())) {
+//                throw new Exception("Vous ne pouvez pas modifier votre propre rôle");
+//            }
+//            return updateUtilisateur(id, dto);
+//        }
+//
+//        throw new Exception("Permission refusée");
+//    }
+public Utilisateur updateUtilisateurWithPermissions(UUID id, UtilisateurDTO dto, String emailCurrentUser) throws Exception {
+    Utilisateur currentUser = findByEmail(emailCurrentUser);
+    Utilisateur existingUser = getUtilisateurById(id);
+
+    boolean isSameUser = currentUser.getId().equals(id);
+
+    // SUPERADMIN peut tout modifier
+    if (Role.SUPERADMIN.equals(currentUser.getRole())) {
+        return updateUtilisateur(id, dto);
     }
 
+    // PROPRIETAIRE peut modifier les employés de son atelier ET son propre compte
+    if (Role.PROPRIETAIRE.equals(currentUser.getRole())) {
+        if (currentUser.getAtelier() != null &&
+                currentUser.getAtelier().getId().equals(existingUser.getAtelier().getId())) {
+
+            // Vérification sécurisée du rôle
+            if (dto.getRole() != null) {
+                String roleUpper = dto.getRole().toUpperCase();
+                if (isSameUser) {
+                    if (!"PROPRIETAIRE".equals(roleUpper)) {
+                        throw new Exception("Vous ne pouvez pas changer votre propre rôle");
+                    }
+                } else {
+                    if (List.of("PROPRIETAIRE", "SUPERADMIN").contains(roleUpper)) {
+                        throw new Exception("Vous ne pouvez pas attribuer ce rôle");
+                    }
+                }
+            }
+            return updateUtilisateur(id, dto);
+        }
+    }
+
+    // TAILLEUR et SECRETAIRE peuvent modifier seulement leur propre compte
+    if ((Role.TAILLEUR.equals(currentUser.getRole()) || Role.SECRETAIRE.equals(currentUser.getRole())) && isSameUser) {
+        // Vérifications sécurisées
+        if (dto.getRole() != null && !dto.getRole().equalsIgnoreCase(currentUser.getRole().name())) {
+            throw new Exception("Vous ne pouvez pas modifier votre propre rôle");
+        }
+
+        if (dto.getAtelierId() != null && !dto.getAtelierId().equals(currentUser.getAtelier().getId())) {
+            throw new Exception("Vous ne pouvez pas modifier votre atelier");
+        }
+
+        // Filtrer les champs autorisés
+        UtilisateurDTO filteredDto = new UtilisateurDTO();
+        filteredDto.setNom(dto.getNom());
+        filteredDto.setPrenom(dto.getPrenom());
+        filteredDto.setEmail(dto.getEmail());
+        filteredDto.setMotdepasse(dto.getMotdepasse());
+
+        return updateUtilisateur(id, filteredDto);
+    }
+
+    // Chacun peut modifier son propre compte (sauf son rôle)
+    if (isSameUser) {
+        if (dto.getRole() != null && !dto.getRole().equalsIgnoreCase(currentUser.getRole().name())) {
+            throw new Exception("Vous ne pouvez pas modifier votre propre rôle");
+        }
+        return updateUtilisateur(id, dto);
+    }
+
+    throw new Exception("Permission refusée");
+}
     public void deleteUtilisateurWithPermissions(UUID id, String emailCurrentUser) throws Exception {
         Utilisateur currentUser = findByEmail(emailCurrentUser);
         Utilisateur targetUser = getUtilisateurById(id);
@@ -242,4 +318,90 @@ public class UtilisateurService {
     public Optional<Utilisateur> findById(UUID id) {
         return utilisateurRepository.findById(id);
     }
+
+
+    // ==================== MÉTHODES POUR LES PHOTOS ====================
+
+    /**
+     * MÉTHODE POUR UPLOADER UNE PHOTO DE PROFIL
+     * Utilisation : utilisateurService.updateUserPhoto(userId, fichierImage)
+     */
+    public String updateUserPhoto(UUID userId, MultipartFile photo) throws Exception {
+        Utilisateur utilisateur = getUtilisateurById(userId);
+
+        // 1. Vérifier que le fichier n'est pas vide
+        if (photo == null || photo.isEmpty()) {
+            throw new IllegalArgumentException("Aucune photo fournie");
+        }
+
+        // 2. Valider que c'est une image
+        if (!fileStorageService.isImageFile(photo)) {
+            throw new IllegalArgumentException("Le fichier doit être une image (JPEG, PNG, etc.)");
+        }
+
+        // 3. Valider la taille
+        fileStorageService.validateFileSize(photo, MAX_PHOTO_SIZE);
+
+        try {
+            // 4. Supprimer l'ancienne photo si elle existe
+            if (utilisateur.getPhotoPath() != null) {
+                fileStorageService.deleteFile(utilisateur.getPhotoPath(), "user_photo");
+            }
+
+            // 5. Sauvegarder la nouvelle photo
+            String uniqueFileName = fileStorageService.storeFile(photo, "user_photo");
+
+            // 6. Mettre à jour l'utilisateur en base de données
+            utilisateur.setPhotoPath(uniqueFileName);
+            utilisateurRepository.save(utilisateur);
+
+            System.out.println("✅ Photo utilisateur mise à jour: " + uniqueFileName);
+            return uniqueFileName;
+
+        } catch (IOException e) {
+            throw new RuntimeException("Erreur lors de l'upload de la photo: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * MÉTHODE POUR SUPPRIMER UNE PHOTO DE PROFIL
+     * Utilisation : utilisateurService.removeUserPhoto(userId)
+     */
+    public void removeUserPhoto(UUID userId) throws Exception {
+        Utilisateur utilisateur = getUtilisateurById(userId);
+
+        if (utilisateur.getPhotoPath() != null) {
+            // 1. Supprimer le fichier physique
+            boolean deleted = fileStorageService.deleteFile(utilisateur.getPhotoPath(), "user_photo");
+
+            if (deleted) {
+                System.out.println("✅ Photo supprimée: " + utilisateur.getPhotoPath());
+            }
+
+            // 2. Mettre à jour la base de données
+            utilisateur.setPhotoPath(null);
+            utilisateurRepository.save(utilisateur);
+        }
+    }
+
+    //pour le mot de passe
+
+    public Utilisateur updateUserPassword(UUID userId, String currentPassword, String newPassword) throws Exception {
+        Utilisateur utilisateur = getUtilisateurById(userId);
+
+        // Vérifier le mot de passe actuel
+        if (!passwordEncoder.matches(currentPassword, utilisateur.getMotDePasse())) {
+            throw new Exception("Mot de passe actuel incorrect");
+        }
+
+        // Vérifier que le nouveau mot de passe est différent
+        if (passwordEncoder.matches(newPassword, utilisateur.getMotDePasse())) {
+            throw new Exception("Le nouveau mot de passe doit être différent de l'actuel");
+        }
+
+        // Mettre à jour le mot de passe
+        utilisateur.setMotDePasse(passwordEncoder.encode(newPassword));
+        return utilisateurRepository.save(utilisateur);
+    }
+
 }

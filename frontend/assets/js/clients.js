@@ -518,7 +518,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             `;
             ul.appendChild(infoLi);
-
+           // ✅ NOUVEAU : Afficher le prix
+            if (m.prix) {
+                const prixLi = document.createElement("li");
+                prixLi.classList.add("list-group-item", "fw-bold", "bg-success", "text-white");
+                prixLi.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Prix du modèle:</span>
+                        <span class="badge bg-light text-dark fs-6">${m.prix} FCFA</span>
+                    </div>
+                `;
+                ul.appendChild(prixLi);
+            }
             // Afficher le type de vêtement
             if (m.typeVetement) {
                 const typeLi = document.createElement("li");
