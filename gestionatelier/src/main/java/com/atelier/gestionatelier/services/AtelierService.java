@@ -101,26 +101,66 @@ public class AtelierService {
         return convertToDTO(atelier);
     }
 
+//    public AtelierDTO updateAtelier(UUID id, AtelierDTO atelierDTO) {
+//        Utilisateur currentUser = getCurrentUser();
+//        Atelier existingAtelier = atelierRepository.findById(id)
+//                .orElseThrow(() -> new IllegalArgumentException("Atelier non trouvé avec l'ID: " + id));
+//
+//        // Vérifier les permissions
+//        if (!hasAccessToAtelier(existingAtelier, currentUser)) {
+//            throw new IllegalArgumentException("Accès non autorisé à cet atelier");
+//        }
+//
+//        // Seul SUPERADMIN peut modifier les ateliers (ou le propriétaire peut modifier le sien si vous le souhaitez)
+//        if (!"SUPERADMIN".equals(currentUser.getRole().name())) {
+//            throw new IllegalArgumentException("Seul le SuperAdmin peut modifier les ateliers");
+//        }
+//
+//        // [Validation et mise à jour existante...]
+//
+//        return convertToDTO(atelierRepository.save(existingAtelier));
+//    }
+
     public AtelierDTO updateAtelier(UUID id, AtelierDTO atelierDTO) {
         Utilisateur currentUser = getCurrentUser();
         Atelier existingAtelier = atelierRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Atelier non trouvé avec l'ID: " + id));
-        
+
         // Vérifier les permissions
         if (!hasAccessToAtelier(existingAtelier, currentUser)) {
             throw new IllegalArgumentException("Accès non autorisé à cet atelier");
         }
-        
+
         // Seul SUPERADMIN peut modifier les ateliers (ou le propriétaire peut modifier le sien si vous le souhaitez)
         if (!"SUPERADMIN".equals(currentUser.getRole().name())) {
             throw new IllegalArgumentException("Seul le SuperAdmin peut modifier les ateliers");
         }
-        
-        // [Validation et mise à jour existante...]
-        
-        return convertToDTO(atelierRepository.save(existingAtelier));
-    }
 
+        // ✅ CORRECTION : METTRE À JOUR LES CHAMPS AVEC LES NOUVELLES VALEURS
+        if (atelierDTO.getNom() != null && !atelierDTO.getNom().trim().isEmpty()) {
+            existingAtelier.setNom(atelierDTO.getNom());
+        }
+
+        if (atelierDTO.getAdresse() != null) {
+            existingAtelier.setAdresse(atelierDTO.getAdresse());
+        }
+
+        if (atelierDTO.getEmail() != null) {
+            existingAtelier.setEmail(atelierDTO.getEmail());
+        }
+
+        if (atelierDTO.getTelephone() != null) {
+            existingAtelier.setTelephone(atelierDTO.getTelephone());
+        }
+
+        // La date de création ne doit pas être modifiée
+        // existingAtelier.setDateCreation(existingAtelier.getDateCreation());
+
+        // ✅ SAUVEGARDER LES MODIFICATIONS
+        Atelier updatedAtelier = atelierRepository.save(existingAtelier);
+
+        return convertToDTO(updatedAtelier);
+    }
     public void deleteAtelier(UUID id) {
         Utilisateur currentUser = getCurrentUser();
         

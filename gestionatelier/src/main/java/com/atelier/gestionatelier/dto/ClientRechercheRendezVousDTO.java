@@ -11,7 +11,8 @@ public class ClientRechercheRendezVousDTO {
     private String nom;
     private String prenom;
     private String contact;
-    private String adresse; // ✅ Contient l'email pour les notifications
+    private String adresse;
+    private String email; // ✅ Contient l'email pour les notifications
     private String photo;
     private LocalDateTime dateCreation;
 

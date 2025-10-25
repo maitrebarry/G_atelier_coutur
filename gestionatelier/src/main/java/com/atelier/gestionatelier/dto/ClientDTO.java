@@ -13,6 +13,7 @@ public class ClientDTO implements Serializable {
     private String prenom;
     private String contact;
     private String adresse;
+    private String email;
     private String sexe;
     private String genderPreview;
     private String femme_type;
@@ -56,17 +57,18 @@ public class ClientDTO implements Serializable {
     private String homme_tour_manche;
 
     private UUID atelierId;
-
+    // NOUVEAU : Référence au modèle existant
+    private UUID selectedModelId;
     public UUID getAtelierId() {
         return atelierId;
     }
-
+    private String modeleNom;
     public void setAtelierId(UUID atelierId) {
         this.atelierId = atelierId;
     }
 
 
-     public static long getSerialversionuid() {
+    public static long getSerialversionuid() {
         return serialVersionUID;
     }
     public String getNom() {
@@ -93,6 +95,8 @@ public class ClientDTO implements Serializable {
     public void setAdresse(String adresse) {
         this.adresse = adresse;
     }
+    public String getEmail() {return email;}
+    public void setEmail(String email) {this.email = email;}
     public String getSexe() {
         return sexe;
     }
@@ -335,7 +339,21 @@ public class ClientDTO implements Serializable {
     public void setPrix(String prix) {
         this.prix = prix;
     }
+    // NOUVEAU : Getter et Setter pour selectedModelId
+    public UUID getSelectedModelId() {
+        return selectedModelId;
+    }
 
+    public void setSelectedModelId(UUID selectedModelId) {
+        this.selectedModelId = selectedModelId;
+    }
+    public String getModeleNom() {
+        return modeleNom;
+    }
+
+    public void setModeleNom(String modeleNom) {
+        this.modeleNom = modeleNom;
+    }
     // Méthode utilitaire pour convertir en Double
     public Double getPrixAsDouble() {
         if (prix == null || prix.trim().isEmpty()) {

@@ -28,6 +28,7 @@ public class RendezVousDTO {
         private String prenom;
         private String contact;
         private String adresse;
+        private String email;
         private String photo;
     }
 

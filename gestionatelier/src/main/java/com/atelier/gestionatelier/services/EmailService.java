@@ -66,9 +66,9 @@ public class EmailService {
                                                    String nomAtelier, String notes) {
         String subject = "Date de récupération - " + nomAtelier;
 
-        String text = "Bonjour " + prenomClient + ",\n\n" +
-                "Vos vêtements seront prêts le :\n" + dateRendezVous.format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH'h'mm")) + "\n\n" +
-                "Vous pouvez passer les récupérer à l'atelier.\n\n" +
+        String text = "Bonjour " + prenomClient + ",\n" +
+                "Vos vêtements seront prêts le :\n" + dateRendezVous.format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH'h'mm")) + "\n" +
+                "Vous pouvez passer les récupérer à l'atelier.\n" +
                 "Merci !\n" +
                 nomAtelier;
 
@@ -79,12 +79,12 @@ public class EmailService {
                                                    String nomAtelier, String notes) {
         String subject = "Modification de votre rendez-vous - " + nomAtelier;
 
-        String text = "Bonjour " + prenomClient + " " + nomClient + ",\n\n" +
+        String text = "Bonjour " + prenomClient + " " + nomClient + ",\n" +
                 "Votre rendez-vous a été modifié.\n\n" +
                 "📅 Nouvelle date: " + nouvelleDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")) + "\n" +
                 "🏭 Atelier: " + nomAtelier + "\n" +
                 "📋 Type: " + typeRendezVous + "\n" +
-                (notes != null && !notes.isEmpty() ? "📝 Notes: " + notes + "\n\n" : "\n") +
+                (notes != null && !notes.isEmpty() ? "📝 Notes: " + notes + "\n" : "\n") +
                 "Nous restons à votre disposition pour toute information complémentaire.\n\n" +
                 "Cordialement,\nL'équipe " + nomAtelier;
 
@@ -112,15 +112,18 @@ public class EmailService {
     public void envoyerEmailAnnulationRendezVous(String emailClient, String nomClient, String prenomClient,
                                                  LocalDateTime dateRendezVous, String typeRendezVous,
                                                  String nomAtelier) {
-        String subject = "Annulation de votre rendez-vous - " + nomAtelier;
+        String subject = "Changement de votre rendez-vous - " + nomAtelier;
 
-        String text = "Bonjour " + prenomClient + " " + nomClient + ",\n\n" +
-                "Votre rendez-vous de " + typeRendezVous.toLowerCase() + " prévu le " +
-                dateRendezVous.format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")) +
-                " a été annulé.\n\n" +
-                "N'hésitez pas à prendre un nouveau rendez-vous si nécessaire.\n\n" +
-                "Cordialement,\nL'équipe " + nomAtelier;
+        String text = "Bonjour " + prenomClient + ",\n\n"
+                + "Nous vous informons que votre rendez-vous pour " + typeRendezVous.toLowerCase()
+                + " prévu le " + dateRendezVous.format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm"))
+                + " a été annulé.\n\n"
+                + "Pas d’inquiétude, un nouveau rendez-vous vous sera proposé très prochainement.\n"
+                + "Nous restons disponibles pour toute question ou ajustement.\n\n"
+                + "Merci pour votre compréhension et votre confiance.\n\n"
+                + "— L’équipe " + nomAtelier;
 
         envoyerEmail(emailClient, subject, text);
     }
+
 }

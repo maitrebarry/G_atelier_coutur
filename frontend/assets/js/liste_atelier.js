@@ -80,6 +80,7 @@ function displayAteliers(ateliers) {
             <td>${index + 1}</td>
             <td>${escapeHtml(atelier.nom)}</td>
             <td>${escapeHtml(atelier.adresse)}</td>
+             <td>${escapeHtml(atelier.email)}</td>
             <td>${escapeHtml(atelier.telephone)}</td>
             <td>${formatDate(atelier.dateCreation)}</td>
             <td>
@@ -175,6 +176,7 @@ async function editAtelier(id) {
     document.getElementById("editAtelierId").value = atelier.id;
     document.getElementById("editNomAtelier").value = atelier.nom || "";
     document.getElementById("editAdresseAtelier").value = atelier.adresse || "";
+    document.getElementById("editemailAtelier").value = atelier.email || "";
     document.getElementById("editTelephoneAtelier").value =
       atelier.telephone || "";
 
@@ -239,6 +241,7 @@ document
       id: atelierId,
       nom: document.getElementById("editNomAtelier").value.trim(),
       adresse: document.getElementById("editAdresseAtelier").value.trim(),
+      email: document.getElementById("editemailAtelier").value.trim(),
       telephone: document.getElementById("editTelephoneAtelier").value.trim(),
     };
 

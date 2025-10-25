@@ -70,7 +70,7 @@ public class RendezVousService {
         validerDateRendezVous(dto.getDateRDV(), atelier.getId());
 
         // ✅ VÉRIFICATION PRÉALABLE : Le client a-t-il un email valide ?
-        if (client.getAdresse() == null || !client.getAdresse().contains("@")) {
+        if (client.getEmail() == null || !client.getEmail().contains("@")) {
             throw new RuntimeException("Impossible de créer le rendez-vous : le client n'a pas d'email valide");
         }
 
@@ -253,7 +253,9 @@ public class RendezVousService {
         clientInfo.setNom(rendezVous.getClient().getNom());
         clientInfo.setPrenom(rendezVous.getClient().getPrenom());
         clientInfo.setContact(rendezVous.getClient().getContact());
-        clientInfo.setAdresse(rendezVous.getClient().getAdresse()); // ✅ Contient l'email
+        clientInfo.setAdresse(rendezVous.getClient().getAdresse());
+        // ✅ Contient l'email
+        clientInfo.setEmail(rendezVous.getClient().getEmail());
         clientInfo.setPhoto(rendezVous.getClient().getPhoto());
         dto.setClient(clientInfo);
 

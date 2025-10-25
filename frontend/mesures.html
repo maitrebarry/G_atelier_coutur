@@ -51,6 +51,91 @@
             border-color: #0d6efd;
             box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
             }
+
+            /* NOUVEAUX STYLES - Section modèles existants */
+.existing-models-section {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 15px 0;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.divider-text {
+    padding: 0 10px;
+    color: #6c757d;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.models-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.model-card {
+    border: 2px solid transparent;
+    border-radius: 8px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+    text-align: center;
+}
+
+.model-card:hover {
+    border-color: #007bff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.model-card.selected {
+    border-color: #007bff;
+    background-color: #e7f3ff;
+}
+
+.model-image {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.model-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-top: 5px;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.model-details .badge {
+    font-size: 0.7rem;
+}
+
+/* Style pour le sélecteur de catégorie */
+#categorieModele {
+    font-size: 0.8rem;
+}
         </style>
     </head>
     <body>
@@ -69,55 +154,58 @@
                     </div>
                 </div>
                 <!--navigation-->
-              <ul class="metismenu" id="menu">
-				<!-- Tableau de bord - Visible pour tous -->
-				<li>
-					<a href="home.html">
-						<div class="parent-icon"><i class='bx bx-home-circle'></i></div>
-						<div class="menu-title">Tableau de bord</div>
-					</a>
-				</li>
+                <ul class="metismenu" id="menu">
+                    <!-- Tableau de bord - Visible pour tous -->
+                    <li>
+                        <a href="home.html">
+                            <div class="parent-icon"><i class='bx bx-home-circle'></i></div>
+                            <div class="menu-title">Tableau de bord</div>
+                        </a>
+                    </li>
 
-				<!-- Modèles - Permissions: PROPRIETAIRE, SECRETAIRE, TAILLEUR -->
-				<li class="permission-required" data-permissions="MODELE_VIEW">
-					<a href="javascript:;" class="has-arrow">
-						<div class="parent-icon"><i class='bx bx-cut'></i></div>
-						<div class="menu-title">Modèles</div>
-					</a>
-					<ul>
-						<li class="permission-required" data-permissions="CLIENT_VIEW">
-							<a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures clients</a>
-						</li>
-						<li class="permission-required" data-permissions="CLIENT_VIEW">
-							<a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a>
-						</li>
-					</ul>
-				</li>
-				<!-- Rendez-vous - Permissions: PROPRIETAIRE, SECRETAIRE -->
-				<li class="permission-required" data-permissions="RENDEZVOUS_VIEW">
-					<a href="rendezvous.html">
-						<div class="parent-icon"><i class='bx bx-calendar'></i></div>
-						<div class="menu-title">Rendez-vous</div>
-					</a>
-				</li>
+                    <!-- Modèles - Permissions: PROPRIETAIRE, SECRETAIRE, TAILLEUR -->
+                    <li class="permission-required" data-permissions="MODELE_VIEW">
+                        <a href="javascript:;" class="has-arrow">
+                            <div class="parent-icon"><i class='bx bx-cut'></i></div>
+                            <div class="menu-title">Modèles</div>
+                        </a>
+                        <ul>
+                            <li class="permission-required" data-permissions="CLIENT_VIEW">
+                                <a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures clients</a>
+                            </li>
+                            <li class="permission-required" data-permissions="CLIENT_VIEW">
+                                <a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a>
+                            </li>
+                            <li class="permission-required" data-permissions="MODELE_VIEW">
+                                <a href="modele.html"><i class="bx bx-right-arrow-alt"></i>Modèle</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <!-- Rendez-vous - Permissions: PROPRIETAIRE, SECRETAIRE -->
+                    <li class="permission-required" data-permissions="RENDEZVOUS_VIEW">
+                        <a href="rendezvous.html">
+                            <div class="parent-icon"><i class='bx bx-calendar'></i></div>
+                            <div class="menu-title">Rendez-vous</div>
+                        </a>
+                    </li>
 
-				<!-- Paiements - Permissions: PROPRIETAIRE, SECRETAIRE -->
-				<li class="permission-required" data-permissions="PAIEMENT_VIEW">
-					<a href="paiements.html">
-						<div class="parent-icon"><i class='bx bx-wallet'></i></div>
-						<div class="menu-title">Paiements</div>
-					</a>
-				</li>
+                    <!-- Paiements - Permissions: PROPRIETAIRE, SECRETAIRE -->
+                    <li class="permission-required" data-permissions="PAIEMENT_VIEW">
+                        <a href="paiements.html">
+                            <div class="parent-icon"><i class='bx bx-wallet'></i></div>
+                            <div class="menu-title">Paiements</div>
+                        </a>
+                    </li>
 
-				<!-- Paramètres - Permissions: PROPRIETAIRE uniquement -->
-				<li class="permission-required" data-permissions="PARAMETRES_VIEW">
-					<a href="parametres.html">
-						<div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
-						<div class="menu-title">Paramètres</div>
-					</a>
-				</li>
-			 </ul>
-                <!--end navigation-->
+                    <!-- Paramètres - Permissions: PROPRIETAIRE uniquement -->
+                    <li class="permission-required" data-permissions="PARAMETRES_VIEW">
+                        <a href="parametres.html">
+                            <div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
+                            <div class="menu-title">Paramètres</div>
+                        </a>
+                    </li>
+                </ul>
+			    <!--end navigation-->
             </div>
             <!--end sidebar wrapper -->
             <!--start header -->
@@ -327,6 +415,47 @@
                                                     <!-- <input type="file" id="photoInput" accept="image/*" style="display: none" /> -->
                                                     <input type="file" id="photoInput" name="photo" accept="image/*" style="display: none" />
                                                 </div>
+                                                  <!-- NOUVEAU : Séparateur -->
+                                                <div class="divider mb-3">
+                                                    <span class="divider-text">OU</span>
+                                                </div>
+
+                                                <!-- NOUVEAU : Section Modèles Existants (collapsible) -->
+                                                <div class="existing-models-section">
+                                                    <button class="btn btn-light w-100 d-flex justify-content-between align-items-center mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#existingModelsCollapse" aria-expanded="false" aria-controls="existingModelsCollapse">
+                                                        <h6 class="mb-0">Choisir un modèle existant</h6>
+                                                        <i class="bx bx-chevron-down" id="existingModelsToggleIcon"></i>
+                                                    </button>
+
+                                                    <div class="collapse" id="existingModelsCollapse">
+                                                        <!-- Filtre par catégorie -->
+                                                        <div class="mb-3">
+                                                            <label class="form-label small">Catégorie:</label>
+                                                            <select class="form-select form-select-sm" id="categorieModele">
+                                                                <option value="all">Toutes les catégories</option>
+                                                                <option value="ROBE">Robe</option>
+                                                                <option value="JUPE">Jupe</option>
+                                                                <option value="HOMME">Vêtement Homme</option>
+                                                                <option value="ENFANT">Vêtement Enfant</option>
+                                                                <option value="AUTRE">Autre</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <!-- Liste des modèles -->
+                                                        <div class="models-grid" id="modelsGrid">
+                                                            <div class="text-center py-3">
+                                                                <div class="spinner-border spinner-border-sm" role="status">
+                                                                    <span class="visually-hidden">Chargement...</span>
+                                                                </div>
+                                                                <span class="ms-2">Chargement des modèles...</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- ✅ CORRECTION : Champs cachés avec les BONS noms -->
+                                                        <input type="hidden" name="selectedModelId" id="selectedModelId" value="">
+                                                        <input type="hidden" name="modeleNom" id="modeleNom" value="">
+                                                    </div>
+                                                </div>
                                                 <div class="mt-3">
                                                     <div class="form-check form-check-inline">
                                                         <input class="form-check-input" type="radio" name="genderPreview" id="previewFemale" value="Femme" checked>
@@ -365,13 +494,17 @@
                                                         <div class="invalid-feedback">Veuillez saisir un numéro de contact valide.</div>
                                                     </div>
                                                     <div class="col-md-6 mb-3">
-                                                        <label class="form-label">Adresse-email</label>
+                                                        <label class="form-label">Adresse ou Localite</label>
                                                         <input type="text" class="form-control" name="adresse" id="adresse_cl" />
                                                     </div>
                                                 </div>
                                                 
                                                 <div class="row">
-                                                    <div class="col-md-12 mb-3">
+                                                     <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Email <span class="-star">*</span></label>
+                                                        <input type="email" class="form-control" name="email" id="email_cl" />
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
                                                         <label class="form-label">Sexe <span class="-star">*</span></label>
                                                         <select class="form-select -field" name="sexe" id="sexe" >
                                                             <option value="">-- Sélectionner --</option>
@@ -649,6 +782,32 @@
                                 </form>
                             </div>
                         </div>
+                        <!-- NOUVEAU : Modal pour visualiser un modèle -->
+                      
+                            <div class="modal fade" id="modelPreviewModal" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="modelPreviewModalLabel">Détails du modèle</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body text-center">
+                                            <!-- ✅ Vérifiez que ces éléments existent -->
+                                            <img id="modelPreviewImage" src="" class="img-fluid rounded mb-3" alt="Modèle" style="max-height: 400px;">
+                                            <h6 id="modelPreviewName"></h6>
+                                            <p id="modelPreviewDescription" class="text-muted small"></p>
+                                            <div class="model-details">
+                                                <span class="badge bg-primary" id="modelPreviewCategory"></span>
+                                                <span class="badge bg-secondary ms-1" id="modelPreviewPrice"></span>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                            <button type="button" class="btn btn-primary" id="selectModelBtn">Sélectionner ce modèle</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                 </div>
             </div>
             <!--end page wrapper -->
@@ -767,5 +926,22 @@
 	<script src="assets/js/profil.js"></script>
 	<script src="assets/js/home_permission.js"></script>
     <script src="assets/js/mesures.js"></script>
+    <script>
+        // Toggle the chevron icon when the collapse shows/hides
+        document.addEventListener('DOMContentLoaded', function () {
+            var collapseEl = document.getElementById('existingModelsCollapse');
+            var icon = document.getElementById('existingModelsToggleIcon');
+            if (!collapseEl || !icon) return;
+
+            collapseEl.addEventListener('show.bs.collapse', function () {
+                icon.classList.remove('bx-chevron-down');
+                icon.classList.add('bx-chevron-up');
+            });
+            collapseEl.addEventListener('hide.bs.collapse', function () {
+                icon.classList.remove('bx-chevron-up');
+                icon.classList.add('bx-chevron-down');
+            });
+        });
+    </script>
     </body>
 </html>

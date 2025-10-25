@@ -102,6 +102,9 @@
 						<li class="permission-required" data-permissions="CLIENT_VIEW">
 							<a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a>
 						</li>
+						<li class="permission-required" data-permissions="MODELE_VIEW">
+							<a href="modele.html"><i class="bx bx-right-arrow-alt"></i>Modèle</a>
+						</li>
 					</ul>
 				</li>
 				<!-- Rendez-vous - Permissions: PROPRIETAIRE, SECRETAIRE -->
@@ -360,6 +363,7 @@
 												<th>N°</th>
 												<th>Nom</th>
 												<th>Adresse</th>
+												<th>Email</th>
 												<th>Téléphone</th>
 												<th>Date de création</th>
 												<th>Actions</th>
@@ -395,7 +399,7 @@
 								</div>
 								<div class="mb-3">
 									<label for="emailAtelier" class="form-label">Email <span class="text-danger">*</span></label>
-									<input type="text" class="form-control" id="emailAtelier" name="email" required>
+									<input type="email" class="form-control" id="emailAtelier" name="email" required>
 								</div>
 								<div class="mb-3">
 									<label for="telephoneAtelier" class="form-label">Téléphone <span class="text-danger">*</span></label>
@@ -437,6 +441,10 @@
 									<div class="mb-3">
 										<label for="editAdresseAtelier" class="form-label">Adresse <span class="text-danger">*</span></label>
 										<input type="text" class="form-control" id="editAdresseAtelier" name="adresse" required>
+									</div>
+									<div class="mb-3">
+										<label for="editemailAtelier" class="form-label">Email <span class="text-danger">*</span></label>
+										<input type="email" class="form-control" id="editemailAtelier" name="email" required>
 									</div>
 									<div class="mb-3">
 										<label for="editTelephoneAtelier" class="form-label">Téléphone <span class="text-danger">*</span></label>

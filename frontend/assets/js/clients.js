@@ -332,6 +332,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <td>${client.nom || ""}</td>
         <td>${client.contact || ""}</td>
         <td>${client.adresse || ""}</td>
+        <td>${client.email}</td>
         <td>
           ${sexe}
           ${typeVetement ? `<br><small class="text-muted">${typeVetement}</small>` : ''}

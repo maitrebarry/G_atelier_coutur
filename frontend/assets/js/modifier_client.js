@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("editPrenom").value = client.prenom || "";
       document.getElementById("editContact").value = client.contact || "";
       document.getElementById("editAdresse").value = client.adresse || "";
-      
+      document.getElementById("editEmail").value = client.email || "";
       // ✅ CORRECTION : Assurer que le sexe est bien défini
       const sexe = mesure.sexe || client.sexe || "Femme";
       document.getElementById("editSexe").value = sexe;
@@ -299,6 +299,7 @@ document.addEventListener("DOMContentLoaded", () => {
       formData.append("prenom", document.getElementById("editPrenom").value);
       formData.append("contact", document.getElementById("editContact").value);
       formData.append("adresse", document.getElementById("editAdresse").value);
+      formData.append("email", document.getElementById("editEmail").value);
       formData.append("sexe", document.getElementById("editSexe").value);
        // ✅ NOUVEAU : Ajouter le prix
       const prix = document.getElementById("editPrix").value;
@@ -464,8 +465,9 @@ document.addEventListener("DOMContentLoaded", () => {
       { id: "editNom", label: "Nom" },
       { id: "editPrenom", label: "Prénom" },
       { id: "editContact", label: "Contact" },
+      { id: "editEmail", label: "Email" },
       { id: "editSexe", label: "Sexe" },
-        { id: "editPrix", label: "Prix" },
+      { id: "editPrix", label: "Prix" },
     ];
 
     requiredFields.forEach((field) => {

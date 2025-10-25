@@ -189,6 +189,57 @@ function displayClients(clients) {
     console.log('📋 Clients affichés:', clients.length);
 }
 
+// function createClientCard(client) {
+//     const colDiv = document.createElement('div');
+//     colDiv.className = 'col-md-6 col-lg-4 mb-3';
+
+//     const cardDiv = document.createElement('div');
+//     cardDiv.className = 'card client-card radius-10 cursor-pointer';
+//     cardDiv.style.transition = 'all 0.3s ease';
+    
+//     const hasMesures = client.derniereMesure != null;
+//     const mesuresText = hasMesures ? 'Mesures' : 'Aucune mesure';
+    
+//     cardDiv.innerHTML = `
+//         <div class="card-body">
+//             <div class="d-flex align-items-center mb-2">
+//                 <div class="flex-shrink-0">
+//                     <div class="rounded-circle bg-light text-center d-flex align-items-center justify-content-center" 
+//                          style="width: 50px; height: 50px;">
+//                         <i class="bx bx-user text-muted"></i>
+//                     </div>
+//                 </div>
+//                 <div class="flex-grow-1 ms-3">
+//                     <h6 class="mb-0 fw-bold">${client.prenom} ${client.nom}</h6>
+//                     <small class="text-muted">${client.contact}</small>
+//                 </div>
+//             </div>
+//             <div class="mt-2">
+//                 <span class="badge bg-light-info text-info badge-sm me-1">
+//                     <i class="bx bx-ruler me-1"></i>${mesuresText}
+//                 </span>
+//                 <span class="badge bg-light-warning text-warning badge-sm">
+//                     <i class="bx bx-t-shirt me-1"></i>${client.nombreModelesEnCours || 0} modèle(s)
+//                 </span>
+//             </div>
+//             ${hasMesures ? `
+//             <div class="mt-2 small text-muted">
+//                 <i class="bx bx-calendar me-1"></i>
+//                 Dernière mesure: ${new Date(client.derniereMesure.dateMesure).toLocaleDateString('fr-FR')}
+//             </div>
+//             ` : ''}
+//         </div>
+//     `;
+
+//     // Événement de clic
+//     cardDiv.addEventListener('click', () => selectClient(client));
+
+//     colDiv.appendChild(cardDiv);
+//     return colDiv;
+// }
+
+// === SÉLECTION CLIENT ===
+
 function createClientCard(client) {
     const colDiv = document.createElement('div');
     colDiv.className = 'col-md-6 col-lg-4 mb-3';
@@ -200,14 +251,26 @@ function createClientCard(client) {
     const hasMesures = client.derniereMesure != null;
     const mesuresText = hasMesures ? 'Mesures' : 'Aucune mesure';
     
+    // ✅ Photo du client si disponible
+    const clientPhotoUrl = client.photo 
+        ? `http://localhost:8081${client.photo}` 
+        : null;
+
     cardDiv.innerHTML = `
         <div class="card-body">
             <div class="d-flex align-items-center mb-2">
                 <div class="flex-shrink-0">
-                    <div class="rounded-circle bg-light text-center d-flex align-items-center justify-content-center" 
-                         style="width: 50px; height: 50px;">
-                        <i class="bx bx-user text-muted"></i>
-                    </div>
+                    ${clientPhotoUrl ? `
+                        <img src="${clientPhotoUrl}" 
+                             alt="${client.prenom} ${client.nom}"
+                             class="rounded-circle"
+                             style="width: 50px; height: 50px; object-fit: cover;">
+                    ` : `
+                        <div class="rounded-circle bg-light text-center d-flex align-items-center justify-content-center" 
+                             style="width: 50px; height: 50px;">
+                            <i class="bx bx-user text-muted"></i>
+                        </div>
+                    `}
                 </div>
                 <div class="flex-grow-1 ms-3">
                     <h6 class="mb-0 fw-bold">${client.prenom} ${client.nom}</h6>
@@ -238,7 +301,6 @@ function createClientCard(client) {
     return colDiv;
 }
 
-// === SÉLECTION CLIENT ===
 async function selectClient(client) {
     console.log('🎯 Client sélectionné:', client);
     
@@ -282,9 +344,10 @@ function displayClientDetails(client) {
         clientName.textContent = `${client.prenom} ${client.nom}`;
     }
     if (clientContact) {
+        // Changer l'icône d'enveloppe par une icône de localisation (bx-map-pin)
         clientContact.innerHTML = `
             <i class="bx bx-phone me-1"></i>${client.contact}<br>
-            <i class="bx bx-envelope me-1"></i>${client.adresse}
+            <i class="bx bx-map-pin me-1"></i>${client.adresse}
         `;
     }
 
@@ -294,6 +357,7 @@ function displayClientDetails(client) {
     // Afficher les modèles
     displayModeles(client.mesures);
 }
+
 
 function displayMesures(mesures) {
     const mesuresList = document.getElementById('mesuresList');
@@ -312,8 +376,33 @@ function displayMesures(mesures) {
     // Prendre la dernière mesure
     const derniereMesure = mesures[mesures.length - 1];
     
+    // ✅ Gestion de la photo comme dans votre code
+    let photoPath = "default_femme.png";
+    if (derniereMesure.sexe && derniereMesure.sexe.toLowerCase() === "homme") {
+        photoPath = "default_homme.png";
+    }
+    if (derniereMesure.photoPath) {
+        let cleanPath = derniereMesure.photoPath
+            .replace(/^\/+/, "")
+            .replace("model_photo/", "");
+        photoPath = `http://localhost:8081/model_photo/${cleanPath}`;
+    }
+
     const mesuresHTML = `
-        <div class="row g-2">
+        <div class="row g-3">
+            <div class="col-12 text-center mb-2">
+                <img src="${photoPath}" 
+                     alt="Photo du modèle" 
+                     class="rounded shadow-sm"
+                     style="max-width: 150px; max-height: 150px; object-fit: cover;"
+                     onerror="this.src='${derniereMesure.sexe === 'HOMME' ? 'default_homme.png' : 'default_femme.png'}'">
+                <div class="mt-1 small text-muted">
+                    Modèle: ${derniereMesure.typeVetement || 'Non spécifié'} • 
+                    ${derniereMesure.sexe === 'HOMME' ? 'Homme' : 
+                      derniereMesure.sexe === 'FEMME' ? 'Femme' : 'Non spécifié'}
+                </div>
+            </div>
+            
             <div class="col-6">
                 <div class="d-flex justify-content-between">
                     <small class="text-muted">Épaules:</small>
@@ -358,35 +447,62 @@ function displayModeles(mesures) {
     const modelesList = document.getElementById('modelesList');
     if (!modelesList) return;
 
-    // Filtrer les mesures qui ont un prix (considérées comme des modèles)
-    const modeles = mesures.filter(mesure => mesure.prix && mesure.prix > 0);
+    // ✅ CORRECTION : Uniquement les mesures qui sont des VRAIS modèles
+    // Un modèle = a un prix ET un typeVetement ET n'est pas une simple mesure
+    const modeles = mesures.filter(mesure => {
+        // Exclure les mesures sans prix ou sans type
+        if (!mesure.prix || mesure.prix <= 0 || !mesure.typeVetement) {
+            return false;
+        }
+        
+        // Vérifier que c'est un vrai modèle (pas une mesure de base)
+        return true;
+    });
+
+    console.log('📊 Modèles filtrés:', modeles); // Debug
 
     if (modeles.length === 0) {
-        modelesList.innerHTML = '<p class="text-muted small">Aucun modèle en cours</p>';
+        modelesList.innerHTML = `
+            <div class="text-center text-muted py-3">
+                <i class="bx bx-t-shirt bx-lg mb-2"></i>
+                <p class="small">Aucun modèle en cours</p>
+            </div>
+        `;
         return;
     }
 
     let modelesHTML = '';
-    modeles.forEach((modele, index) => {
+    modeles.forEach((modele) => {
         const prixFormatted = new Intl.NumberFormat('fr-FR').format(modele.prix);
         
+        // Gestion de la photo
+        let photoPath = modele.sexe === 'HOMME' ? 'default_homme.png' : 'default_femme.png';
+        if (modele.photoPath) {
+            let cleanPath = modele.photoPath.replace(/^\/+/, "").replace("model_photo/", "");
+            photoPath = `http://localhost:8081/model_photo/${cleanPath}`;
+        }
+        
+        const sexeDisplay = modele.sexe === 'HOMME' ? 'Homme' : 
+                           modele.sexe === 'FEMME' ? 'Femme' : 'Non spécifié';
+
         modelesHTML += `
             <div class="col-12">
                 <div class="card border shadow-none mb-2">
                     <div class="card-body py-2">
                         <div class="d-flex align-items-center">
                             <div class="flex-shrink-0 me-3">
-                                <div class="rounded bg-light d-flex align-items-center justify-content-center" 
-                                     style="width: 60px; height: 60px;">
-                                    <i class="bx bx-t-shirt text-muted"></i>
-                                </div>
+                                <img src="${photoPath}" 
+                                     alt="${modele.typeVetement}" 
+                                     class="rounded"
+                                     style="width: 60px; height: 60px; object-fit: cover;"
+                                     onerror="this.onerror=null; this.src='${modele.sexe === 'HOMME' ? 'default_homme.png' : 'default_femme.png'}'">
                             </div>
                             <div class="flex-grow-1">
                                 <h6 class="mb-1 fw-bold" style="font-size: 0.85rem;">
-                                    ${modele.typeVetement || 'Modèle'} ${index + 1}
+                                    ${modele.typeVetement}
                                 </h6>
                                 <p class="mb-1" style="font-size: 0.75rem;">
-                                    <small class="text-muted">${modele.sexe === 'HOMME' ? 'Homme' : 'Femme'} • ${modele.typeVetement || 'Non spécifié'}</small>
+                                    <small class="text-muted">${sexeDisplay} • ${new Date(modele.dateMesure).toLocaleDateString('fr-FR')}</small>
                                 </p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span class="fw-bold text-primary" style="font-size: 0.8rem;">${prixFormatted} FCFA</span>
@@ -402,7 +518,6 @@ function displayModeles(mesures) {
 
     modelesList.innerHTML = modelesHTML;
 }
-
 function filterClients(searchTerm) {
     const clientCards = document.querySelectorAll('.client-card');
     
@@ -457,7 +572,6 @@ async function handleRendezVousSubmit(event) {
         Common.showErrorMessage('Erreur lors de la création du rendez-vous');
     }
 }
-
 function displayRendezVous(rendezVousList) {
     const rendezvousList = document.getElementById('rendezvousList');
     if (!rendezvousList) return;
@@ -480,6 +594,9 @@ function displayRendezVous(rendezVousList) {
         const statutClass = getRdvStatutClass(rdv.statut);
         const typeIcon = getTypeIcon(rdv.typeRendezVous);
         
+        // ✅ CORRECTION : Afficher le type de vêtement au lieu de "N/A"
+        // const modeleType = rdv.modeleType || rdv.type_vetement || 'Non spécifié';
+        
         html += `
             <tr>
                 <td>
@@ -495,7 +612,8 @@ function displayRendezVous(rendezVousList) {
                 <td>
                     <span class="badge bg-primary">${typeIcon} ${rdv.typeRendezVous}</span>
                 </td>
-                <td>${rdv.modeleType || 'N/A'}</td>
+
+                
                 <td>
                     <span class="badge ${statutClass}">${rdv.statut}</span>
                 </td>
@@ -507,9 +625,7 @@ function displayRendezVous(rendezVousList) {
                         </button>
                         ` : ''}
                         ${rdv.statut !== 'TERMINE' && rdv.statut !== 'ANNULE' ? `
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editerRendezVousAction('${rdv.id}')" title="Modifier">
-                            <i class="bx bx-edit"></i>
-                        </button>
+                        <!-- ❌ SUPPRIMÉ : Bouton edit -->
                         <button class="btn btn-sm btn-outline-danger" onclick="annulerRendezVousAction('${rdv.id}')" title="Annuler">
                             <i class="bx bx-x"></i>
                         </button>
@@ -528,20 +644,123 @@ function displayRendezVous(rendezVousList) {
     rendezvousList.innerHTML = html;
 }
 
-// === ACTIONS RENDEZ-VOUS ===
+// === ACTIONS RENDEZ-VOUS AVEC SWEETALERT ===
 async function confirmerRendezVousAction(rendezVousId) {
-    if (!confirm('Confirmer ce rendez-vous ? Un email sera envoyé au client.')) return;
-    
     try {
-        Common.showLoading('Confirmation du rendez-vous...');
-        await confirmerRendezVous(rendezVousId);
-        Common.showSuccessMessage('Rendez-vous confirmé avec succès !');
-        loadRendezVousAVenir();
-        Common.hideLoading();
+        const result = await Swal.fire({
+            title: 'Confirmer le rendez-vous ?',
+            text: 'Le client recevra une notification de confirmation.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Oui, confirmer',
+            cancelButtonText: 'Annuler',
+            reverseButtons: true
+        });
+
+        if (result.isConfirmed) {
+            Common.showLoading('Confirmation du rendez-vous...');
+            await confirmerRendezVous(rendezVousId);
+            
+            await Swal.fire({
+                icon: 'success',
+                title: 'Rendez-vous confirmé !',
+                text: 'Le client a été notifié.',
+                timer: 3000,
+                showConfirmButton: false
+            });
+            
+            loadRendezVousAVenir();
+        }
     } catch (error) {
         console.error('Erreur confirmation:', error);
+        await Swal.fire({
+            icon: 'error',
+            title: 'Erreur',
+            text: 'Erreur lors de la confirmation du rendez-vous'
+        });
+    } finally {
         Common.hideLoading();
-        Common.showErrorMessage('Erreur lors de la confirmation du rendez-vous');
+    }
+}
+
+async function annulerRendezVousAction(rendezVousId) {
+    try {
+        const result = await Swal.fire({
+            title: 'Annuler le rendez-vous ?',
+            text: 'Le client recevra une notification d\'annulation.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Oui, annuler',
+            cancelButtonText: 'Garder',
+            reverseButtons: true
+        });
+
+        if (result.isConfirmed) {
+            Common.showLoading('Annulation du rendez-vous...');
+            await annulerRendezVous(rendezVousId);
+            
+            await Swal.fire({
+                icon: 'success',
+                title: 'Rendez-vous annulé !',
+                text: 'Le client a été notifié.',
+                timer: 3000,
+                showConfirmButton: false
+            });
+            
+            loadRendezVousAVenir();
+        }
+    } catch (error) {
+        console.error('Erreur annulation:', error);
+        await Swal.fire({
+            icon: 'error',
+            title: 'Erreur',
+            text: 'Erreur lors de l\'annulation du rendez-vous'
+        });
+    } finally {
+        Common.hideLoading();
+    }
+}
+
+async function terminerRendezVousAction(rendezVousId) {
+    try {
+        const result = await Swal.fire({
+            title: 'Marquer comme terminé ?',
+            text: 'Ce rendez-vous sera archivé.',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#0dcaf0',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Oui, terminer',
+            cancelButtonText: 'Annuler',
+            reverseButtons: true
+        });
+
+        if (result.isConfirmed) {
+            Common.showLoading('Marquage comme terminé...');
+            await terminerRendezVous(rendezVousId);
+            
+            await Swal.fire({
+                icon: 'success',
+                title: 'Rendez-vous terminé !',
+                timer: 3000,
+                showConfirmButton: false
+            });
+            
+            loadRendezVousAVenir();
+        }
+    } catch (error) {
+        console.error('Erreur terminaison:', error);
+        await Swal.fire({
+            icon: 'error',
+            title: 'Erreur',
+            text: 'Erreur lors du marquage du rendez-vous'
+        });
+    } finally {
+        Common.hideLoading();
     }
 }
 
@@ -585,12 +804,12 @@ function editerRendezVousAction(rendezVousId) {
 // === FONCTIONS UTILITAIRES ===
 function getRdvStatutClass(statut) {
     const classes = {
-        'PLANIFIE': 'bg-light-warning text-warning',
-        'CONFIRME': 'bg-light-success text-success',
-        'ANNULE': 'bg-light-danger text-danger',
-        'TERMINE': 'bg-light-info text-info'
+        'PLANIFIE': 'bg-light-warning text-warning border border-warning',
+        'CONFIRME': 'bg-light-success text-success border border-success',
+        'ANNULE': 'bg-light-danger text-danger border border-danger',
+        'TERMINE': 'bg-light-info text-info border border-info'
     };
-    return classes[statut] || 'bg-light-secondary text-secondary';
+    return classes[statut] || 'bg-light-secondary text-secondary border';
 }
 
 function getTypeIcon(type) {

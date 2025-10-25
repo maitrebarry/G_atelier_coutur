@@ -21,6 +21,7 @@ public class Client {
     private String prenom;
     private String contact;
     private String adresse;
+    private String email;
     private String photo; // Nom du fichier photo (ex: "photo.jpg")
     @Column(name = "date_creation")
     private LocalDateTime dateCreation = LocalDateTime.now();

@@ -53,7 +53,12 @@ private UUID id;
 
     // Chemin d'accès de la photo
     private String photoPath;
+    // NOUVEAU : Référence au modèle existant
+    @Column(name = "modele_reference_id")
+    private UUID modeleReferenceId;
 
+    @Column(name = "modele_nom")
+    private String modeleNom;
     @ManyToOne
     @JoinColumn(name = "id_client", nullable = false)
     @JsonBackReference

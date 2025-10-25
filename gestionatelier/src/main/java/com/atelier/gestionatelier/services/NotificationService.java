@@ -16,10 +16,10 @@ public class NotificationService {
         Atelier atelier = rendezVous.getAtelier();
 
         // ✅ EMAIL FONCTIONNEL - Utilisation du champ adresse comme email
-        if (client.getAdresse() != null && client.getAdresse().contains("@")) {
+        if (client.getEmail() != null && client.getEmail().contains("@")) {
             try {
                 emailService.envoyerEmailConfirmationRendezVous(
-                        client.getAdresse(), // ✅ Utilisation du champ adresse comme email
+                        client.getEmail(), // ✅ Utilisation du champ adresse comme email
                         client.getNom(),
                         client.getPrenom(),
                         rendezVous.getDateRDV(),
@@ -40,10 +40,10 @@ public class NotificationService {
         Atelier atelier = rendezVous.getAtelier();
 
         // ✅ EMAIL FONCTIONNEL - Utilisation du champ adresse comme email
-        if (client.getAdresse() != null && client.getAdresse().contains("@")) {
+        if (client.getEmail() != null && client.getEmail().contains("@")) {
             try {
                 emailService.envoyerEmailModificationRendezVous(
-                        client.getAdresse(), // ✅ Utilisation du champ adresse comme email
+                        client.getEmail(), // ✅ Utilisation du champ adresse comme email
                         client.getNom(),
                         client.getPrenom(),
                         rendezVous.getDateRDV(),
@@ -62,10 +62,10 @@ public class NotificationService {
         Atelier atelier = rendezVous.getAtelier();
 
         // ✅ EMAIL FONCTIONNEL - Utilisation du champ adresse comme email
-        if (client.getAdresse() != null && client.getAdresse().contains("@")) {
+        if (client.getEmail() != null && client.getEmail().contains("@")) {
             try {
                 emailService.envoyerEmailAnnulationRendezVous(
-                        client.getAdresse(), // ✅ Utilisation du champ adresse comme email
+                        client.getEmail(), // ✅ Utilisation du champ adresse comme email
                         client.getNom(),
                         client.getPrenom(),
                         rendezVous.getDateRDV(),
