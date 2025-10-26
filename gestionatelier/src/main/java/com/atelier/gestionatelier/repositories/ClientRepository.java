@@ -27,4 +27,15 @@ public interface ClientRepository extends JpaRepository<Client, UUID> {
 
     // ✅ Compter le nombre de clients par atelier (utile pour les statistiques)
     long countByAtelierId(UUID atelierId);
+
+    // Trouver un client par ID et atelier
+
+
+    // Trouver les clients avec leurs mesures non affectées
+    @Query("SELECT DISTINCT c FROM Client c " +
+            "LEFT JOIN FETCH c.mesures m " +
+            "WHERE c.atelier.id = :atelierId " +
+            "AND m.affecte = false " +
+            "AND SIZE(c.mesures) > 0")
+    List<Client> findByAtelierIdWithMesuresNonAffectees(@Param("atelierId") UUID atelierId);
 }

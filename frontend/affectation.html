@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en" class="semi-dark">
 
@@ -8,16 +9,17 @@
 	<!--favicon-->
 	<link rel="icon" href="assets/images/favicon-32x32.png" type="image/png" />
 	<!--plugins-->
+	 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 	<link href="assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
 	<link href="assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css" rel="stylesheet" />
 	<link href="assets/plugins/highcharts/css/highcharts.css" rel="stylesheet" />
 	<link href="assets/plugins/vectormap/jquery-jvectormap-2.0.2.css" rel="stylesheet" />
 	<link href="assets/plugins/metismenu/css/metisMenu.min.css" rel="stylesheet" />
+	<!-- lien pour icone -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
 	<!-- loader-->
 	<link href="assets/css/pace.min.css" rel="stylesheet" />
-     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 	<script src="assets/js/pace.min.js"></script>
 	<!-- Bootstrap CSS -->
 	<link href="assets/css/bootstrap.min.css" rel="stylesheet">
@@ -27,56 +29,43 @@
 	<link rel="stylesheet" href="assets/css/dark-theme.css" />
 	<link rel="stylesheet" href="assets/css/semi-dark.css" />
 	<link rel="stylesheet" href="assets/css/header-colors.css" />
-     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-	<script src="assets/js/auth.js"></script>
-	<title>Dashkote - Bootstrap5 Admin Template</title>
-    <style>
-    body {
-        background-color: #f8f9fa;
-        padding: 20px;
-    }
+	<!-- <script src="assets/js/auth.js"></script> -->
 
-    .card {
-        margin-bottom: 20px;
-        border: none;
-        border-radius: 0.35rem;
-        box-shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
-    }
-
-    .fm-menu .list-group-item {
-        border: none;
-        color: #5a5c69;
-        transition: 0.15s;
-    }
-
-    .fm-menu .list-group-item:hover,
-    .fm-menu .list-group-item.active {
-        background-color: #eaecf4 !important;
-        color: #4e73df !important;
-        font-weight: bold;
-    }
-
-    .fm-menu .list-group-item i {
-        width: 20px;
-        text-align: center;
-    }
-
-    </style>
+	<title></title>
 </head>
+
 <body>
+	  <style>
+        .client-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .client-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .client-card.selected {
+            border: 2px solid #0d6efd;
+            background-color: #f8f9fa;
+        }
+        .progress {
+            background-color: #e9ecef;
+        }
+        .badge {
+            font-size: 0.75em;
+        }
+    </style>
 	<!--wrapper-->
 	<div class="wrapper">
 		<!--sidebar wrapper -->
 		<div class="sidebar-wrapper" data-simplebar="true">
 			<div class="sidebar-header">
-				<div>
-					<img src="assets/images/logo-icon.png" class="logo-icon" alt="logo icon">
+				<div class="branding">
+					<img src="assets/images/logo2_atelierCouture.jpeg" class="logo-icon" alt="logo icon">
+					<h6 class="logo-text">STITCH MANAGER</h6>
 				</div>
-				<div>
-					<h4 class="logo-text">Atelier Couture</h4>
-				</div>
-				<div class="toggle-icon ms-auto"><i class='bx bx-arrow-to-left'></i>
+				<div class="toggle-icon ms-auto">
+					<i class='bx bx-arrow-to-left'></i>
 				</div>
 			</div>
 			<!--navigation-->
@@ -103,22 +92,17 @@
 							<a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a>
 						</li>
 						<li class="permission-required" data-permissions="MODELE_VIEW">
-							<a href="modeles.html"><i class="bx bx-right-arrow-alt"></i>Modèles en cours</a>
-						</li>
-						<li class="permission-required" data-permissions="AFFECTATION_VIEW">
-							<a href="affectations.html"><i class="bx bx-right-arrow-alt"></i>Affectations</a>
+							<a href="modele.html"><i class="bx bx-right-arrow-alt"></i>Modèle</a>
 						</li>
 					</ul>
 				</li>
-
-				<!-- Tailleurs - Permissions: PROPRIETAIRE, SECRETAIRE -->
-				<li class="permission-required" data-permissions="TAILLEUR_VIEW">
-					<a href="tailleurs.html">
-						<div class="parent-icon"><i class='bx bx-user-pin'></i></div>
-						<div class="menu-title">Tailleurs</div>
-					</a>
-				</li>
-
+				<!-- NOUVEAU : Affectations -->
+                    <li class="permission-required" data-permissions="AFFECTATION_VIEW">
+                        <a href="affectation.html" class="active">
+                            <div class="parent-icon"><i class='bx bx-user-check'></i></div>
+                            <div class="menu-title">Affectations</div>
+                        </a>
+                    </li>
 				<!-- Rendez-vous - Permissions: PROPRIETAIRE, SECRETAIRE -->
 				<li class="permission-required" data-permissions="RENDEZVOUS_VIEW">
 					<a href="rendezvous.html">
@@ -147,288 +131,315 @@
 		</div>
 		<!--end sidebar wrapper -->
 		<!--start header -->
-			<header>
-				<div class="topbar d-flex align-items-center">
-					<nav class="navbar navbar-expand">
-						<div class="mobile-toggle-menu"><i class='bx bx-menu'></i>
-						</div>
-						<div class="top-menu ms-auto">
-							<ul class="navbar-nav align-items-center">
-								<li class="nav-item dropdown dropdown-large">
-									<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
-										role="button" data-bs-toggle="dropdown" aria-expanded="false"> <span
-											class="alert-count">7</span>
-										<i class='bx bx-bell'></i>
-									</a>
-									<div class="dropdown-menu dropdown-menu-end">
-										<a href="javascript:;">
-											<div class="msg-header">
-												<p class="msg-header-title">Notifications</p>
-												<p class="msg-header-clear ms-auto">Marks all as read</p>
-											</div>
-										</a>
-										<div class="header-notifications-list">
-
-
+		<header>
+			<div class="topbar d-flex align-items-center">
+				<nav class="navbar navbar-expand">
+					<div class="mobile-toggle-menu"><i class='bx bx-menu'></i>
+					</div>
+					<div class="top-menu ms-auto">
+						<ul class="navbar-nav align-items-center">
+							<li class="nav-item dropdown dropdown-large">
+								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
+									role="button" data-bs-toggle="dropdown" aria-expanded="false"> <span
+										class="alert-count">7</span>
+									<i class='bx bx-bell'></i>
+								</a>
+								<div class="dropdown-menu dropdown-menu-end">
+									<a href="javascript:;">
+										<div class="msg-header">
+											<p class="msg-header-title">Notifications</p>
+											<p class="msg-header-clear ms-auto">Marks all as read</p>
 										</div>
-										<a href="javascript:;">
-											<div class="text-center msg-footer">View All Notifications</div>
-										</a>
-									</div>
-								</li>
-								<li class="nav-item dropdown dropdown-large">
-									<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
-										role="button" data-bs-toggle="dropdown" aria-expanded="false">
 									</a>
-									<div class="dropdown-menu dropdown-menu-end">
-										<a href="javascript:;">
+									<div class="header-notifications-list">
 
-										</a>
-										<div class="header-message-list">
-										</div>
 
 									</div>
-								</li>
-							</ul>
-						</div>
-						<div class="user-box dropdown">
-							<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#"
-								role="button" data-bs-toggle="dropdown" aria-expanded="false">
-								<img src="https://via.placeholder.com/110x110" class="user-img" alt="user avatar">
-								<div class="user-info ps-3">
-									<p class="user-name mb-0" id="user-name">Chargement...</p>
-									<p class="designattion mb-0" id="user-role">Connecté</p>
-								</div>
-							</a>
-							<ul class="dropdown-menu dropdown-menu-end">
-								<li><a class="dropdown-item" href="javascript:;"><i
-											class="bx bx-user"></i><span>Profile</span></a>
-								</li>
-								<li><a class="dropdown-item" href="javascript:;"><i
-											class="bx bx-cog"></i><span>Paramètres</span></a>
-								</li>
-								<li>
-									<div class="dropdown-divider mb-0"></div>
-								</li>
-								<li>
-									<a class="dropdown-item" href="#" id="logoutBtn">
-										<i class='bx bx-log-out-circle'></i><span>Déconnexion</span>
+									<a href="javascript:;">
+										<div class="text-center msg-footer">View All Notifications</div>
 									</a>
-								</li>
-							</ul>
-						</div>
-						<!-- <div class="user-box dropdown">
-							<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-								<img src="https://via.placeholder.com/110x110" class="user-img" alt="user avatar">
-								<div class="user-info ps-3">
-									<p class="user-name mb-0">Pauline Seitz</p>
-									<p class="designattion mb-0">Web Designer</p>
 								</div>
-							</a>
-							<ul class="dropdown-menu dropdown-menu-end">
-								<li><a class="dropdown-item" href="javascript:;"><i class="bx bx-user"></i><span>Profile</span></a>
-								</li>
-								<li><a class="dropdown-item" href="javascript:;"><i class="bx bx-cog"></i><span>Paramètres</span></a>
-								</li>
-								<li>
-									<div class="dropdown-divider mb-0"></div>
-								</li>
-								<li><a class="dropdown-item" href="javascript:;"><i class='bx bx-log-out-circle'></i><span>Déconnexion</span></a>
-								</li>
-							</ul>
-						</div> -->
-					</nav>
+							</li>
+							<li class="nav-item dropdown dropdown-large">
+								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
+									role="button" data-bs-toggle="dropdown" aria-expanded="false">
+								</a>
+								<div class="dropdown-menu dropdown-menu-end">
+									<a href="javascript:;">
+
+									</a>
+									<div class="header-message-list">
+									</div>
+
+								</div>
+							</li>
+						</ul>
+					</div>
+					<!-- Bouton / Menu utilisateur -->
+					<div class="user-box dropdown">
+						<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#"
+							role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<!-- CHANGEMENT : src avec image par défaut -->
+							<img src="/assets/images/default-user.jpg" class="user-img" alt="user avatar" id="headerUserImg">
+							<div class="user-info ps-3">
+								<p class="user-name mb-0" id="user-name">Chargement...</p>
+								<p class="designattion mb-0" id="user-role">Connecté</p>
+							</div>
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end">
+							<li>
+								<a class="dropdown-item" href="javascript:;" onclick="openProfileModal()">
+									<i class="bx bx-user"></i><span>Mon Profil</span>
+								</a>
+							</li>
+							<li><div class="dropdown-divider mb-0"></div></li>
+							<li>
+								<a class="dropdown-item" href="#" id="logoutBtn">
+									<i class='bx bx-log-out-circle'></i><span>Déconnexion</span>
+								</a>
+							</li>
+						</ul>
+					</div>
+										
+				</nav>
+			</div>
+		</header>
+		<!-- ================= MODALE PROFIL UTILISATEUR ================= -->
+		<div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+			<div class="modal-header bg-primary text-white">
+				<h5 class="modal-title" id="profileModalLabel">
+				<i class="bx bx-user-circle me-2"></i>Mon Profil
+				</h5>
+				<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+			</div>
+
+			<div class="modal-body">
+				<div class="row">
+				<!-- ====== SECTION PHOTO ====== -->
+				<div class="col-md-4 text-center border-end">
+					<!-- CHANGEMENT : chemin corrigé -->
+					<img id="profileAvatar" src="/assets/images/default-user.jpg" alt="Photo de profil"
+						class="rounded-circle shadow mb-3" width="150" height="150" style="object-fit:cover;">
+					
+					<input type="file" id="photoUpload" accept="image/*" class="d-none">
+
+					<button class="btn btn-outline-primary btn-sm w-100 mb-2" id="changePhotoBtn">
+						<i class="bx bx-camera me-1"></i>Changer la photo
+					</button>
+
+					<button class="btn btn-outline-danger btn-sm w-100" id="removePhotoBtn">
+						<i class="bx bx-trash me-1"></i>Supprimer
+					</button>
+
+					<div id="photoPreviewContainer" class="mt-3" style="display:none;">
+						<img id="previewImage" src="" class="rounded shadow" width="100" height="100" style="object-fit:cover;">
+						<button class="btn btn-success btn-sm w-100 mt-2" id="savePhotoBtn">
+							<i class="bx bx-check me-1"></i>Enregistrer la photo
+						</button>
+					</div>
 				</div>
-			</header>
+
+				<!-- ====== SECTION MOT DE PASSE ====== -->
+				<div class="col-md-8">
+					<h6 class="mb-3"><i class="bx bx-lock me-2"></i>Changer le mot de passe</h6>
+					<form id="changePasswordForm">
+					<div class="row g-3">
+						<div class="col-12">
+						<label>Mot de passe actuel</label>
+						<input type="password" class="form-control" id="currentPassword" required>
+						</div>
+						<div class="col-12">
+						<label>Nouveau mot de passe</label>
+						<input type="password" class="form-control" id="newPassword" required>
+						</div>
+						<div class="col-12">
+						<label>Confirmer le mot de passe</label>
+						<input type="password" class="form-control" id="confirmPassword" required>
+						</div>
+					</div>
+					</form>
+				</div>
+				</div>
+			</div>
+
+			<div class="modal-footer">
+				<button class="btn btn-secondary" data-bs-dismiss="modal">
+				<i class="bx bx-x me-1"></i>Fermer
+				</button>
+				<button type="submit" form="changePasswordForm" class="btn btn-success">
+				<i class="bx bx-check-shield me-1"></i>Changer mot de passe
+				</button>
+			</div>
+			</div>
+		</div>
+		</div>
 		<!--end header -->
 		<!--start page wrapper -->
 		<div class="page-wrapper">
 			<div class="page-content">
-				<div class="page-header">
+				    <div class="page-header">
 						<div class="container-fluid">
 							<div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-								<div class="breadcrumb-title pe-3">Paramètres</div>
+								<div class="breadcrumb-title pe-3">Affectations</div>
 								<div class="ps-3">
 									<nav aria-label="breadcrumb">
 										<ol class="breadcrumb mb-0 p-0">
 											<li class="breadcrumb-item"><a href="#"><i class="bx bx-home-alt"></i></a></li>
-											<li class="breadcrumb-item active" aria-current="page">Ajout de l'utilisateur</li>
+											<li class="breadcrumb-item active" aria-current="page">Affecter des clients à un tailleur</li>
 										</ol>
 									</nav>
 								</div>
-							</div>
-						</div>
-				</div> 
-				<div class="row">
-					<!-- COL-3 : Menu de navigation -->
-					<div class="col-12 col-lg-3">
-						<div class="card"> 
-							<div class="card-header bg-primary">
-								<h6 class="mb-0 text-center text-white">Menu</h6>
-							</div>
-							<div class="card-body">     
-								<div class="fm-menu">
-									<div class="list-group list-group-flush">
-										<a href="atelier.html" class="list-group-item py-1 ">
-											<i class='bx bx-home-alt me-2'></i><span class="">Atelier</span>
-										</a>
-										<a href="signup.html" class="list-group-item py-1 active">
-											<i class='bx bx-user me-2'></i><span class="">Utilisateur</span>
-										</a>
-										<a href="profile.html" class="list-group-item py-1">
-											<i class='bx bx-id-card me-2'></i><span>Profile</span>
-										</a>
-										<a href="tailleurs.html" class="list-group-item py-1">
-											<i class='bx bx-user-pin me-2'></i><span>Tailleurs</span>
-										</a>
-									</div>
+								<div class="ms-auto">        
 								</div>
 							</div>
 						</div>
-					</div>     
-				   <!-- COL-9 : Contenu principal -->
-                    <div class="col-12 col-lg-9">
-                        <div class="card">
-                            <div class="card-body">
-                              <form id="userForm" method="POST">
-                                    <div class="row g-3">
-                                        <div class="col-sm-6">
-                                            <label for="inputNom" class="form-label">Nom</label>
-                                            <input type="text" class="form-control" id="inputNom" name="nom" placeholder="Nom">
-                                        </div>
-                                        <div class="col-sm-6">
-                                            <label for="inputPrenom" class="form-label">Prénom</label>
-                                            <input type="text" class="form-control" id="inputPrenom" name="prenom" placeholder="Prénom">
-                                        </div>
-                                    </div>
-                                    <div class="row g-3 mt-2">
-                                        <div class="col-sm-6">
-                                            <label for="inputEmail" class="form-label">Adresse e-mail</label>
-                                            <input type="email" class="form-control" id="inputEmail" name="email" placeholder="exemple@utilisateur.com">
-                                        </div>
-                                        <div class="col-sm-6">
-                                            <label for="inputMotDePasse" class="form-label">Mot de passe</label>
-                                            <div class="input-group" id="show_hide_password">
-                                                <input type="password" class="form-control border-end-0" id="inputMotDePasse" name="motdepasse" placeholder="Mot de passe">
-                                                <a href="javascript:;" class="input-group-text bg-transparent"><i class='bx bx-hide'></i></a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row g-3 mt-2">
-                                        <div class="col-sm-6">
-                                            <label for="inputAtelier" class="form-label">Choisir son atelier</label>
-                                            <select class="form-select" id="inputAtelier" name="atelier">
-                                                <option value="">Sélectionner un atelier</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-sm-6">
-                                            <label for="inputRole" class="form-label">Choisir son rôle</label>
-                                            <select class="form-select" id="inputRole" name="role">
-                                                <option value="">Sélectionner un rôle</option>
-                                                <option value="SUPADMIN">Super Admin</option>
-                                                <option value="PROPRIETAIRE">Propriétaire</option>
-                                                <option value="SECRETAIRE">Secrétaire</option>
-                                                <option value="TAILLEUR">Tailleur</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="row mt-4">
-                                        <div class="col-12 d-flex justify-content-end">
-                                            <button type="submit" name="submit" class="btn btn-primary"> Enregistrer</button>
-                                        </div>
-                                    </div>
-							  </form>
-							</div>
-                        </div>
-                    </div>
-				</div>
-				<!-- Modal Ajouter Atelier -->
-				<div class="modal fade" id="ajouterAtelierModal" tabindex="-1" aria-labelledby="ajouterAtelierModalLabel" aria-hidden="true">
-					<div class="modal-dialog">
-						<form class="modal-content" id="formAtelier">
-							<div class="modal-header bg-primary">
-								<h5 class="modal-title" style="color: white; text-align: center;">Ajouter un atelier</h5>
-								<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-							</div>
-							<div class="modal-body">
-								<div class="mb-3">
-									<label for="nomAtelier" class="form-label">Nom de l'atelier <span class="text-danger">*</span></label>
-									<input type="text" class="form-control" id="nomAtelier" name="nom" required>
-								</div>
-								<div class="mb-3">
-									<label for="adresseAtelier" class="form-label">Adresse <span class="text-danger">*</span></label>
-									<input type="text" class="form-control" id="adresseAtelier" name="adresse" required>
-								</div>
-								<div class="mb-3">
-									<label for="telephoneAtelier" class="form-label">Téléphone <span class="text-danger">*</span></label>
-									<input type="tel" class="form-control" id="telephoneAtelier" name="telephone" required>
-								</div>
-								<div class="mb-3">
-									<label for="dateCreationAtelier" class="form-label">Date de création</label>
-									<input type="date" class="form-control" id="dateCreationAtelier" name="dateCreation">
-									<div class="form-text">Optionnel - La date actuelle sera utilisée si vide</div>
-								</div>
-							</div>
-							<div class="modal-footer">
-								<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-								<button type="submit" class="btn btn-primary">Ajouter</button>
-							</div>
-						</form>
 					</div>
-				</div>
+				    <!-- Section Création d'Affectation (PROPRIETAIRE/SECRETAIRE seulement) -->
+				<div id="creationSection" style="display: none;">
+					<div class="card">
+						<div class="card-header bg-primary text-white">
+							<h5 class="card-title mb-0">
+								<i class="fas fa-plus-circle me-2"></i>Nouvelle Affectation
+							</h5>
+						</div>
+						<div class="card-body">
+							<form id="formAffectation">
+								<!-- Sélection du Tailleur -->
+								<div class="row mb-4">
+									<div class="col-md-6">
+										<label class="form-label fw-bold">Sélectionner un tailleur <span class="text-danger">*</span></label>
+										<select class="form-select" id="selectTailleur" required>
+											<option value="">Choisir un tailleur...</option>
+										</select>
+									</div>
+									<div class="col-md-6">
+										<label class="form-label fw-bold">Date d'échéance estimée</label>
+										<input type="date" class="form-control" id="dateEcheance">
+										<div class="form-text">Date à laquelle le tailleur doit terminer la couture</div>
+									</div>
+								</div>
 
-				<!-- Modal de modification -->
-				<div class="modal fade" id="editAtelierModal" tabindex="-1" aria-labelledby="editAtelierModalLabel" aria-hidden="true">
-					<div class="modal-dialog">
-						<div class="modal-content">
-							<form id="editAtelierForm">
-								<div class="modal-header bg-primary">
-									<h5 class="modal-title" style="color: white;">
-										<i class="bi bi-pencil"></i> Modifier l'atelier
-									</h5>
-									<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+								<!-- Recherche et Filtres Clients -->
+								<div class="card bg-light mb-4">
+									<div class="card-body">
+										<div class="row g-3">
+											<div class="col-md-6">
+												<label class="form-label fw-bold">Rechercher un client</label>
+												<div class="input-group">
+													<input type="text" class="form-control" id="searchClient" 
+														placeholder="Nom, prénom ou téléphone...">
+													<button class="btn btn-outline-secondary" type="button" id="btnClearSearch">
+														<i class="fas fa-times"></i>
+													</button>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<label class="form-label fw-bold">Filtrer par type de vêtement</label>
+												<select class="form-select" id="filterTypeVetement">
+													<option value="">Tous les types</option>
+													<option value="ROBE">Robes</option>
+													<option value="JUPE">Jupes</option>
+													<option value="HOMME">Vêtements homme</option>
+													<option value="ENFANT">Vêtements enfant</option>
+												</select>
+											</div>
+										</div>
+									</div>
 								</div>
-								<div class="modal-body">
-									<!-- Champ caché pour l'ID -->
-									<input type="hidden" id="editAtelierId" name="id">
+
+								<!-- Liste des Clients avec Mesures Validées NON affectées -->
+								<div class="mb-4">
+									<div class="d-flex justify-content-between align-items-center mb-3">
+										<label class="form-label fw-bold mb-0">Clients disponibles pour affectation</label>
+										<span class="badge bg-info" id="clientsCount">0 clients trouvés</span>
+									</div>
 									
-									<div class="mb-3">
-										<label for="editNomAtelier" class="form-label">Nom de l'atelier <span class="text-danger">*</span></label>
-										<input type="text" class="form-control" id="editNomAtelier" name="nom" required>
+									<div class="form-text mb-3">
+										<i class="fas fa-info-circle text-primary me-1"></i>
+										Seuls les clients avec des mesures validées et NON affectées sont affichés
 									</div>
-									<div class="mb-3">
-										<label for="editAdresseAtelier" class="form-label">Adresse <span class="text-danger">*</span></label>
-										<input type="text" class="form-control" id="editAdresseAtelier" name="adresse" required>
-									</div>
-									<div class="mb-3">
-										<label for="editTelephoneAtelier" class="form-label">Téléphone <span class="text-danger">*</span></label>
-										<input type="tel" class="form-control" id="editTelephoneAtelier" name="telephone" required>
-									</div>
-									<div class="mb-3">
-										<label for="editDateCreationAtelier" class="form-label">Date de création</label>
-										<input type="datetime-local" class="form-control" id="editDateCreationAtelier" name="dateCreation">
-										<div class="form-text">Format: AAAA-MM-JJ HH:MM</div>
+									
+									<div id="clientsList" class="row">
+										<!-- Chargé dynamiquement par JS -->
 									</div>
 								</div>
-								<div class="modal-footer">
-									<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-										<i class="bi bi-x"></i> Annuler
-									</button>
-									<button type="submit" class="btn btn-primary">
-										<i class="bi bi-check"></i> Enregistrer
+
+								<!-- Résumé de la sélection -->
+								<div class="card bg-light mb-4" id="selectionSummary" style="display: none;">
+									<div class="card-body">
+										<h6 class="card-title">
+											<i class="fas fa-clipboard-list me-2"></i>Résumé de l'affectation
+										</h6>
+										<div id="summaryContent">
+											<!-- Rempli dynamiquement par JS -->
+										</div>
+									</div>
+								</div>
+
+								<!-- Bouton de soumission -->
+								<div class="text-end">
+									<button type="submit" class="btn btn-primary px-4">
+										<i class="fas fa-user-check me-2"></i>Confirmer l'affectation
 									</button>
 								</div>
 							</form>
 						</div>
 					</div>
 				</div>
-			</div>
+
+				<!-- Section Suivi des Affectations (Tout le monde) -->
+				<div id="suiviSection" class="mt-4">
+					<div class="card">
+						<div class="card-header bg-success text-white">
+							<h5 class="card-title mb-0">
+								<i class="fas fa-tasks me-2"></i>Suivi des Affectations
+							</h5>
+						</div>
+						<div class="card-body">
+							<!-- Filtres pour les affectations -->
+							<div class="row mb-3">
+								<div class="col-md-4">
+									<label class="form-label">Filtrer par statut</label>
+									<select class="form-select" id="filterStatutAffectation">
+										<option value="">Tous les statuts</option>
+										<option value="EN_ATTENTE">En attente</option>
+										<option value="EN_COURS">En cours</option>
+										<option value="TERMINE">Terminé</option>
+										<option value="VALIDE">Validé</option>
+										<option value="ANNULE">Annulé</option>
+									</select>
+								</div>
+								<div class="col-md-4">
+									<label class="form-label">Filtrer par tailleur</label>
+									<select class="form-select" id="filterTailleurAffectation">
+										<option value="">Tous les tailleurs</option>
+										<!-- Chargé dynamiquement par JS -->
+									</select>
+								</div>
+								<div class="col-md-4 d-flex align-items-end">
+									<button class="btn btn-outline-secondary w-100" id="btnResetFiltersAffectation">
+										<i class="fas fa-redo me-1"></i>Réinitialiser
+									</button>
+								</div>
+							</div>
+							
+							<div id="affectationsList">
+								<!-- Chargé dynamiquement par JS -->
+							</div>
+						</div>
+					</div>
+				</div>
+    		</div>
+              
 		</div>
 		<!--end page wrapper -->
 		<!--start overlay-->
 		<div class="overlay toggle-icon"></div>
 		<!--end overlay-->
-		<!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
+		<!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i
+				class='bx bxs-up-arrow-alt'></i></a>
 		<!--End Back To Top Button-->
 		<footer class="page-footer">
 			<p class="mb-0">Copyright © 2021. All right reserved.</p>
@@ -444,9 +455,9 @@
 				<h5 class="mb-0 text-uppercase">Theme Customizer</h5>
 				<button type="button" class="btn-close ms-auto close-switcher" aria-label="Close"></button>
 			</div>
-			<hr/>
+			<hr />
 			<h6 class="mb-0">Theme Styles</h6>
-			<hr/>
+			<hr />
 			<div class="d-flex align-items-center justify-content-between">
 				<div class="form-check">
 					<input class="form-check-input" type="radio" name="flexRadioDefault" id="lightmode" checked>
@@ -461,14 +472,14 @@
 					<label class="form-check-label" for="semidark">Semi Dark</label>
 				</div>
 			</div>
-			<hr/>
+			<hr />
 			<div class="form-check">
 				<input class="form-check-input" type="radio" id="minimaltheme" name="flexRadioDefault">
 				<label class="form-check-label" for="minimaltheme">Minimal Theme</label>
 			</div>
-			<hr/>
+			<hr />
 			<h6 class="mb-0">Header Colors</h6>
-			<hr/>
+			<hr />
 			<div class="header-colors-indigators">
 				<div class="row row-cols-auto g-3">
 					<div class="col">
@@ -502,6 +513,7 @@
 	<!--end switcher-->
 	<!-- Bootstrap JS -->
 	<script src="assets/js/bootstrap.bundle.min.js"></script>
+	<!--plugins-->
 	<script src="assets/js/jquery.min.js"></script>
 	<script src="assets/plugins/simplebar/js/simplebar.min.js"></script>
 	<script src="assets/plugins/metismenu/js/metisMenu.min.js"></script>
@@ -515,15 +527,30 @@
 	<script src="assets/plugins/highcharts/js/accessibility.js"></script>
 	<script src="assets/plugins/apexcharts-bundle/js/apexcharts.min.js"></script>
 	<script src="assets/js/index.js"></script>
-	<script src="assets/plugins/perfect-scrollbar/js/perfect-scrollbar.js"></script>
+	<!--app JS-->
 	<script src="assets/js/app.js"></script>
-	 <script src="assets/js/ajouter_atelier.js"></script>
-	 <script src="assets/js/liste_atelier.js">
-	 </script>	<script src="assets/js/home_permission.js"></script>
 	<script>
 		new PerfectScrollbar('.customers-list');
 		new PerfectScrollbar('.store-metrics');
 		new PerfectScrollbar('.product-list');
 	</script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			const sidebar = document.querySelector('.sidebar-wrapper');
+			if (sidebar) {
+				new PerfectScrollbar(sidebar);
+			} else {
+				console.warn("⚠️ Aucun élément .sidebar-wrapper trouvé pour PerfectScrollbar");
+			}
+		});
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<!-- TOUJOURS en premier -->
+	<script src="assets/js/common.js"></script> 
+	<!-- Ensuite les autres -->
+	<script src="assets/js/auth.js"></script>
+	<script src="assets/js/profil.js"></script>
+	<script src="assets/js/home_permission.js"></script>
+      <script src="assets/js/affectation.js"></script>
 </body>
 </html>

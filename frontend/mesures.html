@@ -154,57 +154,64 @@
                     </div>
                 </div>
                 <!--navigation-->
-                <ul class="metismenu" id="menu">
-                    <!-- Tableau de bord - Visible pour tous -->
-                    <li>
-                        <a href="home.html">
-                            <div class="parent-icon"><i class='bx bx-home-circle'></i></div>
-                            <div class="menu-title">Tableau de bord</div>
-                        </a>
-                    </li>
+               <ul class="metismenu" id="menu">
+				<!-- Tableau de bord - Visible pour tous -->
+				<li>
+					<a href="home.html">
+						<div class="parent-icon"><i class='bx bx-home-circle'></i></div>
+						<div class="menu-title">Tableau de bord</div>
+					</a>
+				</li>
 
-                    <!-- Modèles - Permissions: PROPRIETAIRE, SECRETAIRE, TAILLEUR -->
-                    <li class="permission-required" data-permissions="MODELE_VIEW">
-                        <a href="javascript:;" class="has-arrow">
-                            <div class="parent-icon"><i class='bx bx-cut'></i></div>
-                            <div class="menu-title">Modèles</div>
+				<!-- Modèles - Permissions: PROPRIETAIRE, SECRETAIRE, TAILLEUR -->
+				<li class="permission-required" data-permissions="MODELE_VIEW">
+					<a href="javascript:;" class="has-arrow">
+						<div class="parent-icon"><i class='bx bx-cut'></i></div>
+						<div class="menu-title">Modèles</div>
+					</a>
+					<ul>
+						<li class="permission-required" data-permissions="CLIENT_VIEW">
+							<a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures clients</a>
+						</li>
+						<li class="permission-required" data-permissions="CLIENT_VIEW">
+							<a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a>
+						</li>
+						<li class="permission-required" data-permissions="MODELE_VIEW">
+							<a href="modele.html"><i class="bx bx-right-arrow-alt"></i>Modèle</a>
+						</li>
+					</ul>
+				</li>
+				<!-- NOUVEAU : Affectations -->
+                    <li class="permission-required" data-permissions="AFFECTATION_VIEW">
+                        <a href="affectation.html" class="active">
+                            <div class="parent-icon"><i class='bx bx-user-check'></i></div>
+                            <div class="menu-title">Affectations</div>
                         </a>
-                        <ul>
-                            <li class="permission-required" data-permissions="CLIENT_VIEW">
-                                <a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures clients</a>
-                            </li>
-                            <li class="permission-required" data-permissions="CLIENT_VIEW">
-                                <a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a>
-                            </li>
-                            <li class="permission-required" data-permissions="MODELE_VIEW">
-                                <a href="modele.html"><i class="bx bx-right-arrow-alt"></i>Modèle</a>
-                            </li>
-                        </ul>
                     </li>
-                    <!-- Rendez-vous - Permissions: PROPRIETAIRE, SECRETAIRE -->
-                    <li class="permission-required" data-permissions="RENDEZVOUS_VIEW">
-                        <a href="rendezvous.html">
-                            <div class="parent-icon"><i class='bx bx-calendar'></i></div>
-                            <div class="menu-title">Rendez-vous</div>
-                        </a>
-                    </li>
+				<!-- Rendez-vous - Permissions: PROPRIETAIRE, SECRETAIRE -->
+				<li class="permission-required" data-permissions="RENDEZVOUS_VIEW">
+					<a href="rendezvous.html">
+						<div class="parent-icon"><i class='bx bx-calendar'></i></div>
+						<div class="menu-title">Rendez-vous</div>
+					</a>
+				</li>
 
-                    <!-- Paiements - Permissions: PROPRIETAIRE, SECRETAIRE -->
-                    <li class="permission-required" data-permissions="PAIEMENT_VIEW">
-                        <a href="paiements.html">
-                            <div class="parent-icon"><i class='bx bx-wallet'></i></div>
-                            <div class="menu-title">Paiements</div>
-                        </a>
-                    </li>
+				<!-- Paiements - Permissions: PROPRIETAIRE, SECRETAIRE -->
+				<li class="permission-required" data-permissions="PAIEMENT_VIEW">
+					<a href="paiements.html">
+						<div class="parent-icon"><i class='bx bx-wallet'></i></div>
+						<div class="menu-title">Paiements</div>
+					</a>
+				</li>
 
-                    <!-- Paramètres - Permissions: PROPRIETAIRE uniquement -->
-                    <li class="permission-required" data-permissions="PARAMETRES_VIEW">
-                        <a href="parametres.html">
-                            <div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
-                            <div class="menu-title">Paramètres</div>
-                        </a>
-                    </li>
-                </ul>
+				<!-- Paramètres - Permissions: PROPRIETAIRE uniquement -->
+				<li class="permission-required" data-permissions="PARAMETRES_VIEW">
+					<a href="parametres.html">
+						<div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
+						<div class="menu-title">Paramètres</div>
+					</a>
+				</li>
+			</ul>
 			    <!--end navigation-->
             </div>
             <!--end sidebar wrapper -->

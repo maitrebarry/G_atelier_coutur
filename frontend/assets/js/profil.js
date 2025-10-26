@@ -1,29 +1,4 @@
-// profile.js - SPÉCIFIQUE à la gestion du profil
 
-// Fonction globale pour ouvrir la modal de profil
-// function openProfileModal() {
-//     try {
-//         const profileModalElement = document.getElementById('profileModal');
-//         if (profileModalElement) {
-//             const profileModal = new bootstrap.Modal(profileModalElement);
-//             profileModal.show();
-//         } else {
-//             console.error('Modal de profil non trouvée');
-//             Common.showErrorMessage('Impossible d\'ouvrir le profil');
-//         }
-//     } catch (error) {
-//         console.error('Erreur lors de l\'ouverture du profil:', error);
-//         Common.showErrorMessage('Erreur lors de l\'ouverture du profil');
-//     }
-// }
-
-// Initialisation
-// document.addEventListener('DOMContentLoaded', function() {
-//     console.log('Initialisation de la gestion du profil...');
-//     initializeProfileModal();
-//     setupProfileEventListeners();
-//     loadUserProfileInHeader();
-// });
 // Fonction globale pour ouvrir la modal de profil
 function openProfileModal() {
     try {
@@ -58,63 +33,6 @@ document.addEventListener('userDataLoaded', function() {
     console.log('🟢 Données utilisateur chargées, mise à jour du header');
     loadUserProfileInHeader();
 });
-
-// function initializeProfileModal() {
-//     const profileModal = document.getElementById('profileModal');
-//     if (!profileModal) {
-//         console.error('Modal de profil non trouvée dans le DOM');
-//         return;
-//     }
-
-//     profileModal.addEventListener('show.bs.modal', function() {
-//         console.log('Ouverture de la modal de profil');
-//         loadUserProfile();
-//     });
-
-//     profileModal.addEventListener('hidden.bs.modal', function() {
-//         resetPhotoPreview();
-//         const passwordForm = document.getElementById('changePasswordForm');
-//         if (passwordForm) passwordForm.reset();
-//     });
-// }
-
-// function setupProfileEventListeners() {
-//     const changePhotoBtn = document.getElementById('changePhotoBtn');
-//     const removePhotoBtn = document.getElementById('removePhotoBtn');
-//     const photoUpload = document.getElementById('photoUpload');
-//     const savePhotoBtn = document.getElementById('savePhotoBtn');
-
-//     if (changePhotoBtn) {
-//         changePhotoBtn.addEventListener('click', function() {
-//             if (photoUpload) photoUpload.click();
-//         });
-//     }
-
-//     if (photoUpload) {
-//         photoUpload.addEventListener('change', handlePhotoSelect);
-//     }
-
-//     if (savePhotoBtn) {
-//         savePhotoBtn.addEventListener('click', saveUserPhoto);
-//     }
-
-//     if (removePhotoBtn) {
-//         removePhotoBtn.addEventListener('click', removeUserPhoto);
-//     }
-
-//     const changePasswordForm = document.getElementById('changePasswordForm');
-//     if (changePasswordForm) {
-//         changePasswordForm.addEventListener('submit', handlePasswordChange);
-//     }
-
-//     const logoutBtn = document.getElementById('logoutBtn');
-//     if (logoutBtn) {
-//         logoutBtn.addEventListener('click', function(e) {
-//             e.preventDefault();
-//             Common.logout();
-//         });
-//     }
-// }
 
 function initializeProfileModal() {
     const profileModal = document.getElementById('profileModal');
@@ -423,61 +341,6 @@ function updateProfileDisplay(profileData) {
         };
     }
 }
-
-// function updateHeaderDisplay(profileData) {
-//     console.log('🎨 Mise à jour header:', profileData);
-    
-//     const headerUserImg = document.getElementById('headerUserImg');
-//     const userName = document.getElementById('user-name');
-//     const userRole = document.getElementById('user-role');
-
-//     if (headerUserImg) {
-//         let errorCount = 0;
-        
-//         if (profileData.photoPath) {
-//             const timestamp = new Date().getTime();
-//             const photoUrl = `${window.APP_CONFIG.API_BASE_URL}/user_photo/${profileData.photoPath}?t=${timestamp}`;
-//             console.log('🖼️ Chargement photo header:', photoUrl);
-            
-//             headerUserImg.src = photoUrl;
-//         } else {
-//             console.log('🖼️ Photo par défaut pour header');
-//             headerUserImg.src = `${window.APP_CONFIG.API_BASE_URL}/assets/images/default-user.jpg`;
-//         }
-        
-//         headerUserImg.onerror = function() {
-//             errorCount++;
-//             console.error(`❌ Erreur chargement photo header (tentative ${errorCount})`);
-            
-//             if (errorCount <= 2) {
-//                 this.src = '/assets/images/default-user.jpg';
-//             } else {
-//                 console.error('🚨 Arrêt des tentatives, utilisation fallback SVG');
-//                 this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIyMCIgZmlsbD0iI0YzRjRGNiIvPjxjaXJjbGUgY3g9IjIwIiBjeT0iMTYiIHI9IjgiIGZpbGw9IiNEOEQ4RDgiLz48cmVjdCB4PSIxMiIgeT0iMjQiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMiIgcng9IjIiIGZpbGw9IiNEOEQ4RDgiLz48L3N2Zz4=';
-//             }
-//         };
-        
-//         headerUserImg.onload = function() {
-//             console.log('✅ Photo header chargée avec succès');
-//             errorCount = 0;
-//         };
-//     }
-
-//     if (userName) {
-//         userName.textContent = `${profileData.prenom || ''} ${profileData.nom || ''}`.trim() || 'Utilisateur';
-//     }
-
-//     if (userRole) {
-//         userRole.textContent = getRoleDisplayName(profileData.role);
-//     }
-// }
-
-// function loadUserProfileInHeader() {
-//     const userData = Common.getUserData();
-//     updateHeaderDisplay(userData);
-// }
-
-// MODIFIEZ cette fonction pour forcer le rechargement
 
 function updateHeaderDisplay(profileData) {
     console.log('🎨 Mise à jour header avec:', profileData);

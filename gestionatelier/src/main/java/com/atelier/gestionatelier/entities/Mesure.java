@@ -24,6 +24,9 @@ private UUID id;
     //  Prix du modèle ===
     @Column(name = "prix", nullable = false)
     private Double prix;
+    // NOUVEAU : Champ pour suivre l'affectation
+    @Column(name = "affecte", nullable = false)
+    private Boolean affecte = false;
     // === Mesures communes ===
     private String sexe;
     private Double epaule;

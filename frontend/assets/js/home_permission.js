@@ -1,4 +1,4 @@
-// home_permission.js - Gestion des permissions côté interface
+
 
 // Fonction pour appliquer les permissions aux sections de données
 function applyDataSectionsPermissions() {
@@ -21,48 +21,6 @@ function applyDataSectionsPermissions() {
         }
     });
 }
-
-// Modifier la fonction applyPermissions pour inclure les data-sections
-// function applyPermissions() {
-//     const userData = Common.getUserData();
-//     const userRole = userData.role;
-
-//     console.log("🔐 Application des permissions pour:", userRole);
-//     console.log("📋 Permissions disponibles:", userData.permissions);
-
-//     // 1. Cacher tous les éléments avec permissions du menu
-//     document.querySelectorAll('.permission-required').forEach(element => {
-//         element.style.display = 'none';
-//     });
-
-//     // 2. Afficher seulement les éléments du menu avec les permissions appropriées
-//     document.querySelectorAll('.permission-required').forEach(element => {
-//         const requiredPermission = element.getAttribute('data-permissions');
-
-//         if (requiredPermission && Common.hasPermission(requiredPermission)) {
-//             element.style.display = '';
-//             console.log("✅ Afficher élément menu avec permission:", requiredPermission);
-//         } else {
-//             console.log("❌ Cacher élément menu - Permission manquante:", requiredPermission);
-//         }
-//     });
-
-//     // 3. Tableau de bord toujours visible
-//     const tableauBord = document.querySelector('a[href="home.html"]')?.closest('li');
-//     if (tableauBord) {
-//         tableauBord.style.display = '';
-//     }
-
-//     // 4. Appliquer les permissions aux sections de données
-//     applyDataSectionsPermissions();
-
-//     // 5. Charger les données du tableau de bord selon les permissions
-//     loadDashboardData();
-// }
-
-// Charger les permissions de l'utilisateur connecté depuis l'API
-
-
 async function loadUserPermissions() {
     try {
         const token = Common.getToken();

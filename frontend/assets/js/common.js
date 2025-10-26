@@ -145,15 +145,6 @@ function hideLoading() {
     }
 }
 
-
-// Exposer les fonctions globalement
-// window.Common = {
-//     getToken,
-//     getUserData,
-//     logout,
-//     showSuccessMessage,
-//     showErrorMessage,
-//     hasPermission
 // };
 // Exposer les fonctions globalement
 window.Common = {
