@@ -49,13 +49,14 @@ public class Utilisateur {
     @Column(name = "actif")
     private Boolean actif = true; // Par défaut actif
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "utilisateur_permissions",
             joinColumns = @JoinColumn(name = "utilisateur_id"),
             inverseJoinColumns = @JoinColumn(name = "permission_id")
     )
-    @JsonIgnoreProperties("utilisateurs") // CORRECTION : Évite la récursion
+    @JsonIgnore
+//    @JsonIgnoreProperties("utilisateurs") // CORRECTION : Évite la récursion
     private Set<Permission> permissions = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY) // CORRECTION : Utiliser LAZY loading

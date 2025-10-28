@@ -8,6 +8,8 @@
 	<!--favicon-->
 	<link rel="icon" href="assets/images/favicon-32x32.png" type="image/png" />
 	<!--plugins-->
+	 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 	<link href="assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
 	<link href="assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css" rel="stylesheet" />
 	<link href="assets/plugins/highcharts/css/highcharts.css" rel="stylesheet" />
@@ -26,39 +28,14 @@
 	<link rel="stylesheet" href="assets/css/dark-theme.css" />
 	<link rel="stylesheet" href="assets/css/semi-dark.css" />
 	<link rel="stylesheet" href="assets/css/header-colors.css" />
-	<!-- <script src="assets/js/auth.js"></script> -->
-	 <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-	<title></title>
+	<link href="assets/css/paiements.css" rel="stylesheet">
+
+
+	<title>Paiements - Atelier de Couture</title>
 </head>
 
 <body>
- <style>
-        .card-hover:hover {
-            transform: translateY(-5px);
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .stat-card {
-            border-left: 4px solid #0d6efd;
-        }
-        .stat-card.success {
-            border-left-color: #198754;
-        }
-        .stat-card.warning {
-            border-left-color: #ffc107;
-        }
-        .stat-card.info {
-            border-left-color: #0dcaf0;
-        }
-        .progress {
-            height: 8px;
-        }
-        .cursor-pointer {
-            cursor: pointer;
-        }
-    </style>
+	
 	<!--wrapper-->
 	<div class="wrapper">
 		<!--sidebar wrapper -->
@@ -303,208 +280,209 @@
 		<div class="page-wrapper">
 			<div class="page-content">
 				<div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-					<div class="breadcrumb-title pe-3">Accueil</div>
+					<div class="breadcrumb-title pe-3">Paiements</div>
 					<div class="ps-3">
 						<nav aria-label="breadcrumb">
 							<ol class="breadcrumb mb-0 p-0">
 								<li class="breadcrumb-item"><a href="javascript:;"><i class="bx bx-home-alt"></i></a>
 								</li>
-								<li class="breadcrumb-item active" aria-current="page">Tableau de bord</li>
+								<li class="breadcrumb-item active" aria-current="page">Gestion des Paiements</li>
 							</ol>
 						</nav>
 					</div>
-					   <div>
-                            <button class="btn btn-outline-secondary me-2" onclick="togglePeriode()">
-                                <i class="bx bx-calendar me-1"></i>
-                                <span id="periodeText">Ce mois</span>
-                            </button>
-                            <button class="btn btn-primary" onclick="refreshDashboard()">
-                                <i class="bx bx-refresh me-1"></i>Rafraîchir
-                            </button>
-                        </div>
+					<div class="ms-auto">
+						<button class="btn btn-primary" id="btnRefresh">
+							<i class="fas fa-sync-alt me-1"></i>Actualiser
+						</button>
+					</div>
 				</div>
 
 				<hr />
+				<!-- Navigation par onglets -->
+				<ul class="nav nav-tabs mb-4" id="paymentTabs" role="tablist">
+					<li class="nav-item" role="presentation">
+						<button class="nav-link active" id="clients-tab" data-bs-toggle="tab" data-bs-target="#clients" type="button" role="tab">
+							<i class="fas fa-users me-2"></i>Paiements Clients
+						</button>
+					</li>
+					<li class="nav-item" role="presentation">
+						<button class="nav-link" id="tailleurs-tab" data-bs-toggle="tab" data-bs-target="#tailleurs" type="button" role="tab">
+							<i class="fas fa-user-tie me-2"></i>Paiements Tailleurs
+						</button>
+					</li>
+				</ul>
 
-				 <!-- Période sélection (caché par défaut) -->
-				<div id="periodeSection" class="row mb-3" style="display: none;">
-					<div class="col-12">
-						<div class="card">
-							<div class="card-body">
-								<h6 class="card-title">Période personnalisée</h6>
-								<div class="row g-3">
-									<div class="col-md-3">
-										<label class="form-label">Date début</label>
-										<input type="date" id="dateDebut" class="form-control">
-									</div>
-									<div class="col-md-3">
-										<label class="form-label">Date fin</label>
-										<input type="date" id="dateFin" class="form-control">
-									</div>
-									<div class="col-md-3 d-flex align-items-end">
-										<button class="btn btn-success" onclick="appliquerPeriode()">
-											<i class="bx bx-check me-1"></i>Appliquer
-										</button>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Cartes de statistiques -->
-				<div class="row" id="statsContainer">
-					<!-- Les cartes seront remplies dynamiquement -->
-					<div class="col-12 text-center py-5">
-						<div class="spinner-border text-primary" role="status">
-							<span class="visually-hidden">Chargement...</span>
-						</div>
-						<p class="mt-2 text-muted">Chargement du dashboard...</p>
-					</div>
-				</div>
-
-				<!-- Graphiques et contenu détaillé -->
-				<div id="dashboardContent">
-					<!-- Le contenu sera chargé dynamiquement selon le rôle -->
-				</div>
-
-				<!-- Section Super Admin -->
-				<div id="superAdminContent" class="row" style="display: none;">
-					<div class="col-12">
-						<div class="card">
-							<div class="card-body">
-								<h5 class="card-title">Vue d'ensemble Super Admin</h5>
-								<div class="row">
-									<div class="col-md-8">
-										<canvas id="chiffreAffairesChart" height="250"></canvas>
-									</div>
-									<div class="col-md-4">
-										<h6>Ateliers performants</h6>
-										<div id="ateliersPerformantsList"></div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Section Propriétaire -->
-				<div id="proprietaireContent" class="row" style="display: none;">
-					<div class="col-lg-12 col-md-12 col-sm-12 ">
-						<div class="card mb-4">
-							<div class="card-body">
-								<h5 class="card-title">Performance des tailleurs</h5>
-								<div id="performanceTailleursList"></div>
-							</div>
-						</div>
-						
-						<div class="card">
-							<div class="card-body">
-								<h5 class="card-title">Rendez-vous à venir</h5>
-								<div id="rendezVousProchainsList"></div>
-							</div>
-						</div>
-					</div>
-					<div class="col-lg-4">
-						<div class="card mb-4">
-							<div class="card-body">
-								<h5 class="card-title">Répartition des affectations</h5>
-								<canvas id="affectationsChart" height="250"></canvas>
-							</div>
-						</div>
-						
-						<div class="card">
-							<div class="card-body">
-								<h5 class="card-title">Tâches urgentes</h5>
-								<div id="tachesUrgentesList"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Section Tailleur -->
-				<div id="tailleurContent" class="row" style="display: none;">
-					<div class="col-lg-6">
-						<div class="card mb-4">
-							<div class="card-body">
-								<h5 class="card-title">Mes affectations en cours</h5>
-								<div id="affectationsEnCoursList"></div>
-							</div>
-						</div>
-						
-						<div class="card">
-							<div class="card-body">
-								<h5 class="card-title">Prochaines échéances</h5>
-								<div id="prochainesEcheancesList"></div>
-							</div>
-						</div>
-					</div>
-					<div class="col-lg-6">
-						<div class="card mb-4">
-							<div class="card-body">
-								<h5 class="card-title">Mes performances</h5>
-								<div class="row text-center">
-									<div class="col-6">
-										<h3 id="tauxCompletion" class="text-primary">0%</h3>
-										<small class="text-muted">Taux de completion</small>
-									</div>
-									<div class="col-6">
-										<h3 id="moyenneTemps" class="text-info">0h</h3>
-										<small class="text-muted">Temps moyen</small>
-									</div>
-								</div>
-							</div>
-						</div>
-						
-						<div class="card">
-							<div class="card-body">
-								<h5 class="card-title">Mes revenus</h5>
-								<div class="mb-3">
-									<small class="text-muted">Mensuel</small>
-									<h4 id="revenusMensuels" class="text-success">0 FCFA</h4>
-								</div>
-								<div>
-									<small class="text-muted">En attente</small>
-									<h4 id="revenusAttente" class="text-warning">0 FCFA</h4>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Section Secrétaire -->
-				<div id="secretaireContent" class="row" style="display: none;">
-					<div class="col-lg-6">
-						<div class="card mb-4">
-							<div class="card-body">
-								<h5 class="card-title">Rendez-vous aujourd'hui</h5>
-								<div id="rdvAujourdhuiList"></div>
-							</div>
-						</div>
-						
-						<div class="card">
-							<div class="card-body">
-								<h5 class="card-title">Clients récents</h5>
-								<div id="clientsRecentsList"></div>
-							</div>
-						</div>
-					</div>
-					<div class="col-lg-6">
-						<div class="card mb-4">
-							<div class="card-body">
-								<h5 class="card-title">Tâches du jour</h5>
-								<div id="tachesDuJourList"></div>
-							</div>
-						</div>
-						
-						<div class="card">
-							<div class="card-body">
-								<h5 class="card-title">Paiements en attente</h5>
-								<div id="paiementsAttenteList"></div>
-							</div>
-						</div>
-					</div>
+				<!-- Contenu des onglets -->
+				<div class="tab-content" id="paymentTabsContent">
 					
+                        <!-- Onglet Clients -->
+                    <div class="tab-pane fade show active" id="clients" role="tabpanel">
+                        <div class="row">
+                            <!-- Colonne principale -->
+                            <div class="col-md-8">
+                                <!-- Filtres et recherche -->
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Statut du paiement</label>
+                                                <select class="form-select" id="filterStatutClient">
+                                                    <option value="">Tous les statuts</option>
+                                                    <option value="EN_ATTENTE">En attente</option>
+                                                    <option value="PARTIEL">Partiel</option>
+                                                    <option value="PAYE">Payé</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Rechercher un client</label>
+                                                <input type="text" class="form-control" id="searchClient" placeholder="Nom du client...">
+                                            </div>
+                                            <div class="col-md-4 d-flex align-items-end">
+                                                <button class="btn btn-outline-secondary w-100" id="btnResetFiltersClient">
+                                                    <i class="fas fa-redo me-1"></i>Réinitialiser
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Liste des clients -->
+                                <div class="row" id="clientsList">
+                                    <!-- Les cartes clients seront générées ici par JavaScript -->
+                                </div>
+                            </div>
+
+                            <!-- Colonne latérale pour les détails -->
+                            <div class="col-md-4">
+                                <!-- Détails du client sélectionné -->
+                                <div class="card mb-4" id="clientDetailsCard">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="mb-0 text-white">Détails du Client</h6>
+                                    </div>
+                                    <div class="card-body text-center py-5">
+                                        <div class="mb-3">
+                                            <i class="fas fa-layer-group fa-3x text-muted"></i>
+                                        </div>
+                                        <h6 class="text-muted">Aucun client sélectionné</h6>
+                                        <p class="text-muted small mb-0">Cliquez sur un client pour afficher ses détails et effectuer un paiement</p>
+                                    </div>
+                                </div>
+
+                                <!-- Formulaire de paiement -->
+                                <div class="card" id="paymentFormCard">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0 text-white">Effectuer un Paiement</h6>
+                                    </div>
+                                    <div class="card-body text-center py-5">
+                                        <div class="mb-3">
+                                            <i class="fas fa-credit-card fa-3x text-muted"></i>
+                                        </div>
+                                        <h6 class="text-muted">Sélectionnez d'abord un client</h6>
+                                        <p class="text-muted small mb-0">Choisissez un client dans la liste pour activer le formulaire de paiement</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Onglet Tailleurs -->
+                    <div class="tab-pane fade" id="tailleurs" role="tabpanel">
+                        <div class="row">
+                            <!-- Colonne principale -->
+                            <div class="col-md-8">
+                                <!-- Filtres et recherche -->
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Statut du paiement</label>
+                                                <select class="form-select" id="filterStatutTailleur">
+                                                    <option value="">Tous les statuts</option>
+                                                    <option value="EN_ATTENTE">En attente</option>
+                                                    <option value="PARTIEL">Partiel</option>
+                                                    <option value="PAYE">Payé</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Rechercher un tailleur</label>
+                                                <input type="text" class="form-control" id="searchTailleur" placeholder="Nom du tailleur...">
+                                            </div>
+                                            <div class="col-md-4 d-flex align-items-end">
+                                                <button class="btn btn-outline-secondary w-100" id="btnResetFiltersTailleur">
+                                                    <i class="fas fa-redo me-1"></i>Réinitialiser
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Liste des tailleurs -->
+                                <div class="row" id="tailleursList">
+                                    <!-- Les cartes tailleurs seront générées ici par JavaScript -->
+                                </div>
+                            </div>
+
+                            <!-- Colonne latérale pour les détails -->
+                            <div class="col-md-4">
+                                <!-- Détails du tailleur sélectionné -->
+                                <div class="card mb-4" id="tailleurDetailsCard">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h6 class="mb-0 ">Détails du Tailleur</h6>
+                                    </div>
+                                    <div class="card-body text-center py-5">
+                                        <div class="mb-3">
+                                            <i class="fas fa-layer-group fa-3x text-muted"></i>
+                                        </div>
+                                        <h6 class="text-muted">Aucun tailleur sélectionné</h6>
+                                        <p class="text-muted small mb-0">Cliquez sur un tailleur pour afficher ses détails et effectuer un paiement</p>
+                                    </div>
+                                </div>
+
+                                <!-- Formulaire de paiement tailleur -->
+                                <div class="card" id="paymentFormTailleurCard">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h6 class="mb-0">Payer le Tailleur</h6>
+                                    </div>
+                                    <div class="card-body text-center py-5">
+                                        <div class="mb-3">
+                                            <i class="fas fa-money-bill-wave fa-3x text-muted"></i>
+                                        </div>
+                                        <h6 class="text-muted">Sélectionnez d'abord un tailleur</h6>
+                                        <p class="text-muted small mb-0">Choisissez un tailleur dans la liste pour activer le formulaire de paiement</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+				</div>
+				 <!-- Modal pour afficher le reçu -->
+				<div class="modal fade" id="recuModal" tabindex="-1" aria-labelledby="recuModalLabel" aria-hidden="true">
+					<div class="modal-dialog modal-lg">
+						<div class="modal-content">
+							<div class="modal-header bg-primary text-white">
+								<h5 class="modal-title" id="recuModalLabel">
+									<i class="fas fa-receipt me-2"></i>Reçu de Paiement
+								</h5>
+								<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+							</div>
+							<div class="modal-body">
+								<div id="recuContent" class="recu-container">
+									<!-- Le contenu du reçu sera généré ici -->
+								</div>
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+									<i class="fas fa-times me-1"></i>Fermer
+								</button>
+								<button type="button" class="btn btn-success" onclick="imprimerRecu()">
+									<i class="fas fa-print me-1"></i>Imprimer
+								</button>
+								<button type="button" class="btn btn-info" onclick="telechargerRecu()">
+									<i class="fas fa-download me-1"></i>Télécharger
+								</button>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -586,6 +564,7 @@
 	</div>
 	<!--end switcher-->
 	<!-- Bootstrap JS -->
+<!--end switcher-->
 	<script src="assets/js/bootstrap.bundle.min.js"></script>
 	<!--plugins-->
 	<script src="assets/js/jquery.min.js"></script>
@@ -602,14 +581,12 @@
 	<script src="assets/plugins/apexcharts-bundle/js/apexcharts.min.js"></script>
 	<script src="assets/js/index.js"></script>
 	<!--app JS-->
+	<!--app JS-->
 	<script src="assets/js/app.js"></script>
 	<script>
-		const scrollbarElement = document.getElementById('someElement');
-		if (scrollbarElement) {
-			new PerfectScrollbar(scrollbarElement);
-		} else {
-			console.warn('Élément PerfectScrollbar non trouvé');
-		}
+		new PerfectScrollbar('.customers-list');
+		new PerfectScrollbar('.store-metrics');
+		new PerfectScrollbar('.product-list');
 	</script>
 	<script>
 		document.addEventListener("DOMContentLoaded", function () {
@@ -622,42 +599,11 @@
 		});
 	</script>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-	<!-- TOUJOURS en premier -->
-	<script src="assets/js/common.js"></script> 
-	<!-- Ensuite les autres -->
+	<!-- Scripts communs -->
+	<script src="assets/js/common.js"></script>
 	<script src="assets/js/auth.js"></script>
 	<script src="assets/js/profil.js"></script>
 	<script src="assets/js/home_permission.js"></script>
-	<script src="assets/js/home.js"></script>
-	<script>
-		// Correction d'urgence - À mettre avant les autres scripts
-		document.addEventListener('DOMContentLoaded', function() {
-    // Empêcher les erreurs de graphiques
-    if (typeof ApexCharts !== 'undefined') {
-        const originalRender = ApexCharts.prototype.render;
-        ApexCharts.prototype.render = function() {
-            if (!this.el || !document.body.contains(this.el)) {
-                console.warn('ApexCharts: Élément non trouvé, rendu annulé');
-                return Promise.resolve();
-            }
-            return originalRender.call(this);
-        };
-    }
-    
-    // Empêcher les erreurs Highcharts
-    if (typeof Highcharts !== 'undefined') {
-        const originalChart = Highcharts.chart;
-        Highcharts.chart = function(container, options) {
-            const element = typeof container === 'string' ? 
-                document.getElementById(container) : container;
-            if (!element) {
-                console.warn('Highcharts: Conteneur non trouvé:', container);
-                return null;
-            }
-            return originalChart.call(this, container, options);
-        };
-    }
-});
-	</script>
+	<script src="assets/js/paiement.js"></script>
 </body>
 </html>

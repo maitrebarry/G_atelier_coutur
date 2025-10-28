@@ -1,0 +1,165 @@
+
+		.payment-card {
+			transition: all 0.3s ease;
+			border: 1px solid #e0e0e0;
+		}
+
+		.payment-card:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		}
+
+		.status-badge {
+			font-size: 0.75rem;
+			padding: 4px 8px;
+			border-radius: 4px;
+		}
+
+		.status-pending {
+			background-color: #fff3cd;
+			color: #856404;
+		}
+
+		.status-paid {
+			background-color: #d1ecf1;
+			color: #0c5460;
+		}
+
+		.status-partial {
+			background-color: #d4edda;
+			color: #155724;
+		}
+
+		.payment-history {
+			max-height: 300px;
+			overflow-y: auto;
+		}
+
+		.history-item {
+			border-bottom: 1px solid #eee;
+			padding: 8px 0;
+		}
+
+		.history-item:last-child {
+			border-bottom: none;
+		}
+
+		.progress {
+			height: 8px;
+		}
+
+		.client-avatar {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			background: linear-gradient(45deg, #007bff, #6610f2);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: white;
+			font-weight: bold;
+			font-size: 14px;
+		}
+
+		.amount-display {
+			font-size: 1.1rem;
+			font-weight: 600;
+		}
+
+		.payment-section {
+			background: white;
+			border-radius: 10px;
+			padding: 20px;
+			box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+		}
+
+        .recu-container {
+            font-family: 'Courier New', monospace;
+            background: white;
+            padding: 20px;
+            border: 2px solid #333;
+        }
+
+        .recu-header {
+            text-align: center;
+            border-bottom: 2px dashed #333;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .recu-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .recu-subtitle {
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        .recu-info {
+            margin-bottom: 15px;
+        }
+
+        .recu-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+
+        .recu-label {
+            font-weight: bold;
+        }
+
+        .recu-value {
+            text-align: right;
+        }
+
+        .recu-total {
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+            padding: 10px 0;
+            margin: 15px 0;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .recu-footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed #333;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .recu-qr {
+            text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        /* Style pour l'impression */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .recu-container, .recu-container * {
+                visibility: visible;
+            }
+            .recu-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                border: none;
+                box-shadow: none;
+            }
+            .modal-footer {
+                display: none !important;
+            }
+        }

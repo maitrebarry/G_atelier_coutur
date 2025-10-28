@@ -6,7 +6,7 @@ const API_BASE_URL = window.APP_CONFIG.API_BASE_URL;
 function checkAdminPermission() {
     const userData = Common.getUserData();
     const allowedRoles = ['SUPERADMIN', 'PROPRIETAIRE'];
-    
+
     if (!allowedRoles.includes(userData.role)) {
         Common.showErrorMessage("Accès refusé. Cette fonctionnalité est réservée aux administrateurs.");
         return false;
@@ -40,7 +40,7 @@ async function handleApiError(response, context) {
     return false;
 }
 
-// Charger les utilisateurs
+// Charger les utilisateurs - CORRIGÉ
 async function loadUsers() {
     try {
         const token = Common.getToken();
@@ -48,6 +48,8 @@ async function loadUsers() {
             Common.showErrorMessage("Token non disponible. Veuillez vous reconnecter.");
             return;
         }
+
+        console.log('📡 Chargement des utilisateurs...');
 
         const response = await fetch(`${API_BASE_URL}/api/utilisateurs`, {
             headers: {
@@ -57,28 +59,78 @@ async function loadUsers() {
 
         if (response.ok) {
             allUsers = await response.json();
+            console.log('✅ Utilisateurs chargés:', allUsers.length);
             displayUsers(allUsers);
         } else {
             if (await handleApiError(response, "chargement utilisateurs")) return;
             Common.showErrorMessage("Erreur lors du chargement des utilisateurs");
         }
     } catch (error) {
-        console.error('Erreur:', error);
+        console.error('❌ Erreur chargement utilisateurs:', error);
         Common.showErrorMessage('Une erreur est survenue lors du chargement des utilisateurs');
     }
 }
 
 // Afficher la liste des utilisateurs
+// function displayUsers(users) {
+//     const usersList = document.getElementById('usersList');
+//     if (!usersList) {
+//         console.error('❌ Element #usersList non trouvé');
+//         return;
+//     }
+
+//     usersList.innerHTML = '';
+
+//     users.forEach(user => {
+//         const userElement = document.createElement('div');
+//         userElement.className = 'list-group-item user-card p-3';
+//         userElement.dataset.userId = user.id;
+//         userElement.innerHTML = `
+//             <div class="d-flex align-items-center">
+//                 <div class="flex-shrink-0">
+//                     <div class="user-avatar">
+//                         ${user.prenom?.charAt(0) || ''}${user.nom?.charAt(0) || ''}
+//                     </div>
+//                 </div>
+//                 <div class="flex-grow-1 ms-3">
+//                     <div class="user-name fw-bold">${user.prenom || ''} ${user.nom || ''}</div>
+//                     <div class="user-email small text-muted">${user.email || ''}</div>
+//                     <span class="badge bg-secondary">${user.role || ''}</span>
+//                 </div>
+//             </div>
+//         `;
+
+//         userElement.addEventListener('click', () => selectUser(user.id));
+//         usersList.appendChild(userElement);
+//     });
+// }
+// Afficher la liste des utilisateurs - CORRIGÉ
 function displayUsers(users) {
     const usersList = document.getElementById('usersList');
     if (!usersList) {
         console.error('❌ Element #usersList non trouvé');
         return;
     }
-    
+
     usersList.innerHTML = '';
 
+    if (!users || users.length === 0) {
+        usersList.innerHTML = `
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-users fa-2x mb-3"></i>
+                <p class="mb-0">Aucun utilisateur trouvé</p>
+            </div>
+        `;
+        return;
+    }
+
     users.forEach(user => {
+        // ✅ VÉRIFICATION que l'utilisateur a un ID valide
+        if (!user.id) {
+            console.warn('⚠️ Utilisateur sans ID:', user);
+            return;
+        }
+
         const userElement = document.createElement('div');
         userElement.className = 'list-group-item user-card p-3';
         userElement.dataset.userId = user.id;
@@ -97,11 +149,13 @@ function displayUsers(users) {
             </div>
         `;
 
-        userElement.addEventListener('click', () => selectUser(user.id));
+        userElement.addEventListener('click', () => {
+            console.log('👤 Sélection utilisateur:', user.id);
+            selectUser(user.id);
+        });
         usersList.appendChild(userElement);
     });
 }
-
 // Charger toutes les permissions
 async function loadAllPermissions() {
     try {
@@ -130,8 +184,15 @@ async function loadAllPermissions() {
     }
 }
 
-// Sélectionner un utilisateur
+// Sélectionner un utilisateur - CORRIGÉ
 async function selectUser(userId) {
+    // ✅ VÉRIFICATION DE L'ID
+    if (!userId || userId === 'undefined') {
+        console.error('❌ ID utilisateur invalide lors de la sélection');
+        Common.showErrorMessage("Utilisateur invalide");
+        return;
+    }
+
     selectedUserId = userId;
 
     // Mettre en évidence l'utilisateur sélectionné
@@ -146,8 +207,10 @@ async function selectUser(userId) {
     // Afficher le nom de l'utilisateur sélectionné
     const selectedUser = allUsers.find(u => u.id == userId);
     const selectedUserName = document.getElementById('selectedUserName');
-    if (selectedUserName) {
+    if (selectedUserName && selectedUser) {
         selectedUserName.textContent = `${selectedUser.prenom} ${selectedUser.nom}`;
+    } else {
+        selectedUserName.textContent = "Utilisateur inconnu";
     }
 
     // Afficher le bouton d'enregistrement
@@ -160,14 +223,23 @@ async function selectUser(userId) {
     await loadUserPermissions(userId);
 }
 
-// Charger les permissions d'un utilisateur
+// permission.js - POUR LA PAGE DE GESTION DES PERMISSIONS
 async function loadUserPermissions(userId) {
     try {
+        // ✅ VÉRIFICATION CRITIQUE - S'assurer que userId est valide
+        if (!userId || userId === 'undefined' || userId === 'null') {
+            console.error('❌ ID utilisateur invalide:', userId);
+            Common.showErrorMessage("ID utilisateur invalide");
+            return;
+        }
+
         const token = Common.getToken();
         if (!token) {
             Common.showErrorMessage("Token non disponible. Veuillez vous reconnecter.");
             return;
         }
+
+        console.log('📡 Chargement permissions pour utilisateur:', userId);
 
         const response = await fetch(`${API_BASE_URL}/api/admin/utilisateurs/${userId}/permissions`, {
             headers: {
@@ -178,20 +250,27 @@ async function loadUserPermissions(userId) {
         if (response.ok) {
             const userPermissions = await response.json();
             selectedUserPermissions = new Set(userPermissions.map(p => p.id));
-            
+
+            console.log('✅ Permissions utilisateur chargées:', userPermissions.length);
+
             // Afficher dans le tableau organisé
             renderUserPermissionsTable();
-            
+
         } else {
             if (await handleApiError(response, "chargement permissions utilisateur")) return;
-            Common.showErrorMessage("Erreur lors du chargement des permissions de l'utilisateur");
+
+            // Gestion spécifique des erreurs
+            if (response.status === 400) {
+                Common.showErrorMessage("Requête invalide. Vérifiez l'ID utilisateur.");
+            } else {
+                Common.showErrorMessage("Erreur lors du chargement des permissions de l'utilisateur");
+            }
         }
     } catch (error) {
-        console.error('Erreur:', error);
+        console.error('❌ Erreur chargement permissions:', error);
         Common.showErrorMessage('Une erreur est survenue lors du chargement des permissions');
     }
 }
-
 // Afficher les permissions dans un tableau organisé avec checkboxes
 function renderUserPermissionsTable() {
     const container = document.getElementById('permissionsList');
@@ -199,7 +278,7 @@ function renderUserPermissionsTable() {
         console.error('❌ Element #permissionsList non trouvé');
         return;
     }
-    
+
     if (!selectedUserId) {
         container.innerHTML = `
             <div class="text-center text-muted py-5">
@@ -253,7 +332,7 @@ function renderUserPermissionsTable() {
         permissionsByModule[module].forEach(permission => {
             const isChecked = Array.from(selectedUserPermissions).some(id => id === permission.id);
             const action = permission.code.split('_')[1] || permission.code;
-            
+
             tableHTML += `
                 <tr class="permission-row ${isChecked ? 'table-success' : ''}">
                     <td class="text-center">
@@ -309,7 +388,7 @@ function addTableEventListeners() {
     // Case à cocher "Tout sélectionner"
     const selectAllCheckbox = document.getElementById('selectAllPermissions');
     if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
+        selectAllCheckbox.addEventListener('change', function () {
             const checkboxes = document.querySelectorAll('.permission-checkbox');
             checkboxes.forEach(checkbox => {
                 checkbox.checked = this.checked;
@@ -326,10 +405,10 @@ function addTableEventListeners() {
 
     // Cases à cocher individuelles
     document.querySelectorAll('.permission-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
+        checkbox.addEventListener('change', function () {
             updateSelectedCount();
             updateSelectAllCheckbox();
-            
+
             // Mettre à jour le style de la ligne
             const row = this.closest('tr');
             if (this.checked) {
@@ -361,11 +440,11 @@ function updateSelectedCount() {
 function updateSelectAllCheckbox() {
     const selectAllCheckbox = document.getElementById('selectAllPermissions');
     const checkboxes = document.querySelectorAll('.permission-checkbox');
-    
+
     if (selectAllCheckbox && checkboxes.length > 0) {
         const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
         const someChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
-        
+
         selectAllCheckbox.checked = allChecked;
         selectAllCheckbox.indeterminate = someChecked && !allChecked;
     }
@@ -394,7 +473,7 @@ function getSelectedPermissionsFromTable() {
 // Enregistrer les permissions modifiées
 async function savePermissions() {
     console.log("🔍 Début savePermissions");
-    
+
     if (!selectedUserId) {
         Common.showErrorMessage("Veuillez sélectionner un utilisateur");
         return;
@@ -434,16 +513,16 @@ async function savePermissions() {
             if (response.ok) {
                 const result = await response.json();
                 console.log("✅ Réponse du serveur:", result);
-                
+
                 // Message de succès
                 Common.showSuccessMessage("Les permissions ont été mises à jour avec succès !");
-                
+
                 // Recharger les permissions pour vérifier la mise à jour
                 await loadUserPermissions(selectedUserId);
-                
+
             } else {
                 console.error("❌ Erreur réponse:", response.status);
-                
+
                 let errorMsg = "Erreur lors de la mise à jour des permissions";
                 try {
                     const errorData = await response.json();
@@ -451,7 +530,7 @@ async function savePermissions() {
                 } catch (e) {
                     console.error("Impossible de parser la réponse d'erreur");
                 }
-                
+
                 Common.showErrorMessage(errorMsg);
             }
         } catch (error) {
@@ -465,9 +544,9 @@ async function savePermissions() {
 }
 
 // Initialisation
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('🚀 Initialisation de la page permissions');
-    
+
     // Vérifier que SweetAlert2 est disponible
     if (typeof Swal === 'undefined') {
         console.warn('⚠️ SweetAlert2 non disponible, utilisation des alertes natives');
@@ -491,14 +570,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Recherche d'utilisateurs
     const userSearch = document.getElementById('userSearch');
     if (userSearch) {
-        userSearch.addEventListener('input', function(e) {
+        userSearch.addEventListener('input', function (e) {
             const searchTerm = e.target.value.toLowerCase();
             const userElements = document.querySelectorAll('.user-card');
-            
+
             userElements.forEach(element => {
                 const userName = element.querySelector('.user-name')?.textContent.toLowerCase() || '';
                 const userEmail = element.querySelector('.user-email')?.textContent.toLowerCase() || '';
-                
+
                 if (userName.includes(searchTerm) || userEmail.includes(searchTerm)) {
                     element.style.display = 'flex';
                 } else {

@@ -1,8 +1,12 @@
 package com.atelier.gestionatelier.services;
 
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import java.time.format.DateTimeFormatter;
@@ -124,6 +128,40 @@ public class EmailService {
                 + "— L’équipe " + nomAtelier;
 
         envoyerEmail(emailClient, subject, text);
+    }
+
+    // Dans votre EmailService existant, ajoutez cette méthode:
+    public void envoyerEmailAvecPieceJointe(String to, String subject, String text,
+                                            byte[] pieceJointe, String nomFichier) {
+        try {
+            if (to == null || !to.contains("@")) {
+                System.err.println("❌ Email invalide: " + to);
+                return;
+            }
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(text, false);
+
+            // Ajouter la pièce jointe
+            if (pieceJointe != null && nomFichier != null) {
+                helper.addAttachment(nomFichier, new ByteArrayResource(pieceJointe));
+            }
+
+            mailSender.send(message);
+            System.out.println("✅ Email avec pièce jointe envoyé à: " + to);
+
+        } catch (MessagingException e) {
+            System.err.println("❌ Erreur envoi email avec PJ à " + to + ": " + e.getMessage());
+            // Version de secours
+            System.out.println("📧 EMAIL AVEC PJ SIMULÉ (erreur SMTP) - Destinataire: " + to);
+            System.out.println("📧 Sujet: " + subject);
+            System.out.println("📧 Fichier: " + nomFichier);
+        }
     }
 
 }

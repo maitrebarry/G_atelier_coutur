@@ -55,7 +55,25 @@ async function apiCall(endpoint, options = {}) {
         throw error;
     }
 }
-
+async function loadRendezVousAVenir() {
+    try {
+        Common.showLoading('Chargement des rendez-vous...');
+        const rendezVous = await apiCall(`/rendezvous/atelier/${currentAtelierId}/a-venir`);
+        displayRendezVous(rendezVous);
+        Common.hideLoading();
+    } catch (error) {
+        console.error('Erreur chargement rendez-vous:', error);
+        Common.hideLoading();
+        
+        // Afficher un message plus informatif
+        if (error.message.includes('404')) {
+            Common.showInfoMessage('Aucun rendez-vous trouvé pour cet atelier');
+            displayRendezVous([]);
+        } else {
+            Common.showErrorMessage('Erreur lors du chargement des rendez-vous: ' + error.message);
+        }
+    }
+}
 // === FONCTIONS CLIENT ===
 async function loadClients() {
     console.log('👥 Chargement des clients depuis l\'API');
@@ -189,54 +207,7 @@ function displayClients(clients) {
     console.log('📋 Clients affichés:', clients.length);
 }
 
-// function createClientCard(client) {
-//     const colDiv = document.createElement('div');
-//     colDiv.className = 'col-md-6 col-lg-4 mb-3';
 
-//     const cardDiv = document.createElement('div');
-//     cardDiv.className = 'card client-card radius-10 cursor-pointer';
-//     cardDiv.style.transition = 'all 0.3s ease';
-    
-//     const hasMesures = client.derniereMesure != null;
-//     const mesuresText = hasMesures ? 'Mesures' : 'Aucune mesure';
-    
-//     cardDiv.innerHTML = `
-//         <div class="card-body">
-//             <div class="d-flex align-items-center mb-2">
-//                 <div class="flex-shrink-0">
-//                     <div class="rounded-circle bg-light text-center d-flex align-items-center justify-content-center" 
-//                          style="width: 50px; height: 50px;">
-//                         <i class="bx bx-user text-muted"></i>
-//                     </div>
-//                 </div>
-//                 <div class="flex-grow-1 ms-3">
-//                     <h6 class="mb-0 fw-bold">${client.prenom} ${client.nom}</h6>
-//                     <small class="text-muted">${client.contact}</small>
-//                 </div>
-//             </div>
-//             <div class="mt-2">
-//                 <span class="badge bg-light-info text-info badge-sm me-1">
-//                     <i class="bx bx-ruler me-1"></i>${mesuresText}
-//                 </span>
-//                 <span class="badge bg-light-warning text-warning badge-sm">
-//                     <i class="bx bx-t-shirt me-1"></i>${client.nombreModelesEnCours || 0} modèle(s)
-//                 </span>
-//             </div>
-//             ${hasMesures ? `
-//             <div class="mt-2 small text-muted">
-//                 <i class="bx bx-calendar me-1"></i>
-//                 Dernière mesure: ${new Date(client.derniereMesure.dateMesure).toLocaleDateString('fr-FR')}
-//             </div>
-//             ` : ''}
-//         </div>
-//     `;
-
-//     // Événement de clic
-//     cardDiv.addEventListener('click', () => selectClient(client));
-
-//     colDiv.appendChild(cardDiv);
-//     return colDiv;
-// }
 
 // === SÉLECTION CLIENT ===
 
