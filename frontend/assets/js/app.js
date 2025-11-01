@@ -1,5 +1,14 @@
 $(function () {
   ("use strict");
+  // Force light sidebar/theme by default: remove dark/semi-dark classes
+  // This ensures the sidebar appears light on all pages unless the user
+  // explicitly switches themes using the theme switcher.
+  try {
+    var $html = $("html");
+    $html.removeClass("dark-theme semi-dark minimal-theme");
+  } catch (e) {
+    console.warn('Could not enforce default light theme:', e);
+  }
   /* perfect scrol bar */
   new PerfectScrollbar(".header-message-list");
   new PerfectScrollbar(".header-notifications-list");

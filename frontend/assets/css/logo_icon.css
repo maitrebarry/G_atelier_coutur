@@ -1,0 +1,26 @@
+	/* --- LOGO + NOM ALIGNÉS SUR UNE LIGNE --- */
+.branding {
+    display: flex;
+    align-items: center;         /* Aligne verticalement le logo et le texte */
+    justify-content: center;     /* Centre horizontalement dans la sidebar */
+    gap: 10px;                   /* Espacement entre logo et texte */
+    width: 100%;
+}
+
+/* --- IMAGE DU LOGO --- */
+.logo-icon {
+    width: 50px;                 /* Ajuste la taille selon ton goût */
+    height: 50px;
+    object-fit: contain;
+}
+
+/* --- TEXTE DU NOM --- */
+.logo-text {
+    font-size: 1.5rem;           /* Taille du texte */
+    font-weight: 700;            /* Gras et élégant */
+    letter-spacing: 2px;         /* Espacement entre les lettres */
+    color: #2c2c2c;              /* Couleur sobre et élégante */
+    text-transform: uppercase;   /* Pour afficher ATELIKO en majuscules */
+    flex: 1;                     /* Pour que le texte prenne tout l’espace disponible */
+    text-align: center;          /* Centrer le texte si nécessaire */
+}

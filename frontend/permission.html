@@ -6,7 +6,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<!--favicon-->
-	<link rel="icon" href="assets/images/favicon-32x32.png" type="image/png" />
+	<link rel="icon" href="assets/images/logo_ateliko.png" type="image/png" />
 	<!--plugins-->
 	<link href="assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
 	<link href="assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css" rel="stylesheet" />
@@ -28,8 +28,8 @@
 	<link rel="stylesheet" href="assets/css/dark-theme.css" />
 	<link rel="stylesheet" href="assets/css/semi-dark.css" />
 	<link rel="stylesheet" href="assets/css/header-colors.css" />
-	<script src="assets/js/auth.js"></script>
-	<title>Assigner permission</title>
+	<link href="assets/css/logo_icon.css" rel="stylesheet" />
+	<title>ATELIKO</title>
 	<style>
 		body {
 			background-color: #f8f9fa;
@@ -98,6 +98,46 @@
 			font-size: 0.7em;
 			font-weight: 500;
 		}
+		/* Styles spécifiques pour la page permissions */
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.user-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.user-card:hover {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+}
+
+.user-card.selected {
+    border-color: #0d6efd;
+    background-color: #e7f3ff;
+}
+
+/* Couleurs des badges de rôle */
+.bg-primary { background-color: #0d6efd !important; }
+.bg-danger { background-color: #dc3545 !important; }
+.bg-info { background-color: #0dcaf0 !important; }
+.bg-warning { background-color: #ffc107 !important; color: #000 !important; }
+
+/* Style pour l'avatar selon le rôle */
+.user-avatar.bg-primary { background-color: #0d6efd !important; }
+.user-avatar.bg-danger { background-color: #dc3545 !important; }
+.user-avatar.bg-info { background-color: #0dcaf0 !important; }
+.user-avatar.bg-warning { background-color: #ffc107 !important; color: #000 !important; }
 	</style>
 </head>
 
@@ -107,74 +147,18 @@
 		<!--sidebar wrapper -->
 		<div class="sidebar-wrapper" data-simplebar="true">
 			<div class="sidebar-header">
-				<div>
-					<img src="assets/images/logo-icon.png" class="logo-icon" alt="logo icon">
+				<div class="branding">
+					<img src="assets/images/logo_ateliko.png" class="logo-icon" alt="logo icon">
+					<h6 class="logo-text">ATELIKO</h6>
 				</div>
-				<div>
-					<h4 class="logo-text">Atelier Couture</h4>
-				</div>
-				<div class="toggle-icon ms-auto"><i class='bx bx-arrow-to-left'></i>
+				<div class="toggle-icon ms-auto">
+					<i class='bx bx-arrow-to-left'></i>
 				</div>
 			</div>
 			<!--navigation-->
-			<ul class="metismenu" id="menu">
-				<!-- Tableau de bord - Visible pour tous -->
-				<li>
-					<a href="home.html">
-						<div class="parent-icon"><i class='bx bx-home-circle'></i></div>
-						<div class="menu-title">Tableau de bord</div>
-					</a>
-				</li>
-
-				<!-- Modèles - Permissions: PROPRIETAIRE, SECRETAIRE, TAILLEUR -->
-				<li class="permission-required" data-permissions="MODELE_VIEW">
-					<a href="javascript:;" class="has-arrow">
-						<div class="parent-icon"><i class='bx bx-cut'></i></div>
-						<div class="menu-title">Modèles</div>
-					</a>
-					<ul>
-						<li class="permission-required" data-permissions="CLIENT_VIEW">
-							<a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures clients</a>
-						</li>
-						<li class="permission-required" data-permissions="CLIENT_VIEW">
-							<a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a>
-						</li>
-						<li class="permission-required" data-permissions="MODELE_VIEW">
-							<a href="modele.html"><i class="bx bx-right-arrow-alt"></i>Modèle</a>
-						</li>
-					</ul>
-				</li>
-				<!-- NOUVEAU : Affectations -->
-                    <li class="permission-required" data-permissions="AFFECTATION_VIEW">
-                        <a href="affectation.html" class="active">
-                            <div class="parent-icon"><i class='bx bx-user-check'></i></div>
-                            <div class="menu-title">Affectations</div>
-                        </a>
-                    </li>
-				<!-- Rendez-vous - Permissions: PROPRIETAIRE, SECRETAIRE -->
-				<li class="permission-required" data-permissions="RENDEZVOUS_VIEW">
-					<a href="rendezvous.html">
-						<div class="parent-icon"><i class='bx bx-calendar'></i></div>
-						<div class="menu-title">Rendez-vous</div>
-					</a>
-				</li>
-
-				<!-- Paiements - Permissions: PROPRIETAIRE, SECRETAIRE -->
-				<li class="permission-required" data-permissions="PAIEMENT_VIEW">
-					<a href="paiements.html">
-						<div class="parent-icon"><i class='bx bx-wallet'></i></div>
-						<div class="menu-title">Paiements</div>
-					</a>
-				</li>
-
-				<!-- Paramètres - Permissions: PROPRIETAIRE uniquement -->
-				<li class="permission-required" data-permissions="PARAMETRES_VIEW">
-					<a href="parametres.html">
-						<div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
-						<div class="menu-title">Paramètres</div>
-					</a>
-				</li>
-			</ul>
+			 <ul class="metismenu" id="menu">
+				
+             </ul>
 			<!--end navigation-->
 		</div>
 		<!--end sidebar wrapper -->
@@ -364,31 +348,23 @@
 				<div class="row">
 					<!-- COL-3 : Menu de navigation -->
 					<div class="col-12 col-lg-3">
-						<div class="card">
+						<div class="card"> 
 							<div class="card-header bg-primary">
 								<h6 class="mb-0 text-center text-white">Menu</h6>
 							</div>
-							<div class="card-body">
+							<div class="card-body">     
 								<div class="fm-menu">
 									<div class="list-group list-group-flush">
-										<a href="parametres.html" class="list-group-item py-1" data-permissions="ATELIER_VIEW">
-											<i class='bx bx-home-alt me-2'></i><span class="">Atelier</span>
-										</a>
-										<a href="signup.html" class="list-group-item py-1" data-permissions="USER_VIEW">
-											<i class='bx bx-user me-2'></i><span class="">Utilisateur</span>
-										</a>
-										<a href="permission.html" class="list-group-item py-1 active" data-permissions="PERMISSION_VIEW">
-											<i class='bx bx-user-pin me-2'></i><span>Assigner Permission</span>
-										</a>
-										<a href="liste_permission.html" class="list-group-item py-1 superadmin-only" >
-											<i class="bx bx-list-ul me-2"></i><span>Liste des Permissions</span>
-										</a>
+										<!-- Le menu sera généré dynamiquement -->
+										<div class="text-center py-3 text-muted">
+											<div class="spinner-border spinner-border-sm" role="status"></div>
+											<span class="ms-2">Chargement du menu...</span>
+										</div>
 									</div>
 								</div>
 							</div>
 						</div>
-					</div>
-
+					</div>     
 					  <!-- COL-9 : Contenu principal -->
 					<div class="col-12 col-lg-9">
 						<div class="card">
@@ -593,15 +569,57 @@
 		new PerfectScrollbar('.product-list');
 	</script>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="assets/js/common.js"></script> 
-	<!-- Ensuite les autres -->
-	<script src="assets/js/auth.js"></script>
-	<script src="assets/js/profil.js"></script>
-	
+   <script src="assets/js/common.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/sidebar.js"></script>
+	<script src="assets/js/global-menu.js"></script>
+    <script src="assets/js/profil.js"></script>
 	<script src="assets/js/home_permission.js"></script>
 	<script src="assets/js/permission.js"></script>
-	<script src="assets/js/liste_atelier.js"></script>
-	<script src="assets/js/ajouter_atelier.js"></script>
+	<script>
+            // ✅ CORRECTION : Vérifier que Common existe AVANT d'appeler checkPageAccess
+            document.addEventListener('DOMContentLoaded', function() {
+                // Attendre que Common soit chargé
+                const checkCommon = () => {
+                    if (typeof Common !== 'undefined' && Common.checkPageAccess) {
+                        Common.checkPageAccess();
+                    } else {
+                        setTimeout(checkCommon, 100);
+                    }
+                };
+                checkCommon();
+            });
+	</script>
+	<script>
+		// Correction d'urgence - À mettre avant les autres scripts
+		document.addEventListener('DOMContentLoaded', function() {
+	// Empêcher les erreurs de graphiques
+	if (typeof ApexCharts !== 'undefined') {
+		const originalRender = ApexCharts.prototype.render;
+		ApexCharts.prototype.render = function() {
+			if (!this.el || !document.body.contains(this.el)) {
+				console.warn('ApexCharts: Élément non trouvé, rendu annulé');
+				return Promise.resolve();
+			}
+			return originalRender.call(this);
+		};
+	}
+
+	// Empêcher les erreurs Highcharts
+	if (typeof Highcharts !== 'undefined') {
+		const originalChart = Highcharts.chart;
+		Highcharts.chart = function(container, options) {
+			const element = typeof container === 'string' ? 
+				document.getElementById(container) : container;
+			if (!element) {
+				console.warn('Highcharts: Conteneur non trouvé:', container);
+				return null;
+			}
+			return originalChart.call(this, container, options);
+		};
+	}
+	});
+	</script>
 </body>
 
 </html>

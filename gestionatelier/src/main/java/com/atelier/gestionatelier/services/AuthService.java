@@ -12,6 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -32,43 +33,88 @@ public class AuthService {
         this.authenticationManager = authenticationManager;
     }
 
+//    public LoginResponse authenticateUser(LoginRequest loginRequest) {
+//        // Vérifier manuellement les credentials
+//        Utilisateur utilisateur = utilisateurRepository.findByEmail(loginRequest.getEmail())
+//                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+//
+//        // Vérifier le mot de passe
+//        if (!passwordEncoder.matches(loginRequest.getPassword(), utilisateur.getMotDePasse())) {
+//            throw new RuntimeException("Mot de passe incorrect");
+//        }
+//
+//        // Authentification via Spring Security
+//        Authentication authentication = authenticationManager.authenticate(
+//            new UsernamePasswordAuthenticationToken(
+//                loginRequest.getEmail(),
+//                loginRequest.getPassword()
+//            )
+//        );
+//
+//        SecurityContextHolder.getContext().setAuthentication(authentication);
+//
+//        // Récupérer l'ID de l'atelier (en UUID)
+//        UUID atelierId = null;
+//        if (utilisateur.getAtelier() != null) {
+//            atelierId = utilisateur.getAtelier().getId();
+//        }
+//
+//        // Générer le token JWT avec l'atelierId
+//        String jwt = jwtUtil.generateToken(authentication.getName(), atelierId);
+//
+//        return new LoginResponse(
+//            jwt,
+//            utilisateur.getId(),
+//            utilisateur.getEmail(),
+//            utilisateur.getPrenom(),
+//            utilisateur.getNom(),
+//            utilisateur.getRole().name(),
+//            atelierId  // Ajouter l'atelierId dans la réponse
+//        );
+//    }
+
     public LoginResponse authenticateUser(LoginRequest loginRequest) {
         // Vérifier manuellement les credentials
         Utilisateur utilisateur = utilisateurRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-        
+
         // Vérifier le mot de passe
         if (!passwordEncoder.matches(loginRequest.getPassword(), utilisateur.getMotDePasse())) {
             throw new RuntimeException("Mot de passe incorrect");
         }
-        
+
         // Authentification via Spring Security
         Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(
-                loginRequest.getEmail(), 
-                loginRequest.getPassword()
-            )
+                new UsernamePasswordAuthenticationToken(
+                        loginRequest.getEmail(),
+                        loginRequest.getPassword()
+                )
         );
-        
+
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        
+
         // Récupérer l'ID de l'atelier (en UUID)
         UUID atelierId = null;
         if (utilisateur.getAtelier() != null) {
             atelierId = utilisateur.getAtelier().getId();
         }
-        
+
+        // ✅ CORRECTION : RÉCUPÉRER LES PERMISSIONS
+        Set<String> permissions = utilisateur.getPermissionCodes();
+
         // Générer le token JWT avec l'atelierId
         String jwt = jwtUtil.generateToken(authentication.getName(), atelierId);
-        
+
+        // ✅ CORRECTION : INCLURE LES PERMISSIONS DANS LA RÉPONSE
         return new LoginResponse(
-            jwt,
-            utilisateur.getId(),
-            utilisateur.getEmail(),
-            utilisateur.getPrenom(),
-            utilisateur.getNom(),
-            utilisateur.getRole().name(),
-            atelierId  // Ajouter l'atelierId dans la réponse
+                jwt,
+                utilisateur.getId(),
+                utilisateur.getEmail(),
+                utilisateur.getPrenom(),
+                utilisateur.getNom(),
+                utilisateur.getRole().name(),
+                atelierId,
+                permissions  // <-- AJOUT DES PERMISSIONS
         );
     }
 }

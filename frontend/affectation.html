@@ -7,7 +7,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<!--favicon-->
-	<link rel="icon" href="assets/images/favicon-32x32.png" type="image/png" />
+	<link rel="icon" href="assets/images/logo_ateliko.png" type="image/png" />
 	<!--plugins-->
 	 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -29,9 +29,10 @@
 	<link rel="stylesheet" href="assets/css/dark-theme.css" />
 	<link rel="stylesheet" href="assets/css/semi-dark.css" />
 	<link rel="stylesheet" href="assets/css/header-colors.css" />
+	<link href="assets/css/logo_icon.css" rel="stylesheet" />
 	<!-- <script src="assets/js/auth.js"></script> -->
 
-	<title></title>
+	<title>ATELIKO</title>
 </head>
 
 <body>
@@ -59,10 +60,10 @@
 	<div class="wrapper">
 		<!--sidebar wrapper -->
 		<div class="sidebar-wrapper" data-simplebar="true">
-			<div class="sidebar-header">
+			 <div class="sidebar-header">
 				<div class="branding">
-					<img src="assets/images/logo2_atelierCouture.jpeg" class="logo-icon" alt="logo icon">
-					<h6 class="logo-text">STITCH MANAGER</h6>
+					<img src="assets/images/logo_ateliko.png" class="logo-icon" alt="logo icon">
+					<h6 class="logo-text">ATELIKO</h6>
 				</div>
 				<div class="toggle-icon ms-auto">
 					<i class='bx bx-arrow-to-left'></i>
@@ -70,62 +71,7 @@
 			</div>
 			<!--navigation-->
 			<ul class="metismenu" id="menu">
-				<!-- Tableau de bord - Visible pour tous -->
-				<li>
-					<a href="home.html">
-						<div class="parent-icon"><i class='bx bx-home-circle'></i></div>
-						<div class="menu-title">Tableau de bord</div>
-					</a>
-				</li>
-
-				<!-- Modèles - Permissions: PROPRIETAIRE, SECRETAIRE, TAILLEUR -->
-				<li class="permission-required" data-permissions="MODELE_VIEW">
-					<a href="javascript:;" class="has-arrow">
-						<div class="parent-icon"><i class='bx bx-cut'></i></div>
-						<div class="menu-title">Modèles</div>
-					</a>
-					<ul>
-						<li class="permission-required" data-permissions="CLIENT_VIEW">
-							<a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures clients</a>
-						</li>
-						<li class="permission-required" data-permissions="CLIENT_VIEW">
-							<a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a>
-						</li>
-						<li class="permission-required" data-permissions="MODELE_VIEW">
-							<a href="modele.html"><i class="bx bx-right-arrow-alt"></i>Modèle</a>
-						</li>
-					</ul>
-				</li>
-				<!-- NOUVEAU : Affectations -->
-                    <li class="permission-required" data-permissions="AFFECTATION_VIEW">
-                        <a href="affectation.html" class="active">
-                            <div class="parent-icon"><i class='bx bx-user-check'></i></div>
-                            <div class="menu-title">Affectations</div>
-                        </a>
-                    </li>
-				<!-- Rendez-vous - Permissions: PROPRIETAIRE, SECRETAIRE -->
-				<li class="permission-required" data-permissions="RENDEZVOUS_VIEW">
-					<a href="rendezvous.html">
-						<div class="parent-icon"><i class='bx bx-calendar'></i></div>
-						<div class="menu-title">Rendez-vous</div>
-					</a>
-				</li>
-
-				<!-- Paiements - Permissions: PROPRIETAIRE, SECRETAIRE -->
-				<li class="permission-required" data-permissions="PAIEMENT_VIEW">
-					<a href="paiements.html">
-						<div class="parent-icon"><i class='bx bx-wallet'></i></div>
-						<div class="menu-title">Paiements</div>
-					</a>
-				</li>
-
-				<!-- Paramètres - Permissions: PROPRIETAIRE uniquement -->
-				<li class="permission-required" data-permissions="PARAMETRES_VIEW">
-					<a href="parametres.html">
-						<div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
-						<div class="menu-title">Paramètres</div>
-					</a>
-				</li>
+				
 			</ul>
 			<!--end navigation-->
 		</div>
@@ -548,9 +494,54 @@
 	<!-- TOUJOURS en premier -->
 	<script src="assets/js/common.js"></script> 
 	<!-- Ensuite les autres -->
-	<script src="assets/js/auth.js"></script>
+	<script src="assets/js/auth.js"></script> 
+	<script src="assets/js/sidebar.js"></script>
 	<script src="assets/js/profil.js"></script>
 	<script src="assets/js/home_permission.js"></script>
-      <script src="assets/js/affectation.js"></script>
+	<script src="assets/js/affectation.js"></script>
+	<script>
+		// ✅ CORRECTION : Vérifier que Common existe AVANT d'appeler checkPageAccess
+		document.addEventListener('DOMContentLoaded', function() {
+			// Attendre que Common soit chargé
+			const checkCommon = () => {
+				if (typeof Common !== 'undefined' && Common.checkPageAccess) {
+					Common.checkPageAccess();
+				} else {
+					setTimeout(checkCommon, 100);
+				}
+			};
+			checkCommon();
+		});
+	</script>
+	<script>
+		// Correction d'urgence - À mettre avant les autres scripts
+		document.addEventListener('DOMContentLoaded', function() {
+	// Empêcher les erreurs de graphiques
+	if (typeof ApexCharts !== 'undefined') {
+		const originalRender = ApexCharts.prototype.render;
+		ApexCharts.prototype.render = function() {
+			if (!this.el || !document.body.contains(this.el)) {
+				console.warn('ApexCharts: Élément non trouvé, rendu annulé');
+				return Promise.resolve();
+			}
+			return originalRender.call(this);
+		};
+	}
+
+	// Empêcher les erreurs Highcharts
+	if (typeof Highcharts !== 'undefined') {
+		const originalChart = Highcharts.chart;
+		Highcharts.chart = function(container, options) {
+			const element = typeof container === 'string' ? 
+				document.getElementById(container) : container;
+			if (!element) {
+				console.warn('Highcharts: Conteneur non trouvé:', container);
+				return null;
+			}
+			return originalChart.call(this, container, options);
+		};
+	}
+	});
+	</script>
 </body>
 </html>

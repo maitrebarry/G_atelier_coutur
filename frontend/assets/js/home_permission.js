@@ -21,56 +21,59 @@
             }
         });
     }
-    // home_permission.js - POUR LE TABLEAU DE BORD
-    async function loadCurrentUserPermissions() {  // ✅ CHANGEMENT DE NOM
-        try {
-            const userData = Common.getUserData();
+  async function loadCurrentUserPermissions() {
+    try {
+        const userData = Common.getUserData();
+        console.log('🔍 Chargement permissions utilisateur:', userData);
 
-            console.log('🔍 Données utilisateur dans loadCurrentUserPermissions:', userData);
-
-            // ✅ VÉRIFICATION APPROFONDIE
-            if (!userData) {
-                console.error('❌ Données utilisateur non disponibles');
-                return getDefaultPermissionsByRole('VISITEUR');
-            }
-
-            const userId = userData.id || userData.userId;
-
-            if (!userId) {
-                console.error('❌ ID utilisateur manquant dans userData:', userData);
-                return getDefaultPermissionsByRole(userData.role || 'VISITEUR');
-            }
-
-            console.log('🔐 Chargement permissions pour utilisateur connecté:', userId);
-
-            const token = Common.getToken();
-            if (!token) {
-                console.error('❌ Token non disponible');
-                return getDefaultPermissionsByRole(userData.role || 'VISITEUR');
-            }
-
-            const response = await fetch(`${window.APP_CONFIG?.API_BASE_URL || 'http://localhost:8081'}/api/admin/utilisateurs/${userId}/permissions`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const permissions = await response.json();
-                console.log('✅ Permissions utilisateur connecté chargées:', permissions.length, permissions);
-                return permissions;
-            } else {
-                console.error('❌ Erreur API permissions:', response.status);
-
-                // Fallback aux permissions par défaut
-                return getDefaultPermissionsByRole(userData.role || 'VISITEUR');
-            }
-        } catch (error) {
-            console.error('❌ Erreur lors du chargement des permissions:', error);
-            const userData = Common.getUserData();
+        if (!userData || !userData.userId) {
+            console.error('❌ Données utilisateur non disponibles');
             return getDefaultPermissionsByRole(userData?.role || 'VISITEUR');
         }
+
+        const token = Common.getToken();
+        if (!token) {
+            console.error('❌ Token non disponible');
+            return getDefaultPermissionsByRole(userData.role || 'VISITEUR');
+        }
+
+        const response = await fetch(`${window.APP_CONFIG?.API_BASE_URL || 'http://localhost:8081'}/api/admin/utilisateurs/${userData.userId}/permissions`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        let permissions = [];
+        
+        if (response.ok) {
+            permissions = await response.json();
+            console.log('✅ Permissions chargées:', permissions.length, permissions);
+        } else {
+            console.error('❌ Erreur API permissions, utilisation fallback');
+            permissions = getDefaultPermissionsByRole(userData.role || 'VISITEUR');
+        }
+
+        // 🔥 DÉCLENCHER L'ÉVÉNEMENT DE PERMISSIONS CHARGÉES
+        const event = new CustomEvent('permissionsUpdated', { 
+            detail: { permissions, userData } 
+        });
+        document.dispatchEvent(event);
+
+        return permissions;
+    } catch (error) {
+        console.error('❌ Erreur chargement permissions:', error);
+        const userData = Common.getUserData();
+        const permissions = getDefaultPermissionsByRole(userData?.role || 'VISITEUR');
+        
+        // Déclencher l'événement même en cas d'erreur
+        const event = new CustomEvent('permissionsUpdated', { 
+            detail: { permissions, userData } 
+        });
+        document.dispatchEvent(event);
+        
+        return permissions;
     }
+}
 
     // MODIFIER l'appel dans l'initialisation
     async function initializeApp() {

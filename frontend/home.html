@@ -6,7 +6,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<!--favicon-->
-	<link rel="icon" href="assets/images/favicon-32x32.png" type="image/png" />
+	<link rel="icon" href="assets/images/logo_ateliko.png" type="image/png" />
 	<!--plugins-->
 	<link href="assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
 	<link href="assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css" rel="stylesheet" />
@@ -26,11 +26,12 @@
 	<link rel="stylesheet" href="assets/css/dark-theme.css" />
 	<link rel="stylesheet" href="assets/css/semi-dark.css" />
 	<link rel="stylesheet" href="assets/css/header-colors.css" />
+	<link href="assets/css/logo_icon.css" rel="stylesheet" />
 	<!-- <script src="assets/js/auth.js"></script> -->
 	 <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-	<title></title>
+	<title>ATELIKO</title>
 </head>
 
 <body>
@@ -58,81 +59,31 @@
         .cursor-pointer {
             cursor: pointer;
         }
+
+	
+		
     </style>
 	<!--wrapper-->
 	<div class="wrapper">
 		<!--sidebar wrapper -->
-		<div class="sidebar-wrapper" data-simplebar="true">
-			<div class="sidebar-header">
-				<div class="branding">
-					<img src="assets/images/logo2_atelierCouture.jpeg" class="logo-icon" alt="logo icon">
-					<h6 class="logo-text">STITCH MANAGER</h6>
-				</div>
-				<div class="toggle-icon ms-auto">
-					<i class='bx bx-arrow-to-left'></i>
-				</div>
-			</div>
-			<!--navigation-->
-			<ul class="metismenu" id="menu">
-				<!-- Tableau de bord - Visible pour tous -->
-				<li>
-					<a href="home.html">
-						<div class="parent-icon"><i class='bx bx-home-circle'></i></div>
-						<div class="menu-title">Tableau de bord</div>
-					</a>
-				</li>
+	<div class="sidebar-wrapper" data-simplebar="true">
+    <div class="sidebar-header">
+        <div class="branding">
+            <img src="assets/images/logo_ateliko.png" class="logo-icon" alt="logo icon">
+            <h6 class="logo-text">ATELIKO</h6>
+        </div>
+        <div class="toggle-icon ms-auto">
+            <i class='bx bx-arrow-to-left'></i>
+        </div>
+    </div>
 
-				<!-- Modèles - Permissions: PROPRIETAIRE, SECRETAIRE, TAILLEUR -->
-				<li class="permission-required" data-permissions="MODELE_VIEW">
-					<a href="javascript:;" class="has-arrow">
-						<div class="parent-icon"><i class='bx bx-cut'></i></div>
-						<div class="menu-title">Modèles</div>
-					</a>
-					<ul>
-						<li class="permission-required" data-permissions="CLIENT_VIEW">
-							<a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures clients</a>
-						</li>
-						<li class="permission-required" data-permissions="CLIENT_VIEW">
-							<a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a>
-						</li>
-						<li class="permission-required" data-permissions="MODELE_VIEW">
-							<a href="modele.html"><i class="bx bx-right-arrow-alt"></i>Modèle</a>
-						</li>
-					</ul>
-				</li>
-				<!-- NOUVEAU : Affectations -->
-                    <li class="permission-required" data-permissions="AFFECTATION_VIEW">
-                        <a href="affectation.html" class="active">
-                            <div class="parent-icon"><i class='bx bx-user-check'></i></div>
-                            <div class="menu-title">Affectations</div>
-                        </a>
-                    </li>
-				<!-- Rendez-vous - Permissions: PROPRIETAIRE, SECRETAIRE -->
-				<li class="permission-required" data-permissions="RENDEZVOUS_VIEW">
-					<a href="rendezvous.html">
-						<div class="parent-icon"><i class='bx bx-calendar'></i></div>
-						<div class="menu-title">Rendez-vous</div>
-					</a>
-				</li>
+    <!--navigation-->
+    <ul class="metismenu" id="menu">
+        
+    </ul>
+    <!--end navigation-->
+</div>
 
-				<!-- Paiements - Permissions: PROPRIETAIRE, SECRETAIRE -->
-				<li class="permission-required" data-permissions="PAIEMENT_VIEW">
-					<a href="paiements.html">
-						<div class="parent-icon"><i class='bx bx-wallet'></i></div>
-						<div class="menu-title">Paiements</div>
-					</a>
-				</li>
-
-				<!-- Paramètres - Permissions: PROPRIETAIRE uniquement -->
-				<li class="permission-required" data-permissions="PARAMETRES_VIEW">
-					<a href="parametres.html">
-						<div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
-						<div class="menu-title">Paramètres</div>
-					</a>
-				</li>
-			</ul>
-			<!--end navigation-->
-		</div>
 		<!--end sidebar wrapper -->
 		<!--start header -->
 		<header>
@@ -204,26 +155,6 @@
 							</li>
 						</ul>
 					</div>
-										<!-- <div class="user-box dropdown">
-						<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-							<img src="https://via.placeholder.com/110x110" class="user-img" alt="user avatar">
-							<div class="user-info ps-3">
-								<p class="user-name mb-0">Pauline Seitz</p>
-								<p class="designattion mb-0">Web Designer</p>
-							</div>
-						</a>
-						<ul class="dropdown-menu dropdown-menu-end">
-							<li><a class="dropdown-item" href="javascript:;"><i class="bx bx-user"></i><span>Profile</span></a>
-							</li>
-							<li><a class="dropdown-item" href="javascript:;"><i class="bx bx-cog"></i><span>Paramètres</span></a>
-							</li>
-							<li>
-								<div class="dropdown-divider mb-0"></div>
-							</li>
-							<li><a class="dropdown-item" href="javascript:;"><i class='bx bx-log-out-circle'></i><span>Déconnexion</span></a>
-							</li>
-						</ul>
-					</div> -->
 				</nav>
 			</div>
 		</header>
@@ -313,7 +244,8 @@
 							</ol>
 						</nav>
 					</div>
-					   <div>
+				</div>
+				 <div>
                             <button class="btn btn-outline-secondary me-2" onclick="togglePeriode()">
                                 <i class="bx bx-calendar me-1"></i>
                                 <span id="periodeText">Ce mois</span>
@@ -322,14 +254,13 @@
                                 <i class="bx bx-refresh me-1"></i>Rafraîchir
                             </button>
                         </div>
-				</div>
-
 				<hr />
 
 				 <!-- Période sélection (caché par défaut) -->
 				<div id="periodeSection" class="row mb-3" style="display: none;">
 					<div class="col-12">
 						<div class="card">
+							
 							<div class="card-body">
 								<h6 class="card-title">Période personnalisée</h6>
 								<div class="row g-3">
@@ -604,12 +535,33 @@
 	<!--app JS-->
 	<script src="assets/js/app.js"></script>
 	<script>
-		const scrollbarElement = document.getElementById('someElement');
-		if (scrollbarElement) {
-			new PerfectScrollbar(scrollbarElement);
-		} else {
-			console.warn('Élément PerfectScrollbar non trouvé');
-		}
+	// Remplacer les lignes problématiques (537 et 559) par :
+
+// Ligne ~537
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebarElement = document.querySelector('.sidebar-wrapper');
+    if (sidebarElement) {
+        new PerfectScrollbar('.sidebar-wrapper', {
+            wheelSpeed: 2,
+            wheelPropagation: false,
+            minScrollbarLength: 20
+        });
+    } else {
+        console.warn('⚠️ Élément .sidebar-wrapper non trouvé pour PerfectScrollbar');
+    }
+});
+
+// Ligne ~559 - Si vous avez une autre initialisation
+const mainContent = document.querySelector('.main-content');
+if (mainContent) {
+    new PerfectScrollbar('.main-content', {
+        wheelSpeed: 2,
+        wheelPropagation: true,
+        suppressScrollX: true
+    });
+} else {
+    console.warn('⚠️ Élément .main-content non trouvé pour PerfectScrollbar');
+}
 	</script>
 	<script>
 		document.addEventListener("DOMContentLoaded", function () {
@@ -622,42 +574,56 @@
 		});
 	</script>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-	<!-- TOUJOURS en premier -->
-	<script src="assets/js/common.js"></script> 
-	<!-- Ensuite les autres -->
-	<script src="assets/js/auth.js"></script>
-	<script src="assets/js/profil.js"></script>
-	<script src="assets/js/home_permission.js"></script>
-	<script src="assets/js/home.js"></script>
-	<script>
-		// Correction d'urgence - À mettre avant les autres scripts
-		document.addEventListener('DOMContentLoaded', function() {
-    // Empêcher les erreurs de graphiques
-    if (typeof ApexCharts !== 'undefined') {
-        const originalRender = ApexCharts.prototype.render;
-        ApexCharts.prototype.render = function() {
-            if (!this.el || !document.body.contains(this.el)) {
-                console.warn('ApexCharts: Élément non trouvé, rendu annulé');
-                return Promise.resolve();
+	<!-- Dans home.html - CORRIGER l'ordre -->
+<script src="assets/js/common.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/sidebar.js"></script>
+<script src="assets/js/profil.js"></script>
+<script src="assets/js/home_permission.js"></script>
+<script src="assets/js/home.js"></script>
+<script>
+    // ✅ CORRECTION : Vérifier que Common existe AVANT d'appeler checkPageAccess
+    document.addEventListener('DOMContentLoaded', function() {
+        // Attendre que Common soit chargé
+        const checkCommon = () => {
+            if (typeof Common !== 'undefined' && Common.checkPageAccess) {
+                Common.checkPageAccess();
+            } else {
+                setTimeout(checkCommon, 100);
             }
-            return originalRender.call(this);
         };
-    }
-    
-    // Empêcher les erreurs Highcharts
-    if (typeof Highcharts !== 'undefined') {
-        const originalChart = Highcharts.chart;
-        Highcharts.chart = function(container, options) {
-            const element = typeof container === 'string' ? 
-                document.getElementById(container) : container;
-            if (!element) {
-                console.warn('Highcharts: Conteneur non trouvé:', container);
-                return null;
-            }
-            return originalChart.call(this, container, options);
-        };
-    }
+        checkCommon();
+    });
+</script>
+<script>
+	// Correction d'urgence - À mettre avant les autres scripts
+	document.addEventListener('DOMContentLoaded', function() {
+// Empêcher les erreurs de graphiques
+if (typeof ApexCharts !== 'undefined') {
+	const originalRender = ApexCharts.prototype.render;
+	ApexCharts.prototype.render = function() {
+		if (!this.el || !document.body.contains(this.el)) {
+			console.warn('ApexCharts: Élément non trouvé, rendu annulé');
+			return Promise.resolve();
+		}
+		return originalRender.call(this);
+	};
+}
+
+// Empêcher les erreurs Highcharts
+if (typeof Highcharts !== 'undefined') {
+	const originalChart = Highcharts.chart;
+	Highcharts.chart = function(container, options) {
+		const element = typeof container === 'string' ? 
+			document.getElementById(container) : container;
+		if (!element) {
+			console.warn('Highcharts: Conteneur non trouvé:', container);
+			return null;
+		}
+		return originalChart.call(this, container, options);
+	};
+}
 });
-	</script>
+</script>
 </body>
 </html>

@@ -9,11 +9,11 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Initialisation du module rendez-vous');
     
     // Vérifier les permissions
-    if (!Common.hasPermission('RENDEZVOUS_VIEW')) {
-        Common.showErrorMessage('Accès refusé. Vous n\'avez pas la permission de gérer les rendez-vous.');
-        window.location.href = 'home.html';
-        return;
-    }
+    // if (!Common.hasPermission('RENDEZVOUS_VIEW')) {
+    //     Common.showErrorMessage('Accès refusé. Vous n\'avez pas la permission de gérer les rendez-vous.');
+    //     window.location.href = 'home.html';
+    //     return;
+    // }
 
     // Récupérer l'ID de l'atelier depuis les données utilisateur
     const userData = Common.getUserData();

@@ -129,3 +129,224 @@
             color: #4e73df;
             margin-right: 10px;
         }
+
+
+           /* Style pour le modal de prix */
+            #priceModal .modal-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            }
+
+            #priceModal .modal-title {
+            color: #495057;
+            font-weight: 600;
+            }
+
+            #modelPrice {
+            font-size: 1.1rem;
+            font-weight: 500;
+            }
+
+            #modelPrice:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+            }
+            /* ===== CORRECTION GRILLE MODÈLES - 2 PAR LIGNE ===== */
+
+/* Grille des modèles - 2 COLONNES FIXES */
+.models-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* FORCE 2 colonnes */
+    gap: 10px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 8px 5px;
+    margin-bottom: 15px;
+}
+
+/* Cartes de modèle - TAILLE UNIFORME */
+.model-card {
+    border: 2px solid transparent;
+    border-radius: 8px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100px; /* Hauteur fixe */
+    aspect-ratio: 1 / 1.2; /* Ratio cohérent */
+}
+
+.model-card:hover {
+    border-color: #007bff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.model-card.selected {
+    border-color: #007bff;
+    background: linear-gradient(135deg, #e7f3ff, #d4e7ff);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.25);
+}
+
+/* Image - Taille fixe */
+.model-image {
+    width: 100%;
+    height: 60px; /* Hauteur fixe */
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 6px;
+    flex-shrink: 0; /* Empêche le rétrécissement */
+}
+
+/* Nom du modèle */
+.model-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin: 0;
+    text-align: center;
+    line-height: 1.3;
+    color: #495057;
+    display: -webkit-box;
+    /* -webkit-line-clamp: 2; 2 lignes max */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex-grow: 1; /* Prend l'espace disponible */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.6em; /* Hauteur minimale pour 2 lignes */
+}
+
+/* Prix */
+.model-price {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #28a745;
+    margin-top: 4px;
+    flex-shrink: 0; /* Reste en bas */
+}
+
+/* État de chargement - Prend toute la largeur */
+.models-grid .text-center {
+    grid-column: 1 / -1; /* Prend les 2 colonnes */
+    padding: 20px;
+    color: #6c757d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* Messages d'erreur/vide - Prend toute la largeur */
+.models-grid .alert {
+    grid-column: 1 / -1; /* Prend les 2 colonnes */
+    margin: 0;
+    font-size: 0.85rem;
+    padding: 15px;
+    text-align: center;
+}
+
+/* Scrollbar */
+.models-grid::-webkit-scrollbar {
+    width: 5px;
+}
+
+.models-grid::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 3px;
+}
+
+.models-grid::-webkit-scrollbar-thumb {
+    background: #adb5bd;
+    border-radius: 3px;
+}
+
+.models-grid::-webkit-scrollbar-thumb:hover {
+    background: #6c757d;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .models-grid {
+        grid-template-columns: repeat(2, 1fr); /* Garde 2 colonnes */
+        gap: 8px;
+        max-height: 200px;
+    }
+    
+    .model-card {
+        min-height: 90px;
+        padding: 6px;
+    }
+    
+    .model-image {
+        height: 50px;
+    }
+    
+    .model-name {
+        font-size: 0.7rem;
+        min-height: 2.4em;
+    }
+}
+
+@media (max-width: 576px) {
+    .models-grid {
+        grid-template-columns: repeat(2, 1fr); /* TOUJOURS 2 colonnes */
+        gap: 6px;
+        max-height: 180px;
+    }
+    
+    .model-card {
+        min-height: 85px;
+        padding: 5px;
+    }
+    
+    .model-image {
+        height: 45px;
+    }
+    
+    .model-name {
+        font-size: 0.65rem;
+        min-height: 2.2em;
+    }
+}
+
+/* Pour les très petits écrans */
+@media (max-width: 400px) {
+    .models-grid {
+        grid-template-columns: repeat(2, 1fr); /* Maintient 2 colonnes */
+        gap: 5px;
+    }
+    
+    .model-card {
+        min-height: 80px;
+        padding: 4px;
+    }
+    
+    .model-image {
+        height: 40px;
+    }
+    
+    .model-name {
+        font-size: 0.6rem;
+        min-height: 2em;
+    }
+}
+
+/* Correction pour s'assurer que la grille reste à 2 colonnes */
+.models-grid {
+    /* Force 2 colonnes même avec peu d'éléments */
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Assure que chaque carte a la même largeur */
+.model-card {
+    width: 100%;
+    box-sizing: border-box;
+}

@@ -19,7 +19,8 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, UUID> 
     // Trouver tous les tailleurs actifs d'un atelier
     @Query("SELECT u FROM Utilisateur u WHERE u.role = 'TAILLEUR' AND u.actif = true AND u.atelier.id = :atelierId")
     List<Utilisateur> findTailleursActifsByAtelier(@Param("atelierId") UUID atelierId);
-
+    // Dans UtilisateurRepository.java
+    List<Utilisateur> findByRole(Role role);
     // Trouver un tailleur par ID et atelier
     @Query("SELECT u FROM Utilisateur u WHERE u.id = :tailleurId AND u.role = 'TAILLEUR' AND u.actif = true AND u.atelier.id = :atelierId")
     Optional<Utilisateur> findTailleurByIdAndAtelier(@Param("tailleurId") UUID tailleurId, @Param("atelierId") UUID atelierId);

@@ -25,6 +25,7 @@ public class PermissionService {
         this.utilisateurRepository = utilisateurRepository;
     }
 
+
     public List<Permission> getAllPermissions() {
         return permissionRepository.findAll();
     }
@@ -193,32 +194,71 @@ public class PermissionService {
         }
     }
 
+
     @Transactional
     public void initializeDefaultPermissions() {
         try {
             logger.info("Début de l'initialisation des permissions par défaut");
-            
-            // Permissions par défaut
-            Map<String, String> defaultPermissions = new LinkedHashMap<>();
-            defaultPermissions.put("USER_CREATE", "Créer un utilisateur");
-            defaultPermissions.put("USER_UPDATE", "Modifier un utilisateur");
-            defaultPermissions.put("USER_DELETE", "Supprimer un utilisateur");
-            defaultPermissions.put("USER_VIEW", "Voir les utilisateurs");
-            
-            defaultPermissions.put("CLIENT_CREATE", "Créer un client");
-            defaultPermissions.put("CLIENT_UPDATE", "Modifier un client");
-            defaultPermissions.put("CLIENT_DELETE", "Supprimer un client");
-            defaultPermissions.put("CLIENT_VIEW", "Voir les clients");
-            
-            defaultPermissions.put("ATELIER_CREATE", "Créer un atelier");
-            defaultPermissions.put("ATELIER_UPDATE", "Modifier un atelier");
-            defaultPermissions.put("ATELIER_DELETE", "Supprimer un atelier");
-            defaultPermissions.put("ATELIER_VIEW", "Voir les ateliers");
 
-            defaultPermissions.put("ACCESS_DASHBOARD", "Accéder au tableau de bord");
-            defaultPermissions.put("ACCESS_REPORTS", "Accéder aux rapports");
-            defaultPermissions.put("EXPORT_DATA", "Exporter des données");
-            defaultPermissions.put("IMPORT_DATA", "Importer des données");
+            // Permissions par défaut en FRANÇAIS
+            Map<String, String> defaultPermissions = new LinkedHashMap<>();
+
+            // Permissions pour la Sidebar - Visibilité des menus
+//            defaultPermissions.put("MENU_TABLEAU_BORD", "Accéder au tableau de bord");
+//            defaultPermissions.put("MENU_ATELIERS", "Voir le menu ateliers");
+//            defaultPermissions.put("MENU_UTILISATEURS", "Voir le menu utilisateurs");
+//            defaultPermissions.put("MENU_MODELES", "Voir le menu modèles");
+//            defaultPermissions.put("MENU_AFFECTATIONS", "Voir le menu affectations");
+//            defaultPermissions.put("MENU_RENDEZ_VOUS", "Voir le menu rendez-vous");
+//            defaultPermissions.put("MENU_PAIEMENTS", "Voir le menu paiements");
+//            defaultPermissions.put("MENU_PARAMETRES", "Voir le menu paramètres");
+            // Permissions CRUD Utilisateurs
+            defaultPermissions.put("UTILISATEUR_VOIR", "Voir les utilisateurs");
+            defaultPermissions.put("UTILISATEUR_CREER", "Créer un utilisateur");
+            defaultPermissions.put("UTILISATEUR_MODIFIER", "Modifier un utilisateur");
+            defaultPermissions.put("UTILISATEUR_SUPPRIMER", "Supprimer un utilisateur");
+
+            // Permissions CRUD Clients
+            defaultPermissions.put("CLIENT_VOIR", "Voir les clients");
+            defaultPermissions.put("CLIENT_CREER", "Créer un client");
+            defaultPermissions.put("CLIENT_MODIFIER", "Modifier un client");
+            defaultPermissions.put("CLIENT_SUPPRIMER", "Supprimer un client");
+
+            // Permissions CRUD Ateliers
+            defaultPermissions.put("ATELIER_VOIR", "Voir les ateliers");
+            defaultPermissions.put("ATELIER_CREER", "Créer un atelier");
+            defaultPermissions.put("ATELIER_MODIFIER", "Modifier un atelier");
+            defaultPermissions.put("ATELIER_SUPPRIMER", "Supprimer un atelier");
+
+            // Permissions CRUD Modèles
+            defaultPermissions.put("MODELE_VOIR", "Voir les modèles");
+            defaultPermissions.put("MODELE_CREER", "Créer un modèle");
+            defaultPermissions.put("MODELE_MODIFIER", "Modifier un modèle");
+            defaultPermissions.put("MODELE_SUPPRIMER", "Supprimer un modèle");
+
+            // Permissions CRUD Affectations
+            defaultPermissions.put("AFFECTATION_VOIR", "Voir les affectations");
+            defaultPermissions.put("AFFECTATION_CREER", "Créer une affectation");
+            defaultPermissions.put("AFFECTATION_MODIFIER", "Modifier une affectation");
+            defaultPermissions.put("AFFECTATION_SUPPRIMER", "Supprimer une affectation");
+
+            // Permissions CRUD Rendez-vous
+            defaultPermissions.put("RENDEZ_VOUS_VOIR", "Voir les rendez-vous");
+            defaultPermissions.put("RENDEZ_VOUS_CREER", "Créer un rendez-vous");
+            defaultPermissions.put("RENDEZ_VOUS_MODIFIER", "Modifier un rendez-vous");
+            defaultPermissions.put("RENDEZ_VOUS_SUPPRIMER", "Supprimer un rendez-vous");
+
+            // Permissions CRUD Paiements
+            defaultPermissions.put("PAIEMENT_VOIR", "Voir les paiements");
+            defaultPermissions.put("PAIEMENT_CREER", "Créer un paiement");
+            defaultPermissions.put("PAIEMENT_MODIFIER", "Modifier un paiement");
+            defaultPermissions.put("PAIEMENT_SUPPRIMER", "Supprimer un paiement");
+
+            // Permissions Spéciales
+            defaultPermissions.put("MENU_PARAMETRES", "voir le parametre");
+//            defaultPermissions.put("IMPORTER_DONNEES", "Importer des données");
+//            defaultPermissions.put("GENERER_RAPPORT", "Générer des rapports");
+//            defaultPermissions.put("VOIR_STATISTIQUES", "Voir les statistiques");
 
             int count = 0;
             for (Map.Entry<String, String> entry : defaultPermissions.entrySet()) {
@@ -229,11 +269,77 @@ public class PermissionService {
                     logger.debug("Permission par défaut créée: {}", entry.getKey());
                 }
             }
-            
+
             logger.info("Initialisation des permissions par défaut terminée. {} nouvelles permissions créées.", count);
         } catch (Exception e) {
             logger.error("Erreur lors de l'initialisation des permissions par défaut", e);
             throw new RuntimeException("Erreur lors de l'initialisation des permissions par défaut: " + e.getMessage());
+        }
+    }
+
+    // Dans votre PermissionService.java
+
+    public Map<String, Boolean> getUserPermissionsMap(UUID userId) {
+        try {
+            logger.debug("Récupération des permissions map pour l'utilisateur: {}", userId);
+
+            Utilisateur utilisateur = utilisateurRepository.findById(userId)
+                    .orElseThrow(() -> {
+                        String errorMsg = "Utilisateur non trouvé avec l'ID: " + userId;
+                        logger.error(errorMsg);
+                        return new RuntimeException(errorMsg);
+                    });
+
+            Set<String> userPermissionCodes = utilisateur.getPermissionCodes();
+
+            // Créer un map avec toutes les permissions disponibles en FRANÇAIS
+            Map<String, Boolean> permissionsMap = new HashMap<>();
+
+            // Permissions Sidebar - Visibilité des menus (correspondant à votre frontend)
+            permissionsMap.put("MENU_MESURES", userPermissionCodes.contains("CLIENT_VIEW"));
+            permissionsMap.put("MENU_CLIENTS", userPermissionCodes.contains("CLIENT_VIEW"));
+            permissionsMap.put("MENU_MODELES", userPermissionCodes.contains("MODELE_VIEW"));
+            permissionsMap.put("MENU_AFFECTATIONS", userPermissionCodes.contains("AFFECTATION_VIEW"));
+            permissionsMap.put("MENU_RENDEZ_VOUS", userPermissionCodes.contains("RENDEZVOUS_VIEW"));
+            permissionsMap.put("MENU_PAIEMENTS", userPermissionCodes.contains("PAIEMENT_VIEW"));
+            permissionsMap.put("MENU_PARAMETRES", userPermissionCodes.contains("PARAMETRES_VIEW"));
+
+            // Permissions Boutons - Actions
+            permissionsMap.put("BTN_CREER_CLIENT", userPermissionCodes.contains("CLIENT_CREATE"));
+            permissionsMap.put("BTN_MODIFIER_CLIENT", userPermissionCodes.contains("CLIENT_UPDATE"));
+            permissionsMap.put("BTN_SUPPRIMER_CLIENT", userPermissionCodes.contains("CLIENT_DELETE"));
+
+            permissionsMap.put("BTN_CREER_MODELE", userPermissionCodes.contains("MODELE_CREATE"));
+            permissionsMap.put("BTN_MODIFIER_MODELE", userPermissionCodes.contains("MODELE_UPDATE"));
+            permissionsMap.put("BTN_SUPPRIMER_MODELE", userPermissionCodes.contains("MODELE_DELETE"));
+
+            permissionsMap.put("BTN_CREER_AFFECTATION", userPermissionCodes.contains("AFFECTATION_CREATE"));
+            permissionsMap.put("BTN_MODIFIER_AFFECTATION", userPermissionCodes.contains("AFFECTATION_UPDATE"));
+            permissionsMap.put("BTN_SUPPRIMER_AFFECTATION", userPermissionCodes.contains("AFFECTATION_DELETE"));
+
+            permissionsMap.put("BTN_CREER_RENDEZVOUS", userPermissionCodes.contains("RENDEZVOUS_CREATE"));
+            permissionsMap.put("BTN_MODIFIER_RENDEZVOUS", userPermissionCodes.contains("RENDEZVOUS_UPDATE"));
+            permissionsMap.put("BTN_SUPPRIMER_RENDEZVOUS", userPermissionCodes.contains("RENDEZVOUS_DELETE"));
+
+            permissionsMap.put("BTN_CREER_PAIEMENT", userPermissionCodes.contains("PAIEMENT_CREATE"));
+            permissionsMap.put("BTN_MODIFIER_PAIEMENT", userPermissionCodes.contains("PAIEMENT_UPDATE"));
+            permissionsMap.put("BTN_SUPPRIMER_PAIEMENT", userPermissionCodes.contains("PAIEMENT_DELETE"));
+
+            return permissionsMap;
+        } catch (Exception e) {
+            logger.error("Erreur lors de la récupération des permissions map de l'utilisateur: {}", userId, e);
+            throw new RuntimeException("Erreur lors de la récupération des permissions map: " + e.getMessage());
+        }
+    }
+
+    public boolean userHasPermission(UUID userId, String permissionCode) {
+        try {
+            Set<Permission> userPermissions = getUserPermissions(userId);
+            return userPermissions.stream()
+                    .anyMatch(permission -> permission.getCode().equals(permissionCode));
+        } catch (Exception e) {
+            logger.error("Erreur lors de la vérification de la permission: {} pour l'utilisateur: {}", permissionCode, userId, e);
+            return false;
         }
     }
 

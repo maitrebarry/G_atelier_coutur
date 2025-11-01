@@ -255,31 +255,66 @@ function showInfoMessage(message) {
     }
 }
 
-// Vérification des permissions
+// Vérification des permissions - VERSION CORRIGÉE
 function hasPermission(permissionCode) {
     const userData = getUserData();
     const userRole = userData.role;
 
+    console.log('🔐 Vérification permission:', permissionCode, 'User:', userData);
+
     // SUPERADMIN a toutes les permissions
     if (userRole === 'SUPERADMIN') {
+        console.log('✅ SUPERADMIN - accès accordé');
         return true;
     }
 
-    // Vérifier les permissions individuelles
+    // Vérifier les permissions individuelles (tableau de strings)
     if (userData.permissions && Array.isArray(userData.permissions)) {
-        return userData.permissions.some(perm => perm.code === permissionCode);
+        const hasPerm = userData.permissions.includes(permissionCode);
+        console.log('📋 Permission trouvée:', hasPerm, 'Permissions disponibles:', userData.permissions);
+        return hasPerm;
     }
+
+    console.warn('⚠️ Aucune permission individuelle trouvée - fallback par rôle');
 
     // Fallback par rôle (seulement si pas de permissions individuelles)
     const rolePermissions = {
-        'PROPRIETAIRE': ['MODELE_VIEW', 'CLIENT_VIEW', 'TAILLEUR_VIEW', 'RENDEZVOUS_VIEW', 'PAIEMENT_VIEW', 'PARAMETRE_VIEW', 'AFFECTATION_VIEW'],
-        'SECRETAIRE': ['MODELE_VIEW', 'CLIENT_VIEW', 'TAILLEUR_VIEW', 'RENDEZVOUS_VIEW', 'PAIEMENT_VIEW'],
-        'TAILLEUR': ['MODELE_VIEW']
+        'PROPRIETAIRE': ['MENU_TABLEAU_BORD', 'MENU_CLIENTS', 'MENU_MODELES', 'MENU_AFFECTATIONS', 'MENU_RENDEZ_VOUS', 'MENU_PAIEMENTS', 'MENU_PARAMETRES'],
+        'SECRETAIRE': ['MENU_TABLEAU_BORD', 'MENU_CLIENTS', 'MENU_MODELES', 'MENU_RENDEZ_VOUS', 'MENU_PAIEMENTS'],
+        'TAILLEUR': ['MENU_TABLEAU_BORD', 'MENU_MODELES']
     };
 
-    return rolePermissions[userRole] && rolePermissions[userRole].includes(permissionCode);
+    const hasRolePerm = rolePermissions[userRole] && rolePermissions[userRole].includes(permissionCode);
+    console.log('🎭 Permission par rôle:', hasRolePerm);
+    return hasRolePerm;
 }
-
+// Rafraîchissement des permissions
+async function refreshPermissions() {
+    try {
+        console.log('🔄 Rafraîchissement des permissions...');
+        const userInfo = await apiCall('/api/auth/me');
+        
+        // Mettre à jour les données utilisateur
+        const currentUserData = getUserData();
+        currentUserData.permissions = userInfo.permissions || [];
+        
+        // Sauvegarder
+        const storage = localStorage.getItem("authToken") ? localStorage : sessionStorage;
+        storage.setItem("userData", JSON.stringify(currentUserData));
+        
+        console.log('✅ Permissions mises à jour:', currentUserData.permissions);
+        
+        // Déclencher l'événement
+        window.dispatchEvent(new CustomEvent('permissionsUpdated', { 
+            detail: { permissions: currentUserData.permissions } 
+        }));
+        
+        return currentUserData.permissions;
+    } catch (error) {
+        console.error('❌ Erreur rafraîchissement permissions:', error);
+        throw error;
+    }
+}
 // Vérification d'authentification
 function isAuthenticated() {
     const token = getToken();
@@ -336,22 +371,67 @@ function hideLoading() {
 // ==================================================
 // FONCTIONS API COMMUNES
 // ==================================================
+// async function apiCall(endpoint, options = {}) {
+//     try {
+//         const token = getToken();
+//         const headers = {
+//             'Content-Type': 'application/json',
+//             ...(token && { 'Authorization': `Bearer ${token}` }),
+//             ...options.headers
+//         };
+
+//         const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}${endpoint}`, {
+//             ...options,
+//             headers
+//         });
+
+//         if (!response.ok) {
+//             throw new Error(`HTTP ${response.status}`);
+//         }
+
+//         return await response.json();
+//     } catch (error) {
+//         console.error(`❌ Erreur API ${endpoint}:`, error);
+//         throw error;
+//     }
+// }
 async function apiCall(endpoint, options = {}) {
     try {
         const token = getToken();
+        
+        // ✅ CORRECTION : Nettoyer l'endpoint pour éviter les doubles slash
+        let cleanEndpoint = endpoint;
+        if (cleanEndpoint.startsWith('/')) {
+            cleanEndpoint = cleanEndpoint.substring(1);
+        }
+        
+        const baseUrl = window.APP_CONFIG.API_BASE_URL;
+        const url = `${baseUrl}/${cleanEndpoint}`;
+        
+        console.log('🌐 Appel API:', url, 'Token présent:', !!token);
+        
         const headers = {
             'Content-Type': 'application/json',
             ...(token && { 'Authorization': `Bearer ${token}` }),
             ...options.headers
         };
 
-        const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}${endpoint}`, {
+        const response = await fetch(url, {
             ...options,
             headers
         });
 
+        if (response.status === 403) {
+            console.warn('⛔ Accès refusé (403) - Vérifiez les permissions backend');
+            const errorText = await response.text();
+            console.error('Détails erreur 403:', errorText);
+            throw new Error('Accès refusé - Vous n\'avez pas les permissions nécessaires');
+        }
+
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            const errorText = await response.text();
+            console.error(`❌ HTTP ${response.status}:`, errorText);
+            throw new Error(`HTTP ${response.status} - ${response.statusText}`);
         }
 
         return await response.json();
@@ -360,7 +440,93 @@ async function apiCall(endpoint, options = {}) {
         throw error;
     }
 }
+// ==================================================
+// GESTION DES PAGES ET REDIRECTIONS
+// ==================================================
 
+function checkPageAccess() {
+    if (typeof sidebarManager !== 'undefined') {
+        const currentPage = window.location.pathname.split('/').pop();
+        if (!sidebarManager.canAccessPage(currentPage)) {
+            console.warn('⛔ Accès non autorisé à la page:', currentPage);
+            Common.showErrorMessage('Vous n\'avez pas les permissions nécessaires pour accéder à cette page');
+            setTimeout(() => window.location.href = 'home.html', 2000);
+            return false;
+        }
+    }
+    return true;
+}
+
+function navigateTo(page) {
+    if (typeof sidebarManager !== 'undefined') {
+        if (sidebarManager.canAccessPage(page)) {
+            window.location.href = page;
+        } else {
+            Common.showErrorMessage('Vous n\'avez pas accès à cette page');
+        }
+    } else {
+        window.location.href = page;
+    }
+}
+
+// Vérifier les permissions pour un élément UI
+function checkUIPermission(permission, element) {
+    if (!hasPermission(permission)) {
+        if (element) {
+            element.style.display = 'none';
+        }
+        return false;
+    }
+    return true;
+}
+// Fonction temporaire pour charger les permissions manuellement
+async function loadUserPermissions() {
+    try {
+        console.log('🔄 Chargement manuel des permissions...');
+        const userInfo = await apiCall('/api/auth/me');
+        
+        if (userInfo.permissions && userInfo.permissions.length > 0) {
+            console.log('✅ Permissions chargées:', userInfo.permissions);
+            
+            // Mettre à jour le localStorage
+            const currentUserData = getUserData();
+            currentUserData.permissions = userInfo.permissions;
+            
+            const storage = localStorage.getItem("authToken") ? localStorage : sessionStorage;
+            storage.setItem("userData", JSON.stringify(currentUserData));
+            
+            // Rafraîchir la sidebar
+            window.dispatchEvent(new CustomEvent('permissionsUpdated'));
+            
+            return userInfo.permissions;
+        } else {
+            console.warn('⚠️ Aucune permission dans la réponse API');
+            return [];
+        }
+    } catch (error) {
+        console.error('❌ Erreur chargement permissions:', error);
+        return [];
+    }
+}
+
+// Exposer la fonction
+window.loadUserPermissions = loadUserPermissions;
+
+// Charger automatiquement au démarrage
+document.addEventListener('DOMContentLoaded', function() {
+    if (Common.isAuthenticated()) {
+        setTimeout(() => {
+            const userData = Common.getUserData();
+            if (!userData.permissions || userData.permissions.length === 0) {
+                console.log('🔄 Chargement automatique des permissions...');
+                loadUserPermissions();
+            }
+        }, 1000);
+    }
+});
+// ==================================================
+// EXPOSITION GLOBALE
+// ==================================================
 // ==================================================
 // EXPOSITION GLOBALE
 // ==================================================
@@ -375,5 +541,6 @@ window.Common = {
     isAuthenticated,
     showLoading,
     hideLoading,
-    apiCall
+    apiCall,
+    refreshPermissions  // <-- AJOUTÉ
 };

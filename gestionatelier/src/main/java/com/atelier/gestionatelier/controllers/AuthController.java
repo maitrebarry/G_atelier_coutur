@@ -69,16 +69,47 @@ public class AuthController {
         return ResponseEntity.badRequest().body(Map.of("error", "Token non fourni"));
     }
 
+//    @GetMapping("/me")
+//    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+//        if (authentication == null || !authentication.isAuthenticated()) {
+//            return ResponseEntity.status(401).body(Map.of("error", "Non authentifié"));
+//        }
+//
+//        try {
+//            String email = authentication.getName();
+//            Utilisateur utilisateur = utilisateurService.findByEmail(email);
+//
+//            Map<String, Object> userInfo = new HashMap<>();
+//            userInfo.put("id", utilisateur.getId());
+//            userInfo.put("email", utilisateur.getEmail());
+//            userInfo.put("prenom", utilisateur.getPrenom());
+//            userInfo.put("nom", utilisateur.getNom());
+//            userInfo.put("role", utilisateur.getRole().name());
+//            userInfo.put("username", authentication.getName());
+//            userInfo.put("authorities", authentication.getAuthorities());
+//
+//            if (utilisateur.getAtelier() != null) {
+//                userInfo.put("atelierId", utilisateur.getAtelier().getId());
+//                userInfo.put("atelierNom", utilisateur.getAtelier().getNom());
+//            }
+//
+//            return ResponseEntity.ok(userInfo);
+//
+//        } catch (Exception e) {
+//            return ResponseEntity.status(404).body(Map.of("error", "Utilisateur non trouvé"));
+//        }
+//    }
+
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(401).body(Map.of("error", "Non authentifié"));
         }
-        
+
         try {
             String email = authentication.getName();
             Utilisateur utilisateur = utilisateurService.findByEmail(email);
-            
+
             Map<String, Object> userInfo = new HashMap<>();
             userInfo.put("id", utilisateur.getId());
             userInfo.put("email", utilisateur.getEmail());
@@ -87,14 +118,15 @@ public class AuthController {
             userInfo.put("role", utilisateur.getRole().name());
             userInfo.put("username", authentication.getName());
             userInfo.put("authorities", authentication.getAuthorities());
-            
+            userInfo.put("permissions", utilisateur.getPermissionCodes()); // <-- PERMISSIONS AJOUTÉES
+
             if (utilisateur.getAtelier() != null) {
                 userInfo.put("atelierId", utilisateur.getAtelier().getId());
                 userInfo.put("atelierNom", utilisateur.getAtelier().getNom());
             }
-            
+
             return ResponseEntity.ok(userInfo);
-            
+
         } catch (Exception e) {
             return ResponseEntity.status(404).body(Map.of("error", "Utilisateur non trouvé"));
         }

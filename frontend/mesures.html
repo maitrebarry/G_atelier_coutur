@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="en" class="semi-dark">
   <head>
-   <title>Formulaire de Prise de Mesures Client</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <head>
@@ -9,7 +8,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <!--favicon-->
-        <link rel="icon" href="assets/images/favicon-32x32.png" type="image/png" />
+       <link rel="icon" href="assets/images/logo_ateliko.png" type="image/png" />
         <!--plugins-->
         <link href="assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
         <link href="assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css" rel="stylesheet" />
@@ -28,115 +27,8 @@
         <link rel="stylesheet" href="assets/css/dark-theme.css" />
         <link rel="stylesheet" href="assets/css/semi-dark.css" />
         <link rel="stylesheet" href="assets/css/header-colors.css" />
-        <script src="assets/js/auth.js"></script>
-        <title>Dashkote - Bootstrap5 Admin Template</title>
-        <style>
-            /* Style pour le modal de prix */
-            #priceModal .modal-header {
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            }
-
-            #priceModal .modal-title {
-            color: #495057;
-            font-weight: 600;
-            }
-
-            #modelPrice {
-            font-size: 1.1rem;
-            font-weight: 500;
-            }
-
-            #modelPrice:focus {
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-            }
-
-            /* NOUVEAUX STYLES - Section modèles existants */
-.existing-models-section {
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.divider {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 15px 0;
-}
-
-.divider::before,
-.divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.divider-text {
-    padding: 0 10px;
-    color: #6c757d;
-    font-weight: 500;
-    font-size: 0.9rem;
-}
-
-.models-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    max-height: 250px;
-    overflow-y: auto;
-}
-
-.model-card {
-    border: 2px solid transparent;
-    border-radius: 8px;
-    padding: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: white;
-    text-align: center;
-}
-
-.model-card:hover {
-    border-color: #007bff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.model-card.selected {
-    border-color: #007bff;
-    background-color: #e7f3ff;
-}
-
-.model-image {
-    width: 100%;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-}
-
-.model-name {
-    font-size: 0.75rem;
-    font-weight: 500;
-    margin-top: 5px;
-    text-align: center;
-    line-height: 1.2;
-}
-
-.model-details .badge {
-    font-size: 0.7rem;
-}
-
-/* Style pour le sélecteur de catégorie */
-#categorieModele {
-    font-size: 0.8rem;
-}
-        </style>
+        <link href="assets/css/logo_icon.css" rel="stylesheet" />
+        <title>ATELIKO</title>
     </head>
     <body>
         <!--wrapper-->
@@ -144,73 +36,17 @@
             <!--sidebar wrapper -->
             <div class="sidebar-wrapper" data-simplebar="true">
                 <div class="sidebar-header">
-                    <div>
-                        <img src="assets/images/logo-icon.png" class="logo-icon" alt="logo icon">
+                    <div class="branding">
+                        <img src="assets/images/logo_ateliko.png" class="logo-icon" alt="logo icon">
+                        <h6 class="logo-text">ATELIKO</h6>
                     </div>
-                    <div>
-                        <h4 class="logo-text">Atelier Couture</h4>
-                    </div>
-                    <div class="toggle-icon ms-auto"><i class='bx bx-arrow-to-left'></i>
+                    <div class="toggle-icon ms-auto">
+                        <i class='bx bx-arrow-to-left'></i>
                     </div>
                 </div>
                 <!--navigation-->
-               <ul class="metismenu" id="menu">
-				<!-- Tableau de bord - Visible pour tous -->
-				<li>
-					<a href="home.html">
-						<div class="parent-icon"><i class='bx bx-home-circle'></i></div>
-						<div class="menu-title">Tableau de bord</div>
-					</a>
-				</li>
-
-				<!-- Modèles - Permissions: PROPRIETAIRE, SECRETAIRE, TAILLEUR -->
-				<li class="permission-required" data-permissions="MODELE_VIEW">
-					<a href="javascript:;" class="has-arrow">
-						<div class="parent-icon"><i class='bx bx-cut'></i></div>
-						<div class="menu-title">Modèles</div>
-					</a>
-					<ul>
-						<li class="permission-required" data-permissions="CLIENT_VIEW">
-							<a href="mesures.html"><i class="bx bx-right-arrow-alt"></i>Mesures clients</a>
-						</li>
-						<li class="permission-required" data-permissions="CLIENT_VIEW">
-							<a href="clients.html"><i class="bx bx-right-arrow-alt"></i>Liste des clients</a>
-						</li>
-						<li class="permission-required" data-permissions="MODELE_VIEW">
-							<a href="modele.html"><i class="bx bx-right-arrow-alt"></i>Modèle</a>
-						</li>
-					</ul>
-				</li>
-				<!-- NOUVEAU : Affectations -->
-                    <li class="permission-required" data-permissions="AFFECTATION_VIEW">
-                        <a href="affectation.html" class="active">
-                            <div class="parent-icon"><i class='bx bx-user-check'></i></div>
-                            <div class="menu-title">Affectations</div>
-                        </a>
-                    </li>
-				<!-- Rendez-vous - Permissions: PROPRIETAIRE, SECRETAIRE -->
-				<li class="permission-required" data-permissions="RENDEZVOUS_VIEW">
-					<a href="rendezvous.html">
-						<div class="parent-icon"><i class='bx bx-calendar'></i></div>
-						<div class="menu-title">Rendez-vous</div>
-					</a>
-				</li>
-
-				<!-- Paiements - Permissions: PROPRIETAIRE, SECRETAIRE -->
-				<li class="permission-required" data-permissions="PAIEMENT_VIEW">
-					<a href="paiements.html">
-						<div class="parent-icon"><i class='bx bx-wallet'></i></div>
-						<div class="menu-title">Paiements</div>
-					</a>
-				</li>
-
-				<!-- Paramètres - Permissions: PROPRIETAIRE uniquement -->
-				<li class="permission-required" data-permissions="PARAMETRES_VIEW">
-					<a href="parametres.html">
-						<div class="parent-icon"><i class='bx bx-cog bx-spin'></i></div>
-						<div class="menu-title">Paramètres</div>
-					</a>
-				</li>
+              <ul class="metismenu" id="menu">
+				
 			</ul>
 			    <!--end navigation-->
             </div>
@@ -285,26 +121,7 @@
 							</li>
 						</ul>
 					</div>
-										<!-- <div class="user-box dropdown">
-						<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-							<img src="https://via.placeholder.com/110x110" class="user-img" alt="user avatar">
-							<div class="user-info ps-3">
-								<p class="user-name mb-0">Pauline Seitz</p>
-								<p class="designattion mb-0">Web Designer</p>
-							</div>
-						</a>
-						<ul class="dropdown-menu dropdown-menu-end">
-							<li><a class="dropdown-item" href="javascript:;"><i class="bx bx-user"></i><span>Profile</span></a>
-							</li>
-							<li><a class="dropdown-item" href="javascript:;"><i class="bx bx-cog"></i><span>Paramètres</span></a>
-							</li>
-							<li>
-								<div class="dropdown-divider mb-0"></div>
-							</li>
-							<li><a class="dropdown-item" href="javascript:;"><i class='bx bx-log-out-circle'></i><span>Déconnexion</span></a>
-							</li>
-						</ul>
-					</div> -->
+
 				</nav>
 			</div>
 		 </header>
@@ -927,11 +744,11 @@
 		});
 	</script>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="assets/js/common.js"></script> 
-	<!-- Ensuite les autres -->
-	<script src="assets/js/auth.js"></script>
-	<script src="assets/js/profil.js"></script>
-	<script src="assets/js/home_permission.js"></script>
+   <script src="assets/js/common.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/sidebar.js"></script>
+    <script src="assets/js/profil.js"></script>
+    <script src="assets/js/home_permission.js"></script>
     <script src="assets/js/mesures.js"></script>
     <script>
         // Toggle the chevron icon when the collapse shows/hides
@@ -950,5 +767,49 @@
             });
         });
     </script>
+    <script>
+    // ✅ CORRECTION : Vérifier que Common existe AVANT d'appeler checkPageAccess
+    document.addEventListener('DOMContentLoaded', function() {
+        // Attendre que Common soit chargé
+        const checkCommon = () => {
+            if (typeof Common !== 'undefined' && Common.checkPageAccess) {
+                Common.checkPageAccess();
+            } else {
+                setTimeout(checkCommon, 100);
+            }
+        };
+        checkCommon();
+    });
+</script>
+<script>
+	// Correction d'urgence - À mettre avant les autres scripts
+	document.addEventListener('DOMContentLoaded', function() {
+// Empêcher les erreurs de graphiques
+if (typeof ApexCharts !== 'undefined') {
+	const originalRender = ApexCharts.prototype.render;
+	ApexCharts.prototype.render = function() {
+		if (!this.el || !document.body.contains(this.el)) {
+			console.warn('ApexCharts: Élément non trouvé, rendu annulé');
+			return Promise.resolve();
+		}
+		return originalRender.call(this);
+	};
+}
+
+// Empêcher les erreurs Highcharts
+if (typeof Highcharts !== 'undefined') {
+	const originalChart = Highcharts.chart;
+	Highcharts.chart = function(container, options) {
+		const element = typeof container === 'string' ? 
+			document.getElementById(container) : container;
+		if (!element) {
+			console.warn('Highcharts: Conteneur non trouvé:', container);
+			return null;
+		}
+		return originalChart.call(this, container, options);
+	};
+}
+});
+</script>
     </body>
 </html>
