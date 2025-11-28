@@ -33,6 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ✅ CORRECTION : Fonction principale pour récupérer les clients
+  let userRole = ''; // Variable globale pour le rôle
+
   async function fetchClients() {
     showLoading();
 
@@ -51,9 +53,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const role = userData.role;  // "TAILLEUR", "PROPRIETAIRE", "SECRETAIRE", "SUPERADMIN"
+      userRole = userData.role;  // Stocker le rôle globalement
 
-      console.log("Rôle utilisateur:", role);
+      console.log("Rôle utilisateur:", userRole);
       console.log("Données utilisateur:", userData);
 
       // ✅ CORRECTION : Utiliser l'endpoint unique du backend
@@ -128,6 +130,25 @@ document.addEventListener("DOMContentLoaded", () => {
         prix = client.mesures[0].prix || "";
       }
 
+      // Construire les boutons d'action selon le rôle
+      let actionButtons = `
+        <button class="btn btn-sm btn-info me-1 btn-detail" title="Détail" data-id="${client.id}">
+          <i class="bi bi-eye"></i>
+        </button>
+      `;
+
+      // Les tailleurs ne voient que le bouton détail
+      if (userRole !== 'TAILLEUR') {
+        actionButtons += `
+          <button class="btn btn-sm btn-warning me-1 btn-modifier" title="Modifier" data-id="${client.id}">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-danger btn-supprimer" title="Supprimer" data-id="${client.id}">
+            <i class="bi bi-trash"></i>
+          </button>
+        `;
+      }
+
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${client.prenom || ""}</td>
@@ -141,15 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
          
         </td>
         <td>
-          <button class="btn btn-sm btn-info me-1 btn-detail" title="Détail" data-id="${client.id}">
-            <i class="bi bi-eye"></i>
-          </button>
-          <button class="btn btn-sm btn-warning me-1 btn-modifier" title="Modifier" data-id="${client.id}">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button class="btn btn-sm btn-danger btn-supprimer" title="Supprimer" data-id="${client.id}">
-            <i class="bi bi-trash"></i>
-          </button>
+          ${actionButtons}
         </td>
       `;
 
@@ -164,21 +177,23 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // Event listeners pour modification
-    document.querySelectorAll(".btn-modifier").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const clientId = e.currentTarget.getAttribute("data-id");
-        openEditModal(clientId); 
+    // Event listeners pour modification (seulement si boutons présents)
+    if (userRole !== 'TAILLEUR') {
+      document.querySelectorAll(".btn-modifier").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const clientId = e.currentTarget.getAttribute("data-id");
+          openEditModal(clientId); 
+        });
       });
-    });
 
-    // Event listeners pour suppression
-    document.querySelectorAll(".btn-supprimer").forEach((btn) => {
-      btn.addEventListener("click", function () {
-        const clientId = this.getAttribute("data-id");
-        confirmAndDelete(clientId);
+      // Event listeners pour suppression
+      document.querySelectorAll(".btn-supprimer").forEach((btn) => {
+        btn.addEventListener("click", function () {
+          const clientId = this.getAttribute("data-id");
+          confirmAndDelete(clientId);
+        });
       });
-    });
+    }
   }
 
   // Fonction de suppression
