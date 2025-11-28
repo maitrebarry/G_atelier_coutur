@@ -5,10 +5,16 @@
             {url: 'assets/images/jupe2.jpg', title: 'Collection Jupe'},
             {url: 'assets/images/jupe4.jpg', title: 'Collection Jupe'},
             {url: 'assets/images/jupe5.jpg', title: 'Collection Jupe'},
+             {url: 'assets/images/jupe6.jpg', title: 'Collection Jupe'},
+             {url: 'assets/images/jupe7.jpg', title: 'Collection Jupe'},
+              {url: 'assets/images/jupe8.jpg', title: 'Collection Jupe'},
+               {url: 'assets/images/jupe9.jpg', title: 'Collection Jupe'},
+                {url: 'assets/images/jupe10.jpg', title: 'Collection Jupe'},
             {url: 'assets/images/model1.png', title: 'Modèle Exclusive'},
             {url: 'assets/images/model2.png', title: 'Modèle Exclusive'},
             {url: 'assets/images/model3.jpg', title: 'Nouvelle Collection'},
-            {url: 'assets/images/model4.jpg', title: 'Nouvelle Collection'}
+            {url: 'assets/images/model4.jpg', title: 'Nouvelle Collection'},
+             {url: 'assets/images/model5.jpg', title: 'Nouvelle Collection'}
         ];
         
         let currentImageIndex = 0;

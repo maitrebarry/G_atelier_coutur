@@ -320,123 +320,155 @@
 				</div>
 
 				<!-- Section Propriétaire -->
-				<div id="proprietaireContent" class="row" style="display: none;">
-					<div class="col-lg-12 col-md-12 col-sm-12 ">
-						<div class="card mb-4">
-							<div class="card-body">
-								<h5 class="card-title">Performance des tailleurs</h5>
-								<div id="performanceTailleursList"></div>
-							</div>
-						</div>
-						
-						<div class="card">
-							<div class="card-body">
-								<h5 class="card-title">Rendez-vous à venir</h5>
-								<div id="rendezVousProchainsList"></div>
-							</div>
-						</div>
-					</div>
-					<div class="col-lg-4">
-						<div class="card mb-4">
-							<div class="card-body">
-								<h5 class="card-title">Répartition des affectations</h5>
-								<canvas id="affectationsChart" height="250"></canvas>
-							</div>
-						</div>
-						
-						<div class="card">
-							<div class="card-body">
-								<h5 class="card-title">Tâches urgentes</h5>
-								<div id="tachesUrgentesList"></div>
-							</div>
-						</div>
-					</div>
-				</div>
+<div id="proprietaireContent" style="display: none;">
+    <!-- Première ligne : 2 colonnes -->
+    <div class="row">
+        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Performance des tailleurs</h5>
+                    <div id="performanceTailleursList"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Rendez-vous à venir</h5>
+                    <div id="rendezVousProchainsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-				<!-- Section Tailleur -->
-				<div id="tailleurContent" class="row" style="display: none;">
-					<div class="col-lg-6">
-						<div class="card mb-4">
-							<div class="card-body">
-								<h5 class="card-title">Mes affectations en cours</h5>
-								<div id="affectationsEnCoursList"></div>
-							</div>
-						</div>
-						
-						<div class="card">
-							<div class="card-body">
-								<h5 class="card-title">Prochaines échéances</h5>
-								<div id="prochainesEcheancesList"></div>
-							</div>
-						</div>
-					</div>
-					<div class="col-lg-6">
-						<div class="card mb-4">
-							<div class="card-body">
-								<h5 class="card-title">Mes performances</h5>
-								<div class="row text-center">
-									<div class="col-6">
-										<h3 id="tauxCompletion" class="text-primary">0%</h3>
-										<small class="text-muted">Taux de completion</small>
-									</div>
-									<div class="col-6">
-										<h3 id="moyenneTemps" class="text-info">0h</h3>
-										<small class="text-muted">Temps moyen</small>
-									</div>
-								</div>
-							</div>
-						</div>
-						
-						<div class="card">
-							<div class="card-body">
-								<h5 class="card-title">Mes revenus</h5>
-								<div class="mb-3">
-									<small class="text-muted">Mensuel</small>
-									<h4 id="revenusMensuels" class="text-success">0 FCFA</h4>
-								</div>
-								<div>
-									<small class="text-muted">En attente</small>
-									<h4 id="revenusAttente" class="text-warning">0 FCFA</h4>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
+    <!-- Deuxième ligne : 2 colonnes -->
+    <div class="row">
+        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Répartition des affectations</h5>
+                    <canvas id="affectationsChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Tâches urgentes</h5>
+                    <div id="tachesUrgentesList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-				<!-- Section Secrétaire -->
-				<div id="secretaireContent" class="row" style="display: none;">
-					<div class="col-lg-6">
-						<div class="card mb-4">
-							<div class="card-body">
-								<h5 class="card-title">Rendez-vous aujourd'hui</h5>
-								<div id="rdvAujourdhuiList"></div>
-							</div>
-						</div>
-						
-						<div class="card">
-							<div class="card-body">
-								<h5 class="card-title">Clients récents</h5>
-								<div id="clientsRecentsList"></div>
-							</div>
-						</div>
-					</div>
-					<div class="col-lg-6">
-						<div class="card mb-4">
-							<div class="card-body">
-								<h5 class="card-title">Tâches du jour</h5>
-								<div id="tachesDuJourList"></div>
-							</div>
-						</div>
-						
-						<div class="card">
-							<div class="card-body">
-								<h5 class="card-title">Paiements en attente</h5>
-								<div id="paiementsAttenteList"></div>
-							</div>
-						</div>
-					</div>
-					
-				</div>
+<!-- Section Tailleur -->
+<div id="tailleurContent" style="display: none;">
+    <!-- Première ligne : 2 colonnes -->
+    <div class="row">
+        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Mes affectations en cours</h5>
+                    <div id="affectationsEnCoursList"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Prochaines échéances</h5>
+                    <div id="prochainesEcheancesList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deuxième ligne : 2 colonnes -->
+    <div class="row">
+        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Mes performances</h5>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h3 id="tauxCompletion" class="text-primary">0%</h3>
+                            <small class="text-muted">Taux de completion</small>
+                        </div>
+                        <div class="col-6">
+                            <h3 id="moyenneTemps" class="text-info">0h</h3>
+                            <small class="text-muted">Temps moyen</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Mes revenus</h5>
+                    <div class="mb-3">
+                        <small class="text-muted">Mensuel</small>
+                        <h4 id="revenusMensuels" class="text-success">0 FCFA</h4>
+                    </div>
+                    <div>
+                        <small class="text-muted">En attente</small>
+                        <h4 id="revenusAttente" class="text-warning">0 FCFA</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section Secrétaire -->
+<div id="secretaireContent" style="display: none;">
+    <!-- Première ligne : 2 colonnes -->
+    <div class="row">
+        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Rendez-vous aujourd'hui</h5>
+                    <div id="rdvAujourdhuiList"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Clients récents</h5>
+                    <div id="clientsRecentsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deuxième ligne : 2 colonnes -->
+    <div class="row">
+        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Tâches du jour</h5>
+                    <div id="tachesDuJourList"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Paiements en attente</h5>
+                    <div id="paiementsAttenteList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 			</div>
 		</div>
 		<!--end page wrapper -->
@@ -580,6 +612,7 @@ if (mainContent) {
 <script src="assets/js/sidebar.js"></script>
 <script src="assets/js/profil.js"></script>
 <script src="assets/js/home_permission.js"></script>
+<script src="assets/js/notifications.js"></script>
 <script src="assets/js/home.js"></script>
 <script>
     // ✅ CORRECTION : Vérifier que Common existe AVANT d'appeler checkPageAccess

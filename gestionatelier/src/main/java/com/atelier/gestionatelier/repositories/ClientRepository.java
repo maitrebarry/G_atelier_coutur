@@ -38,4 +38,12 @@ public interface ClientRepository extends JpaRepository<Client, UUID> {
             "AND m.affecte = false " +
             "AND SIZE(c.mesures) > 0")
     List<Client> findByAtelierIdWithMesuresNonAffectees(@Param("atelierId") UUID atelierId);
+
+    // ✅ Trouver les clients assignés à un tailleur spécifique
+    @Query("SELECT DISTINCT c FROM Client c JOIN Affectation a ON a.client.id = c.id WHERE a.tailleur.id = :tailleurId")
+    List<Client> findByTailleurId(@Param("tailleurId") UUID tailleurId);
+
+    // ✅ Trouver un client spécifique assigné à un tailleur
+    @Query("SELECT c FROM Client c JOIN Affectation a ON a.client.id = c.id WHERE c.id = :clientId AND a.tailleur.id = :tailleurId")
+    Optional<Client> findByIdAndTailleurId(@Param("clientId") UUID clientId, @Param("tailleurId") UUID tailleurId);
 }

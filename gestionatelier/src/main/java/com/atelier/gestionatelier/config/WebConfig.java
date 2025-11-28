@@ -5,22 +5,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-//@Configuration
-//public class WebConfig implements WebMvcConfigurer {
-//
-//    @Override
-//    public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
-//        registry.addResourceHandler("/model_photo/**")
-//                .addResourceLocations("file:C:/dev/gestionatelier/uploads/model_photo/");
-//
-//
-//        // nouveau handler pour photos utilisateurs
-//        registry.addResourceHandler("/user_photo/**")
-//                .addResourceLocations("file:C:/dev/gestionatelier/uploads/user_photo/");
-//    }
-//
-//
-//}
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {

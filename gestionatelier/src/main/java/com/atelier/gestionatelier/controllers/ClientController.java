@@ -6,6 +6,7 @@ import com.atelier.gestionatelier.dto.ModeleListDTO;
 import com.atelier.gestionatelier.entities.Client;
 import com.atelier.gestionatelier.entities.Modele;
 import com.atelier.gestionatelier.entities.Utilisateur;
+import com.atelier.gestionatelier.security.Role;
 import com.atelier.gestionatelier.services.ClientService;
 import com.atelier.gestionatelier.services.FileStorageService;
 import com.atelier.gestionatelier.services.ModeleService;
@@ -130,18 +131,34 @@ public class ClientController {
         try {
             System.out.println("=== RÉCUPÉRATION DES CLIENTS ===");
 
+            if (authentication == null || authentication.getName() == null) {
+                System.out.println("❌ Utilisateur non authentifié");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
             String email = authentication.getName();
             Utilisateur currentUser = utilisateurService.findByEmail(email);
 
             List<Client> clients;
 
-            if (currentUser.getAtelier() != null) {
-                // ✅ CORRECTION : Utiliser la méthode qui filtre par atelier
-                clients = clientService.getClientsByAtelier(currentUser.getAtelier().getId());
-                System.out.println("Clients récupérés pour l'atelier " + currentUser.getAtelier().getId() + ": " + clients.size());
+            // ✅ Vérifier le rôle de l'utilisateur
+            if (Role.TAILLEUR.equals(currentUser.getRole())) {
+                // TAILLEUR : voir seulement les clients qui lui sont assignés
+                clients = clientService.getClientsByTailleur(currentUser.getId());
+                System.out.println("Clients assignés au tailleur " + currentUser.getId() + ": " + clients.size());
+            } else if (Role.SUPERADMIN.equals(currentUser.getRole()) || Role.PROPRIETAIRE.equals(currentUser.getRole()) || Role.SECRETAIRE.equals(currentUser.getRole())) {
+                // SUPERADMIN, PROPRIETAIRE, SECRETAIRE : voir tous les clients de leur atelier
+                if (currentUser.getAtelier() != null) {
+                    clients = clientService.getClientsByAtelier(currentUser.getAtelier().getId());
+                    System.out.println("Clients récupérés pour l'atelier " + currentUser.getAtelier().getId() + ": " + clients.size());
+                } else {
+                    clients = clientService.getAllClients();
+                    System.out.println("Tous les clients récupérés (SUPERADMIN sans atelier): " + clients.size());
+                }
             } else {
-                clients = clientService.getAllClients();
-                System.out.println("Tous les clients récupérés (SUPERADMIN): " + clients.size());
+                // Rôle inconnu : aucun client
+                clients = new ArrayList<>();
+                System.out.println("Rôle inconnu, aucun client retourné");
             }
 
             return ResponseEntity.ok(clients);
@@ -160,7 +177,11 @@ public class ClientController {
 
         Optional<Client> clientOpt;
 
-        if (currentUser.getAtelier() != null) {
+        if (Role.TAILLEUR.equals(currentUser.getRole())) {
+            // TAILLEUR : vérifier si le client lui est assigné
+            clientOpt = clientService.getClientByIdAndTailleur(id, currentUser.getId());
+            System.out.println("Recherche client " + id + " pour le tailleur: " + currentUser.getId());
+        } else if (currentUser.getAtelier() != null) {
             // Récupérer le client seulement s'il appartient à l'atelier de l'utilisateur
             clientOpt = clientService.getClientByIdAndAtelier(id, currentUser.getAtelier().getId());
             System.out.println("Recherche client " + id + " pour l'atelier: " + currentUser.getAtelier().getId());
@@ -178,6 +199,8 @@ public class ClientController {
                 });
     }
 
+
+
     @PutMapping("/{id}")
     public ResponseEntity<?> modifierClient(@PathVariable UUID id, @ModelAttribute ClientDTO clientDTO, Authentication authentication) {
         try {
@@ -190,13 +213,21 @@ public class ClientController {
             System.out.println("Utilisateur connecté: " + email);
             System.out.println("Atelier utilisateur: " + (currentUser.getAtelier() != null ? currentUser.getAtelier().getId() : "null"));
 
-            // ✅ CORRECTION : Vérifier l'existence du client
-            Optional<Client> clientOpt = clientService.getClientById(id);
+            // ✅ CORRECTION : Vérifier l'existence du client et les permissions
+            Optional<Client> clientOpt;
+            if (Role.TAILLEUR.equals(currentUser.getRole())) {
+                clientOpt = clientService.getClientByIdAndTailleur(id, currentUser.getId());
+            } else if (currentUser.getAtelier() != null) {
+                clientOpt = clientService.getClientByIdAndAtelier(id, currentUser.getAtelier().getId());
+            } else {
+                clientOpt = clientService.getClientById(id);
+            }
+
             if (clientOpt.isEmpty()) {
-                System.out.println("❌ Client non trouvé: " + id);
+                System.out.println("❌ Client non trouvé ou accès refusé: " + id);
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                         "status", "error",
-                        "message", "Client non trouvé"
+                        "message", "Client non trouvé ou accès refusé"
                 ));
             }
 
@@ -292,7 +323,10 @@ public class ClientController {
 
             // Vérifier l'existence du client ET les permissions
             Optional<Client> clientOpt;
-            if (currentUser.getAtelier() != null) {
+            if (Role.TAILLEUR.equals(currentUser.getRole())) {
+                clientOpt = clientService.getClientByIdAndTailleur(id, currentUser.getId());
+                System.out.println("Recherche avec filtre tailleur");
+            } else if (currentUser.getAtelier() != null) {
                 clientOpt = clientService.getClientByIdAndAtelier(id, currentUser.getAtelier().getId());
                 System.out.println("Recherche avec filtre atelier");
             } else {

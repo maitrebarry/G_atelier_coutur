@@ -124,46 +124,6 @@ public class AffectationService {
                 .collect(Collectors.toList());
     }
 
-    // === MISE À JOUR DU STATUT ===
-//    @Transactional
-//    public AffectationDTO updateStatutAffectation(UUID affectationId, String nouveauStatut,
-//                                                  UUID utilisateurId, String role) {
-//        log.info("🔄 Mise à jour statut affectation: {} -> {} par {} ({})",
-//                affectationId, nouveauStatut, utilisateurId, role);
-//
-//        Affectation affectation = affectationRepository.findByIdWithRelations(affectationId)
-//                .orElseThrow(() -> new RuntimeException("❌ Affectation non trouvée"));
-//
-//        Affectation.StatutAffectation ancienStatut = affectation.getStatut();
-//        Affectation.StatutAffectation newStatut = Affectation.StatutAffectation.valueOf(nouveauStatut);
-//
-//        // Vérifier les permissions
-//        if (!peutChangerStatut(role, ancienStatut, newStatut, affectation.getTailleur().getId().equals(utilisateurId))) {
-//            throw new RuntimeException("❌ Permission refusée: " + role + " ne peut pas changer " + ancienStatut + " à " + newStatut);
-//        }
-//
-//        affectation.setStatut(newStatut);
-//
-//        // Mettre à jour les dates
-//        LocalDateTime maintenant = LocalDateTime.now();
-//        switch (newStatut) {
-//            case EN_COURS:
-//                affectation.setDateDebutReelle(maintenant);
-//                break;
-//            case TERMINE:
-//                affectation.setDateFinReelle(maintenant);
-//                break;
-//            case VALIDE:
-//                affectation.setDateValidation(maintenant);
-//                break;
-//
-//        }
-//
-//        Affectation savedAffectation = affectationRepository.save(affectation);
-//        log.info("✅ Statut mis à jour: {} -> {}", ancienStatut, newStatut);
-//
-//        return convertToDTO(savedAffectation);
-//    }
 
 
     // === MISE À JOUR DU STATUT AVEC ENVOI D'EMAIL ===

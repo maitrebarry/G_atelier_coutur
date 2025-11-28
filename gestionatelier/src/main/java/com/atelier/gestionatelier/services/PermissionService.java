@@ -203,15 +203,7 @@ public class PermissionService {
             // Permissions par défaut en FRANÇAIS
             Map<String, String> defaultPermissions = new LinkedHashMap<>();
 
-            // Permissions pour la Sidebar - Visibilité des menus
-//            defaultPermissions.put("MENU_TABLEAU_BORD", "Accéder au tableau de bord");
-//            defaultPermissions.put("MENU_ATELIERS", "Voir le menu ateliers");
-//            defaultPermissions.put("MENU_UTILISATEURS", "Voir le menu utilisateurs");
-//            defaultPermissions.put("MENU_MODELES", "Voir le menu modèles");
-//            defaultPermissions.put("MENU_AFFECTATIONS", "Voir le menu affectations");
-//            defaultPermissions.put("MENU_RENDEZ_VOUS", "Voir le menu rendez-vous");
-//            defaultPermissions.put("MENU_PAIEMENTS", "Voir le menu paiements");
-//            defaultPermissions.put("MENU_PARAMETRES", "Voir le menu paramètres");
+
             // Permissions CRUD Utilisateurs
             defaultPermissions.put("UTILISATEUR_VOIR", "Voir les utilisateurs");
             defaultPermissions.put("UTILISATEUR_CREER", "Créer un utilisateur");

@@ -13,6 +13,10 @@ import java.util.UUID;
 @Repository
 public interface AffectationRepository extends JpaRepository<Affectation, UUID> {
 
+    // ✅ NOUVELLE MÉTHODE : Trouver toutes les affectations d'un tailleur
+    @Query("SELECT a FROM Affectation a WHERE a.tailleur.id = :tailleurId")
+    List<Affectation> findByTailleurId(@Param("tailleurId") UUID tailleurId);
+
     // Pour TAILLEUR : ses propres affectations dans un atelier
     @Query("SELECT a FROM Affectation a " +
             "LEFT JOIN FETCH a.client " +

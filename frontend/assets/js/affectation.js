@@ -651,6 +651,43 @@ function peutChangerStatutAffectation(affectation) {
 }
 
 // CHANGEMENT DE STATUT
+// async function changerStatut(affectationId, nouveauStatut) {
+//     try {
+//         const result = await Swal.fire({
+//             title: 'Changer le statut ?',
+//             text: `Voulez-vous vraiment passer à "${getStatutText(nouveauStatut)}" ?`,
+//             icon: 'question',
+//             showCancelButton: true,
+//             confirmButtonColor: '#198754',
+//             cancelButtonColor: '#6c757d',
+//             confirmButtonText: 'Oui, changer',
+//             cancelButtonText: 'Annuler'
+//         });
+
+//         if (result.isConfirmed) {
+//             const token = getToken();
+//             const response = await fetch(`${apiAffectations}/${affectationId}/statut`, {
+//                 method: 'PATCH',
+//                 headers: {
+//                     'Content-Type': 'application/json',
+//                     'Authorization': `Bearer ${token}`,
+//                     'X-User-Id': currentUserId,
+//                     'X-User-Role': currentUserRole
+//                 },
+//                 body: JSON.stringify({ statut: nouveauStatut })
+//             });
+
+//             if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+
+//             showSuccess('✅ Statut mis à jour avec succès !');
+//             await loadAffectations();
+//         }
+//     } catch (error) {
+//         console.error('Erreur changement statut:', error);
+//         showError('❌ Erreur lors du changement de statut: ' + error.message);
+//     }
+// }
+// Dans affectation.js - Remplacer l'ancien système
 async function changerStatut(affectationId, nouveauStatut) {
     try {
         const result = await Swal.fire({
@@ -679,6 +716,27 @@ async function changerStatut(affectationId, nouveauStatut) {
 
             if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
 
+            const resultData = await response.json();
+            
+            // ✅ NOTIFICATION GLOBALE quand un tailleur termine un travail
+            if (nouveauStatut === 'TERMINE' && currentUserRole === 'TAILLEUR') {
+                const affectation = resultData.data;
+                
+                // Utilisation du système global
+                window.NotificationManager.add(
+                    '👕 Travail Terminé - Validation Requise',
+                    `Le tailleur ${affectation.tailleur.prenom} ${affectation.tailleur.nom} a terminé le ${affectation.mesure.typeVetement} de ${affectation.client.prenom} ${affectation.client.nom}`,
+                    'success',
+                    'affectation.html',
+                    {
+                        source: 'Atelier Couture',
+                        affectationId: affectation.id,
+                        tailleurId: affectation.tailleur.id,
+                        clientId: affectation.client.id
+                    }
+                );
+            }
+
             showSuccess('✅ Statut mis à jour avec succès !');
             await loadAffectations();
         }
@@ -687,7 +745,6 @@ async function changerStatut(affectationId, nouveauStatut) {
         showError('❌ Erreur lors du changement de statut: ' + error.message);
     }
 }
-
 // ANNULATION D'AFFECTATION
 async function annulerAffectation(affectationId) {
     try {

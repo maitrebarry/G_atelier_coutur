@@ -41,23 +41,50 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         // Autoriser les requêtes OPTIONS (préflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        
-                        // Routes publiques
+
+                        // Routes publiques (uniquement l'authentification)
                         .requestMatchers("/api/auth/**").permitAll()
+
+                        // ✅ CORRECTION : Les routes photos doivent être publiques
                         .requestMatchers("/model_photo/**").permitAll()
                         .requestMatchers("/user_photo/**").permitAll()
+
+                        // ✅ AJOUT : Autoriser l'accès aux ressources statiques
+                        .requestMatchers("/assets/**").permitAll()
+
+                        // ✅ CORRECTION CRITIQUE : Autoriser TAILLEUR sur les routes clients
+                        .requestMatchers("/api/clients/**").hasAnyAuthority(
+                                "ROLE_SUPERADMIN",
+                                "ROLE_PROPRIETAIRE",
+                                "ROLE_SECRETAIRE",
+                                "ROLE_TAILLEUR"  // ✅ AJOUT du rôle TAILLEUR
+                        )
+
+                        // Routes admin
                         .requestMatchers("/api/admin/**").hasAnyAuthority("ROLE_SUPERADMIN", "ROLE_PROPRIETAIRE")
-                        
-                        // Routes authentifiées
+
+                        // Routes spécifiques aux tailleurs
+                        .requestMatchers("/api/tailleur/**").hasAuthority("ROLE_TAILLEUR")
+
+                        // ✅ CORRECTION : Routes modèles pour les clients
+                        .requestMatchers("/api/clients/modeles/**").hasAnyAuthority(
+                                "ROLE_SUPERADMIN", "ROLE_PROPRIETAIRE", "ROLE_SECRETAIRE", "ROLE_TAILLEUR"
+                        )
+
+                        // Routes authentifiées générales
                         .requestMatchers("/api/utilisateurs/**").authenticated()
                         .requestMatchers("/api/ateliers/**").authenticated()
+
+                        // Toutes les autres requêtes API
                         .requestMatchers("/api/**").authenticated()
-                        
+
                         // Toutes les autres requêtes
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .formLogin(form -> form.disable())
+                .httpBasic(httpBasic -> httpBasic.disable())
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
@@ -70,14 +97,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
+
         configuration.setAllowedOrigins(List.of(
-            "http://127.0.0.1:5500",
-            "http://localhost:5500",
-            "http://localhost:8080",
-            "http://localhost:3000"
+                "http://127.0.0.1:5500",
+                "http://localhost:5500",
+                "http://localhost:8080",
+                "http://localhost:3000"
         ));
-        
+
         configuration.addAllowedOriginPattern("*");
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept",  "X-User-Id","X-User-Role"  ));
