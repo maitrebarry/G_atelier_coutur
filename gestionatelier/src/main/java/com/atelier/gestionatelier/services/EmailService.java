@@ -47,22 +47,6 @@ public class EmailService {
         }
     }
 
-//    public void envoyerEmailConfirmationRendezVous(String emailClient, String nomClient, String prenomClient,
-//                                                   LocalDateTime dateRendezVous, String typeRendezVous,
-//                                                   String nomAtelier, String notes) {
-//        String subject = "Confirmation de votre rendez-vous - " + nomAtelier;
-//
-//        String text = "Bonjour " + prenomClient + " " + nomClient + ",\n\n" +
-//                "Votre rendez-vous de " + typeRendezVous.toLowerCase() + " est confirmé.\n\n" +
-//                "📅 Date: " + dateRendezVous.format(DateTimeFormatter.ofPattern("dd/MM/yyyy à HH:mm")) + "\n" +
-//                "🏭 Atelier: " + nomAtelier + "\n" +
-//                "📋 Type: " + typeRendezVous + "\n" +
-//                (notes != null && !notes.isEmpty() ? "📝 Notes: " + notes + "\n\n" : "\n") +
-//                "Merci de votre confiance !\n\n" +
-//                "Cordialement,\nL'équipe " + nomAtelier;
-//
-//        envoyerEmail(emailClient, subject, text);
-//    }
 
 
     public void envoyerEmailConfirmationRendezVous(String emailClient, String nomClient, String prenomClient,

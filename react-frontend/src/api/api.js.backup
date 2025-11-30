@@ -1,0 +1,59 @@
+import axios from 'axios';
+
+// Create axios instance with base URL
+const api = axios.create({
+  baseURL: 'http://localhost:8081/api',
+});
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired, redirect to login
+      localStorage.removeItem('authToken');
+      sessionStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      sessionStorage.removeItem('userData');
+      window.location.href = '/';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const getToken = () => {
+  return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+};
+
+export const getUserData = () => {
+  const data = localStorage.getItem('userData') || sessionStorage.getItem('userData');
+  return data ? JSON.parse(data) : null;
+};
+
+export const setAuthData = (token, userData) => {
+  localStorage.setItem('authToken', token);
+  localStorage.setItem('userData', JSON.stringify(userData));
+};
+
+export const clearAuthData = () => {
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('userData');
+  sessionStorage.removeItem('authToken');
+  sessionStorage.removeItem('userData');
+};
+
+export { api as default };

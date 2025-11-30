@@ -55,4 +55,8 @@ public interface AffectationRepository extends JpaRepository<Affectation, UUID> 
             "LEFT JOIN FETCH a.atelier " +
             "WHERE a.id = :id")
     Optional<Affectation> findByIdWithRelations(@Param("id") UUID id);
+
+    // Trouver les affectations actives d'un client
+    @Query("SELECT a FROM Affectation a WHERE a.client.id = :clientId AND a.statut IN (:statuts)")
+    List<Affectation> findByClientIdAndStatutIn(@Param("clientId") UUID clientId, @Param("statuts") List<Affectation.StatutAffectation> statuts);
 }
