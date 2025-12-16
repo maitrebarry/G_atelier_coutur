@@ -48832,3 +48832,173 @@ Caused by: org.springframework.security.authentication.DisabledException: Utilis
     order by
         n1_0.date_creation desc
 2025-12-16 14:49:38 - o.s.o.j.s.OpenEntityManagerInViewInterceptor - Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2025-12-16 14:50:38 - o.s.security.web.FilterChainProxy - Securing GET /api/notifications/unread
+2025-12-16 14:50:38 - o.s.o.j.SharedEntityManagerCreator$SharedEntityManagerInvocationHandler - Creating new EntityManager for shared EntityManager invocation
+2025-12-16 14:50:38 - org.hibernate.orm.deprecation - HHH90000021: Encountered deprecated setting [javax.persistence.query.timeout], use [jakarta.persistence.query.timeout] instead
+2025-12-16 14:50:38 - org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.actif,
+        u1_0.atelier_id,
+        u1_0.email,
+        u1_0.mot_de_passe,
+        u1_0.nom,
+        u1_0.photo_path,
+        u1_0.prenom,
+        u1_0.role 
+    from
+        utilisateur u1_0 
+    where
+        u1_0.email=?
+2025-12-16 14:50:38 - org.hibernate.SQL - 
+    select
+        p1_0.utilisateur_id,
+        p1_1.id,
+        p1_1.code,
+        p1_1.description 
+    from
+        utilisateur_permissions p1_0 
+    join
+        permissions p1_1 
+            on p1_1.id=p1_0.permission_id 
+    where
+        p1_0.utilisateur_id=?
+2025-12-16 14:50:38 - c.a.g.config.JwtAuthenticationFilter - Authentifié l'utilisateur: adamadiallo@gmail.com, avec les autorités: [ROLE_TAILLEUR]
+2025-12-16 14:50:38 - o.s.security.web.FilterChainProxy - Secured GET /api/notifications/unread
+2025-12-16 14:50:38 - o.s.o.j.s.OpenEntityManagerInViewInterceptor - Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2025-12-16 14:50:38 - org.hibernate.orm.deprecation - HHH90000021: Encountered deprecated setting [javax.persistence.query.timeout], use [jakarta.persistence.query.timeout] instead
+2025-12-16 14:50:38 - org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.actif,
+        u1_0.atelier_id,
+        u1_0.email,
+        u1_0.mot_de_passe,
+        u1_0.nom,
+        u1_0.photo_path,
+        u1_0.prenom,
+        u1_0.role 
+    from
+        utilisateur u1_0 
+    where
+        u1_0.email=?
+2025-12-16 14:50:38 - org.hibernate.SQL - 
+    select
+        p1_0.utilisateur_id,
+        p1_1.id,
+        p1_1.code,
+        p1_1.description 
+    from
+        utilisateur_permissions p1_0 
+    join
+        permissions p1_1 
+            on p1_1.id=p1_0.permission_id 
+    where
+        p1_0.utilisateur_id=?
+2025-12-16 14:50:38 - org.hibernate.orm.deprecation - HHH90000021: Encountered deprecated setting [javax.persistence.query.timeout], use [jakarta.persistence.query.timeout] instead
+2025-12-16 14:50:38 - org.hibernate.SQL - 
+    select
+        n1_0.id,
+        n1_0.date_creation,
+        n1_0.is_read,
+        n1_0.message,
+        n1_0.id_recipient,
+        n1_0.related_entity_id,
+        n1_0.related_entity_type,
+        n1_0.type 
+    from
+        notifications n1_0 
+    left join
+        utilisateur r1_0 
+            on r1_0.id=n1_0.id_recipient 
+    where
+        r1_0.id=? 
+        and not(n1_0.is_read) 
+    order by
+        n1_0.date_creation desc
+2025-12-16 14:50:38 - o.s.o.j.s.OpenEntityManagerInViewInterceptor - Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
+2025-12-16 14:51:38 - o.s.security.web.FilterChainProxy - Securing GET /api/notifications/unread
+2025-12-16 14:51:38 - o.s.o.j.SharedEntityManagerCreator$SharedEntityManagerInvocationHandler - Creating new EntityManager for shared EntityManager invocation
+2025-12-16 14:51:38 - org.hibernate.orm.deprecation - HHH90000021: Encountered deprecated setting [javax.persistence.query.timeout], use [jakarta.persistence.query.timeout] instead
+2025-12-16 14:51:38 - org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.actif,
+        u1_0.atelier_id,
+        u1_0.email,
+        u1_0.mot_de_passe,
+        u1_0.nom,
+        u1_0.photo_path,
+        u1_0.prenom,
+        u1_0.role 
+    from
+        utilisateur u1_0 
+    where
+        u1_0.email=?
+2025-12-16 14:51:38 - org.hibernate.SQL - 
+    select
+        p1_0.utilisateur_id,
+        p1_1.id,
+        p1_1.code,
+        p1_1.description 
+    from
+        utilisateur_permissions p1_0 
+    join
+        permissions p1_1 
+            on p1_1.id=p1_0.permission_id 
+    where
+        p1_0.utilisateur_id=?
+2025-12-16 14:51:38 - c.a.g.config.JwtAuthenticationFilter - Authentifié l'utilisateur: adamadiallo@gmail.com, avec les autorités: [ROLE_TAILLEUR]
+2025-12-16 14:51:38 - o.s.security.web.FilterChainProxy - Secured GET /api/notifications/unread
+2025-12-16 14:51:38 - o.s.o.j.s.OpenEntityManagerInViewInterceptor - Opening JPA EntityManager in OpenEntityManagerInViewInterceptor
+2025-12-16 14:51:38 - org.hibernate.orm.deprecation - HHH90000021: Encountered deprecated setting [javax.persistence.query.timeout], use [jakarta.persistence.query.timeout] instead
+2025-12-16 14:51:38 - org.hibernate.SQL - 
+    select
+        u1_0.id,
+        u1_0.actif,
+        u1_0.atelier_id,
+        u1_0.email,
+        u1_0.mot_de_passe,
+        u1_0.nom,
+        u1_0.photo_path,
+        u1_0.prenom,
+        u1_0.role 
+    from
+        utilisateur u1_0 
+    where
+        u1_0.email=?
+2025-12-16 14:51:38 - org.hibernate.SQL - 
+    select
+        p1_0.utilisateur_id,
+        p1_1.id,
+        p1_1.code,
+        p1_1.description 
+    from
+        utilisateur_permissions p1_0 
+    join
+        permissions p1_1 
+            on p1_1.id=p1_0.permission_id 
+    where
+        p1_0.utilisateur_id=?
+2025-12-16 14:51:38 - org.hibernate.orm.deprecation - HHH90000021: Encountered deprecated setting [javax.persistence.query.timeout], use [jakarta.persistence.query.timeout] instead
+2025-12-16 14:51:38 - org.hibernate.SQL - 
+    select
+        n1_0.id,
+        n1_0.date_creation,
+        n1_0.is_read,
+        n1_0.message,
+        n1_0.id_recipient,
+        n1_0.related_entity_id,
+        n1_0.related_entity_type,
+        n1_0.type 
+    from
+        notifications n1_0 
+    left join
+        utilisateur r1_0 
+            on r1_0.id=n1_0.id_recipient 
+    where
+        r1_0.id=? 
+        and not(n1_0.is_read) 
+    order by
+        n1_0.date_creation desc
+2025-12-16 14:51:38 - o.s.o.j.s.OpenEntityManagerInViewInterceptor - Closing JPA EntityManager in OpenEntityManagerInViewInterceptor
