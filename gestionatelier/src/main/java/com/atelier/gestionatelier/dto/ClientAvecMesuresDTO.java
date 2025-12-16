@@ -25,6 +25,7 @@ public class ClientAvecMesuresDTO {
         private LocalDateTime dateMesure;
         private String typeVetement;
         private Double prix;
+        private String description;
         private String sexe;
 
         // Mesures communes

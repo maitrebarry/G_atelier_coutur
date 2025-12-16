@@ -24,6 +24,9 @@ private UUID id;
     //  Prix du modèle ===
     @Column(name = "prix", nullable = false)
     private Double prix;
+    // Description libre ou note associée à la mesure
+    @Column(name = "description")
+    private String description;
     // NOUVEAU : Champ pour suivre l'affectation
     @Column(name = "affecte", nullable = false)
     private Boolean affecte = false;

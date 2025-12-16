@@ -14,6 +14,16 @@ const Clients = () => {
   const fileInputRef = useRef(null);
   const currentUser = getUserData();
   const isTailleur = currentUser?.role === 'TAILLEUR';
+  const selectedClientMeasure = selectedClient?.mesures?.[0];
+
+  const getClientPhotoUrl = (mesure) => {
+    if (!mesure) return '/assets/images/default_femme.png';
+    if (mesure.photoPath) {
+      const cleanPath = mesure.photoPath.replace(/^\/+/, "").replace("model_photo/", "");
+      return `http://localhost:8081/model_photo/${cleanPath}`;
+    }
+    return mesure.sexe === 'Homme' ? '/assets/images/default_homme.png' : '/assets/images/default_femme.png';
+  };
 
   useEffect(() => {
     fetchClients();
@@ -83,6 +93,7 @@ const Clients = () => {
         email: client.email || '',
         sexe: mesure.sexe || client.sexe || 'Femme',
         prix: mesure.prix || 0,
+        description: mesure.description || '',
         typeVetement: mesure.typeVetement || '',
         // Measurements
         ...mesure
@@ -135,7 +146,7 @@ const Clients = () => {
     try {
       const formData = new FormData();
       // Append basic fields
-      ['nom', 'prenom', 'contact', 'adresse', 'email', 'sexe', 'prix'].forEach(key => {
+      ['nom', 'prenom', 'contact', 'adresse', 'email', 'sexe', 'prix', 'description'].forEach(key => {
         formData.append(key, editFormData[key]);
       });
 
@@ -284,104 +295,104 @@ const Clients = () => {
       {/* Detail Modal */}
       {selectedClient && (
           <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
-              <div className="modal-dialog modal-lg">
-                  <div className="modal-content d-flex flex-row">
-                      <div className="flex-shrink-0 p-3" style={{ maxWidth: '45%' }}>
-                          <img 
-                              src={(() => {
-                                  const m = selectedClient.mesures?.[0];
-                                  if (m?.photoPath) {
-                                      const cleanPath = m.photoPath.replace(/^\/+/, "").replace("model_photo/", "");
-                                      return `http://localhost:8081/model_photo/${cleanPath}`;
-                                  }
-                                  return m?.sexe === 'Homme' ? '/assets/images/default_homme.png' : '/assets/images/default_femme.png';
-                              })()} 
-                              alt="Photo Client" 
-                              className="img-fluid rounded" 
-                              style={{ width: '100%', height: 'auto' }}
-                          />
-                      </div>
-                      <div className="modal-body flex-grow-1 p-3" style={{ overflowY: 'auto', maxHeight: '500px' }}>
-                          <div className="d-flex justify-content-between mb-3">
-                              <h5>{selectedClient.prenom} {selectedClient.nom}</h5>
-                              <button type="button" className="btn-close" onClick={() => setSelectedClient(null)}></button>
-                          </div>
-                          {selectedClient.mesures?.[0] ? (
-                              <ul className="list-group">
-                                  <li className="list-group-item fw-bold bg-light">
-                                      <div className="d-flex justify-content-between">
-                                          <span>Sexe: {selectedClient.mesures[0].sexe}</span>
-                                      </div>
-                                  </li>
-                                  {selectedClient.mesures[0].prix && (
-                                      <li className="list-group-item fw-bold bg-success text-white">
-                                          <div className="d-flex justify-content-between align-items-center">
-                                              <span>Prix du modèle:</span>
-                                              <span className="badge bg-light text-dark fs-6">{selectedClient.mesures[0].prix} FCFA</span>
-                                          </div>
-                                      </li>
-                                  )}
-                                  
-                                  {/* Dynamic Measurements Display */}
-                                  {(() => {
-                                      const m = selectedClient.mesures[0];
-                                      const renderItem = (label, val) => val ? (
-                                          <li className="list-group-item d-flex justify-content-between align-items-center">
-                                              <span>{label}</span>
-                                              <span className="fw-bold">{val}</span>
-                                          </li>
-                                      ) : null;
-
-                                      if (m.sexe === 'Femme') {
-                                          return (
-                                              <>
-                                                  {m.typeVetement && (
-                                                      <li className="list-group-item bg-light fw-bold">Type: {m.typeVetement}</li>
-                                                  )}
-                                                  {renderItem('Épaule', m.epaule)}
-                                                  {renderItem('Manche', m.manche)}
-                                                  {renderItem('Poitrine', m.poitrine)}
-                                                  {renderItem('Taille', m.taille)}
-                                                  {renderItem('Longueur', m.longueur)}
-                                                  
-                                                  {m.typeVetement === 'jupe' && (
-                                                      <>
-                                                          {renderItem('Longueur Jupe', m.longueurJupe)}
-                                                          {renderItem('Ceinture', m.ceinture)}
-                                                      </>
-                                                  )}
-                                                  
-                                                  {renderItem('Fesse', m.fesse)}
-                                                  {renderItem('Tour de manche', m.tourManche)}
-                                                  {renderItem('Longueur poitrine', m.longueurPoitrine)}
-                                                  {renderItem('Longueur taille', m.longueurTaille)}
-                                                  {renderItem('Longueur fesse', m.longueurFesse)}
-                                              </>
-                                          );
-                                      } else {
-                                          // Homme
-                                          return (
-                                              <>
-                                                  {renderItem('Épaule', m.epaule)}
-                                                  {renderItem('Manche', m.manche)}
-                                                  {renderItem('Longueur', m.longueur)}
-                                                  {renderItem('Longueur Pantalon', m.longueurPantalon)}
-                                                  {renderItem('Ceinture', m.ceinture)}
-                                                  {renderItem('Cuisse', m.cuisse)}
-                                                  {renderItem('Poitrine', m.poitrine)}
-                                                  {renderItem('Coude', m.corps)}
-                                                  {renderItem('Tour de manche', m.tourManche)}
-                                              </>
-                                          );
-                                      }
-                                  })()}
-                              </ul>
-                          ) : (
-                              <div className="alert alert-info">Aucune mesure disponible</div>
-                          )}
-                      </div>
+            <div className="modal-dialog modal-lg">
+              <div className="modal-content d-flex flex-row">
+                <div className="flex-shrink-0 p-3" style={{ maxWidth: '45%' }}>
+                  <img 
+                    src={getClientPhotoUrl(selectedClientMeasure)} 
+                    alt="Photo Client" 
+                    className="img-fluid rounded" 
+                    style={{ width: '100%', height: 'auto' }}
+                  />
+                </div>
+                <div className="modal-body flex-grow-1 p-3" style={{ overflowY: 'auto', maxHeight: '500px' }}>
+                  <div className="d-flex justify-content-between mb-3">
+                    <h5>{selectedClient.prenom} {selectedClient.nom}</h5>
+                    <button type="button" className="btn-close" onClick={() => setSelectedClient(null)}></button>
                   </div>
+                  {selectedClientMeasure ? (
+                    <ul className="list-group">
+                      <li className="list-group-item fw-bold bg-light">
+                        <div className="d-flex justify-content-between">
+                          <span>Sexe: {selectedClientMeasure.sexe}</span>
+                        </div>
+                      </li>
+                      {selectedClientMeasure.prix && (
+                        <li className="list-group-item fw-bold bg-success text-white">
+                          <div className="d-flex justify-content-between align-items-center">
+                            <span>Prix du modèle:</span>
+                            <span className="badge bg-light text-dark fs-6">{selectedClientMeasure.prix} FCFA</span>
+                          </div>
+                        </li>
+                      )}
+                      <li className="list-group-item">
+                      <div>
+                        <strong>Description:</strong>
+                        <p className="text-muted small mb-0 text-wrap">
+                        {selectedClientMeasure.description?.trim() || 'Aucune description fournie'}
+                        </p>
+                      </div>
+                      </li>
+                      {/* Dynamic Measurements Display */}
+                      {(() => {
+                        const m = selectedClientMeasure;
+                        const renderItem = (label, val) => val ? (
+                          <li className="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{label}</span>
+                            <span className="fw-bold">{val}</span>
+                          </li>
+                        ) : null;
+
+                        if (m.sexe === 'Femme') {
+                          return (
+                            <>
+                              {m.typeVetement && (
+                                <li className="list-group-item bg-light fw-bold">Type: {m.typeVetement}</li>
+                              )}
+                              {renderItem('Épaule', m.epaule)}
+                              {renderItem('Manche', m.manche)}
+                              {renderItem('Poitrine', m.poitrine)}
+                              {renderItem('Taille', m.taille)}
+                              {renderItem('Longueur', m.longueur)}
+                                                  
+                              {m.typeVetement === 'jupe' && (
+                                <>
+                                  {renderItem('Longueur Jupe', m.longueurJupe)}
+                                  {renderItem('Ceinture', m.ceinture)}
+                                </>
+                              )}
+                                                  
+                              {renderItem('Fesse', m.fesse)}
+                              {renderItem('Tour de manche', m.tourManche)}
+                              {renderItem('Longueur poitrine', m.longueurPoitrine)}
+                              {renderItem('Longueur taille', m.longueurTaille)}
+                              {renderItem('Longueur fesse', m.longueurFesse)}
+                            </>
+                          );
+                        } else {
+                          // Homme
+                          return (
+                            <>
+                              {renderItem('Épaule', m.epaule)}
+                              {renderItem('Manche', m.manche)}
+                              {renderItem('Longueur', m.longueur)}
+                              {renderItem('Longueur Pantalon', m.longueurPantalon)}
+                              {renderItem('Ceinture', m.ceinture)}
+                              {renderItem('Cuisse', m.cuisse)}
+                              {renderItem('Poitrine', m.poitrine)}
+                              {renderItem('Coude', m.corps)}
+                              {renderItem('Tour de manche', m.tourManche)}
+                            </>
+                          );
+                        }
+                      })()}
+                    </ul>
+                  ) : (
+                    <div className="alert alert-info">Aucune mesure disponible</div>
+                  )}
+                </div>
               </div>
+            </div>
           </div>
       )}
 
@@ -444,6 +455,10 @@ const Clients = () => {
                                           <label className="form-label">Prix (FCFA) <span className="text-danger">*</span></label>
                                           <input type="number" className="form-control" name="prix" value={editFormData.prix} onChange={handleInputChange} />
                                       </div>
+                                        <div className="col-md-12 mb-3">
+                                          <label className="form-label">Description <small className="text-muted">(optionnel)</small></label>
+                                          <textarea className="form-control" rows={3} name="description" value={editFormData.description || ''} onChange={handleInputChange} placeholder="Ajouter une description ou note pour ce prix..." />
+                                        </div>
                                   </div>
 
                                   {/* Type Selection for Femme */}

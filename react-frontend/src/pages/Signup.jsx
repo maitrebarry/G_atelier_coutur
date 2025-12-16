@@ -3,456 +3,580 @@ import api, { getUserData } from '../api/api';
 import Swal from 'sweetalert2';
 import { Modal } from 'bootstrap';
 
-const Signup = () => {
-    const [users, setUsers] = useState([]);
-    const [ateliers, setAteliers] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const currentUser = getUserData();
-    
-    // Form states
-    const [formData, setFormData] = useState({
-        nom: '', prenom: '', email: '', motdepasse: '', atelierId: '', role: ''
+const emptyForm = {
+  nom: '',
+  prenom: '',
+  email: '',
+  motdepasse: '',
+  role: '',
+  atelierId: ''
+};
+
+const Signup = ({ embedded = false }) => {
+  const currentUser = getUserData();
+  const proprietaireAtelierId = currentUser?.atelierId || currentUser?.atelier?.id || '';
+
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [ateliers, setAteliers] = useState([]);
+  const [formData, setFormData] = useState(emptyForm);
+  const [editFormData, setEditFormData] = useState({ ...emptyForm, id: null });
+
+  const addModalRef = useRef(null);
+  const editModalRef = useRef(null);
+  const addModalInstance = useRef(null);
+  const editModalInstance = useRef(null);
+
+  useEffect(() => {
+    fetchUsers();
+    fetchAteliers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (addModalRef.current) {
+      addModalInstance.current = new Modal(addModalRef.current);
+    }
+    if (editModalRef.current) {
+      editModalInstance.current = new Modal(editModalRef.current);
+    }
+    return () => {
+      addModalInstance.current?.dispose?.();
+      editModalInstance.current?.dispose?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (currentUser?.role === 'PROPRIETAIRE' && ateliers.length === 1) {
+      setFormData(prev => ({ ...prev, atelierId: ateliers[0].id }));
+      setEditFormData(prev => ({ ...prev, atelierId: ateliers[0].id }));
+    }
+  }, [ateliers, currentUser?.role]);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/utilisateurs');
+      let data = Array.isArray(res.data) ? res.data : [];
+
+      if (currentUser?.role === 'PROPRIETAIRE') {
+        data = data.filter(user => {
+          if (user.id === currentUser.userId) {
+            return true;
+          }
+          const sameAtelier = (user.atelier?.id || user.atelierId) === proprietaireAtelierId;
+          return sameAtelier && ['TAILLEUR', 'SECRETAIRE'].includes(user.role);
+        });
+      }
+
+      if (currentUser?.role === 'TAILLEUR' || currentUser?.role === 'SECRETAIRE') {
+        data = data.filter(user => user.id === currentUser.userId);
+      }
+
+      setUsers(data);
+    } catch (error) {
+      console.error('Erreur chargement utilisateurs:', error);
+      Swal.fire('Erreur', "Impossible de charger les utilisateurs", 'error');
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAteliers = async () => {
+    if (!currentUser) return;
+    try {
+      if (currentUser.role === 'PROPRIETAIRE' && proprietaireAtelierId) {
+        const res = await api.get(`/ateliers/${proprietaireAtelierId}`);
+        const data = res.data ? [res.data] : [];
+        setAteliers(data);
+      } else {
+        const res = await api.get('/ateliers');
+        setAteliers(Array.isArray(res.data) ? res.data : []);
+      }
+    } catch (error) {
+      console.error('Erreur chargement ateliers:', error);
+      setAteliers([]);
+    }
+  };
+
+  const availableRoles = (() => {
+    if (currentUser?.role === 'SUPERADMIN') {
+      return ['SUPERADMIN', 'PROPRIETAIRE', 'SECRETAIRE', 'TAILLEUR'];
+    }
+    if (currentUser?.role === 'PROPRIETAIRE') {
+      return ['SECRETAIRE', 'TAILLEUR'];
+    }
+    if (currentUser?.role === 'SECRETAIRE' || currentUser?.role === 'TAILLEUR') {
+      return [currentUser.role];
+    }
+    return [];
+  })();
+
+  const resetAddForm = () => {
+    setFormData({
+      nom: '',
+      prenom: '',
+      email: '',
+      motdepasse: '',
+      role: currentUser?.role === 'PROPRIETAIRE' ? 'SECRETAIRE' : '',
+      atelierId: currentUser?.role === 'PROPRIETAIRE' ? proprietaireAtelierId : ''
     });
-    const [editFormData, setEditFormData] = useState({
-        id: '', nom: '', prenom: '', email: '', motdepasse: '', atelierId: '', role: ''
+  };
+
+  const openAddModal = () => {
+    resetAddForm();
+    addModalInstance.current?.show();
+  };
+
+  const openEditModal = (user) => {
+    setEditFormData({
+      id: user.id,
+      nom: user.nom || '',
+      prenom: user.prenom || '',
+      email: user.email || '',
+      motdepasse: '',
+      role: user.role || '',
+      atelierId: user.atelier?.id || user.atelierId || ''
+    });
+    editModalInstance.current?.show();
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddSubmit = async (e) => {
+    e.preventDefault();
+    const payload = { ...formData };
+
+    if (!payload.nom || !payload.prenom || !payload.email || !payload.motdepasse || !payload.role) {
+      Swal.fire('Erreur', 'Veuillez remplir tous les champs obligatoires', 'error');
+      return;
+    }
+
+    if (currentUser?.role === 'PROPRIETAIRE') {
+      if (['PROPRIETAIRE', 'SUPERADMIN'].includes(payload.role)) {
+        Swal.fire('Erreur', "Vous ne pouvez pas attribuer ce rôle", 'error');
+        return;
+      }
+      payload.atelierId = proprietaireAtelierId;
+    }
+
+    if (!payload.atelierId) {
+      delete payload.atelierId;
+    }
+
+    try {
+      await api.post('/utilisateurs', payload);
+      Swal.fire('Succès', 'Utilisateur ajouté avec succès', 'success');
+      addModalInstance.current?.hide();
+      fetchUsers();
+      resetAddForm();
+    } catch (error) {
+      console.error('Erreur création utilisateur:', error);
+      Swal.fire('Erreur', error.response?.data?.message || "Impossible d'ajouter l'utilisateur", 'error');
+    }
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!editFormData.id) return;
+
+    const payload = {
+      nom: editFormData.nom,
+      prenom: editFormData.prenom,
+      email: editFormData.email,
+      role: editFormData.role,
+      atelierId: editFormData.atelierId
+    };
+
+    if (!payload.nom || !payload.prenom || !payload.email) {
+      Swal.fire('Erreur', 'Veuillez remplir tous les champs obligatoires', 'error');
+      return;
+    }
+
+    if (editFormData.motdepasse) {
+      payload.motdepasse = editFormData.motdepasse;
+    }
+
+    if (currentUser?.role === 'PROPRIETAIRE') {
+      if (editFormData.id === currentUser.userId) {
+        payload.role = 'PROPRIETAIRE';
+        payload.atelierId = proprietaireAtelierId;
+      } else {
+        payload.atelierId = proprietaireAtelierId;
+        if (['PROPRIETAIRE', 'SUPERADMIN'].includes(payload.role)) {
+          Swal.fire('Erreur', "Vous ne pouvez pas attribuer ce rôle", 'error');
+          return;
+        }
+      }
+    }
+
+    if (currentUser?.role === 'SECRETAIRE' || currentUser?.role === 'TAILLEUR') {
+      if (editFormData.id !== currentUser.userId) {
+        Swal.fire('Erreur', "Vous ne pouvez pas modifier cet utilisateur", 'error');
+        return;
+      }
+      payload.role = currentUser.role;
+      delete payload.atelierId;
+    }
+
+    if (!payload.atelierId) {
+      delete payload.atelierId;
+    }
+
+    try {
+      await api.put(`/utilisateurs/${editFormData.id}`, payload);
+      Swal.fire('Succès', 'Utilisateur mis à jour avec succès', 'success');
+      editModalInstance.current?.hide();
+      fetchUsers();
+    } catch (error) {
+      console.error('Erreur modification utilisateur:', error);
+      Swal.fire('Erreur', error.response?.data?.message || 'Impossible de modifier utilisateur', 'error');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    const result = await Swal.fire({
+      title: 'Êtes-vous sûr ?',
+      text: 'Cette action est irréversible !',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Oui, supprimer !',
+      cancelButtonText: 'Annuler'
     });
 
-    // Refs for modals
-    const addModalRef = useRef(null);
-    const editModalRef = useRef(null);
-    const [addModalInstance, setAddModalInstance] = useState(null);
-    const [editModalInstance, setEditModalInstance] = useState(null);
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/utilisateurs/${id}`);
+        Swal.fire('Supprimé !', "L'utilisateur a été supprimé", 'success');
+        fetchUsers();
+      } catch (error) {
+        console.error('Erreur suppression utilisateur:', error);
+        Swal.fire('Erreur', "Impossible de supprimer l'utilisateur", 'error');
+      }
+    }
+  };
 
-    useEffect(() => {
-        // Initialize modals
-        if (addModalRef.current) {
-            setAddModalInstance(new Modal(addModalRef.current));
-        }
-        if (editModalRef.current) {
-            setEditModalInstance(new Modal(editModalRef.current));
-        }
-        
-        loadUsers();
-        if (['SUPERADMIN', 'PROPRIETAIRE'].includes(currentUser?.role)) {
-            loadAteliers();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+  const toggleActivation = async (user) => {
+    const activate = !user.actif;
+    const actionLabel = activate ? 'activer' : 'désactiver';
+    const result = await Swal.fire({
+      title: `${activate ? 'Activer' : 'Désactiver'} l'utilisateur`,
+      text: `Êtes-vous sûr de vouloir ${actionLabel} cet utilisateur ?`,
+      icon: activate ? 'question' : 'warning',
+      showCancelButton: true,
+      confirmButtonColor: activate ? '#28a745' : '#d33',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: `Oui, ${actionLabel}`,
+      cancelButtonText: 'Annuler'
+    });
 
-    const loadUsers = async () => {
-        try {
-            setLoading(true);
-            const res = await api.get('/utilisateurs');
-            setUsers(Array.isArray(res.data) ? res.data : []);
-        } catch (err) {
-            console.error(err);
-            Swal.fire('Erreur', 'Impossible de charger les utilisateurs', 'error');
-        } finally {
-            setLoading(false);
-        }
+    if (!result.isConfirmed) return;
+
+    try {
+      const url = `/utilisateurs/${user.id}/${activate ? 'activate' : 'deactivate'}`;
+      await api.patch(url);
+      Swal.fire('Succès', `Utilisateur ${activate ? 'activé' : 'désactivé'} avec succès`, 'success');
+      fetchUsers();
+    } catch (error) {
+      console.error('Erreur bascule activation:', error);
+      Swal.fire('Erreur', `Impossible de ${actionLabel} cet utilisateur`, 'error');
+    }
+  };
+
+  const canEdit = (user) => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'SUPERADMIN') {
+      return user.id !== currentUser.userId;
+    }
+    if (currentUser.role === 'PROPRIETAIRE') {
+      if (user.id === currentUser.userId) return true;
+      const sameAtelier = (user.atelier?.id || user.atelierId) === proprietaireAtelierId;
+      return sameAtelier && ['SECRETAIRE', 'TAILLEUR'].includes(user.role);
+    }
+    if (['SECRETAIRE', 'TAILLEUR'].includes(currentUser.role)) {
+      return user.id === currentUser.userId;
+    }
+    return false;
+  };
+
+  const canDelete = (user) => {
+    return currentUser?.role === 'SUPERADMIN' && user.id !== currentUser.userId;
+  };
+
+  const canToggle = (user) => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'SUPERADMIN') {
+      return user.id !== currentUser.userId;
+    }
+    if (currentUser.role === 'PROPRIETAIRE') {
+      const sameAtelier = (user.atelier?.id || user.atelierId) === proprietaireAtelierId;
+      return sameAtelier && ['SECRETAIRE', 'TAILLEUR'].includes(user.role);
+    }
+    return false;
+  };
+
+  const roleBadgeClass = (role) => {
+    const classes = {
+      SUPERADMIN: 'bg-danger',
+      PROPRIETAIRE: 'bg-primary',
+      SECRETAIRE: 'bg-info',
+      TAILLEUR: 'bg-warning'
     };
+    return classes[role] || 'bg-secondary';
+  };
 
-    const loadAteliers = async () => {
-        try {
-            let url = '/ateliers';
-            if (currentUser.role === 'PROPRIETAIRE' && currentUser.atelierId) {
-                url = `/ateliers/${currentUser.atelierId}`;
-            }
-            const res = await api.get(url);
-            setAteliers(Array.isArray(res.data) ? res.data : [res.data]);
-        } catch (err) {
-            console.error(err);
-        }
-    };
+  const renderHeader = () => (
+    <div className="page-header">
+      <div className="container-fluid">
+        <div className="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+          <div className="breadcrumb-title pe-3">Paramètres</div>
+          <div className="ps-3">
+            <nav aria-label="breadcrumb">
+              <ol className="breadcrumb mb-0 p-0">
+                <li className="breadcrumb-item"><a href="/"><i className="bx bx-home-alt" /></a></li>
+                <li className="breadcrumb-item active" aria-current="page">Gestion des utilisateurs</li>
+              </ol>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-    };
+  return (
+    <div className={embedded ? '' : 'page-content'}>
+      {!embedded && renderHeader()}
 
-    const handleEditInputChange = (e) => {
-        const { name, value } = e.target;
-        setEditFormData({ ...editFormData, [name]: value });
-    };
+      <div className="card">
+        <div className="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+          <h6 className="mb-0">Liste des utilisateurs</h6>
+          {['SUPERADMIN', 'PROPRIETAIRE'].includes(currentUser?.role) && (
+            <button type="button" className="btn btn-light btn-sm" onClick={openAddModal}>
+              <i className="bx bx-plus me-1" />Ajouter un utilisateur
+            </button>
+          )}
+        </div>
+        <div className="card-body">
+          <div className="table-responsive">
+            <table className="table table-bordered align-middle">
+              <thead className="table-light">
+                <tr>
+                  <th style={{ width: '60px' }}>N°</th>
+                  <th>Prénom</th>
+                  <th>Nom</th>
+                  <th>Email</th>
+                  <th>Rôle</th>
+                  <th>Statut</th>
+                  <th style={{ width: '160px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="text-center">Chargement...</td>
+                  </tr>
+                ) : users.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="text-center">Aucun utilisateur trouvé</td>
+                  </tr>
+                ) : (
+                  users.map((user, index) => (
+                    <tr key={user.id}>
+                      <td>{index + 1}</td>
+                      <td>{user.prenom || '-'}</td>
+                      <td>{user.nom || '-'}</td>
+                      <td>{user.email || '-'}</td>
+                      <td>
+                        <span className={`badge ${roleBadgeClass(user.role)}`}>{user.role}</span>
+                      </td>
+                      <td>
+                        <span className={`badge ${user.actif ? 'bg-success' : 'bg-danger'}`}>
+                          {user.actif ? 'Actif' : 'Inactif'}
+                        </span>
+                      </td>
+                      <td>
+                        {canEdit(user) && (
+                          <button className="btn btn-sm btn-warning me-1" onClick={() => openEditModal(user)} title="Modifier">
+                            <i className="bx bx-pencil" />
+                          </button>
+                        )}
+                        {canDelete(user) && (
+                          <button className="btn btn-sm btn-danger me-1" onClick={() => handleDelete(user.id)} title="Supprimer">
+                            <i className="bx bx-trash" />
+                          </button>
+                        )}
+                        {canToggle(user) && (
+                          <button
+                            className={`btn btn-sm btn-${user.actif ? 'outline-danger' : 'outline-success'}`}
+                            onClick={() => toggleActivation(user)}
+                            title={user.actif ? 'Désactiver' : 'Activer'}
+                          >
+                            <i className={`bx bx-user-${user.actif ? 'x' : 'check'}`} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-    const handleAddSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            await api.post('/utilisateurs', formData);
-            Swal.fire('Succès', 'Utilisateur créé avec succès', 'success');
-            setFormData({ nom: '', prenom: '', email: '', motdepasse: '', atelierId: '', role: '' });
-            addModalInstance?.hide();
-            loadUsers();
-        } catch (err) {
-            const msg = err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la création';
-            Swal.fire('Erreur', msg, 'error');
-        }
-    };
-
-    const handleEditSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const payload = {
-                nom: editFormData.nom,
-                prenom: editFormData.prenom,
-                email: editFormData.email,
-            };
-            if (editFormData.motdepasse) payload.motdepasse = editFormData.motdepasse;
-            
-            // Role & Atelier logic
-            if (currentUser.role === 'SUPERADMIN') {
-                payload.atelierId = editFormData.atelierId;
-                payload.role = editFormData.role;
-            } else if (currentUser.role === 'PROPRIETAIRE') {
-                if (editFormData.id === currentUser.userId) {
-                     payload.role = 'PROPRIETAIRE';
-                     payload.atelierId = editFormData.atelierId;
-                } else {
-                     payload.atelierId = editFormData.atelierId;
-                     payload.role = editFormData.role;
-                }
-            }
-
-            await api.put(`/utilisateurs/${editFormData.id}`, payload);
-            Swal.fire('Succès', 'Utilisateur modifié avec succès', 'success');
-            editModalInstance?.hide();
-            loadUsers();
-        } catch (err) {
-            const msg = err.response?.data?.message || err.response?.data?.error || 'Erreur lors de la modification';
-            Swal.fire('Erreur', msg, 'error');
-        }
-    };
-
-    const openEditModal = (user) => {
-        setEditFormData({
-            id: user.id,
-            nom: user.nom || '',
-            prenom: user.prenom || '',
-            email: user.email || '',
-            motdepasse: '',
-            atelierId: user.atelier?.id || user.atelierId || '',
-            role: user.role || ''
-        });
-        editModalInstance?.show();
-    };
-
-    const handleDelete = async (id) => {
-        const result = await Swal.fire({
-            title: 'Êtes-vous sûr ?',
-            text: "Cette action est irréversible !",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Oui, supprimer !'
-        });
-
-        if (result.isConfirmed) {
-            try {
-                await api.delete(`/utilisateurs/${id}`);
-                Swal.fire('Supprimé!', 'L\'utilisateur a été supprimé.', 'success');
-                loadUsers();
-            } catch (err) {
-                Swal.fire('Erreur', 'Impossible de supprimer l\'utilisateur', 'error');
-            }
-        }
-    };
-
-    const toggleActivation = async (user) => {
-        const action = user.actif ? 'deactivate' : 'activate';
-        const confirmText = user.actif ? 'Désactiver' : 'Activer';
-        
-        const result = await Swal.fire({
-            title: `${confirmText} l'utilisateur ?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: `Oui, ${confirmText.toLowerCase()}`
-        });
-
-        if (result.isConfirmed) {
-            try {
-                await api.patch(`/utilisateurs/${user.id}/${action}`);
-                Swal.fire('Succès', `Utilisateur ${confirmText.toLowerCase()} avec succès`, 'success');
-                loadUsers();
-            } catch (err) {
-                Swal.fire('Erreur', `Impossible de ${action} l'utilisateur`, 'error');
-            }
-        }
-    };
-
-    // Permission helpers
-    const getUserAtelierId = (user) => user.atelierId || user.atelier?.id;
-
-    const canEdit = (user) => {
-        if (currentUser.role === 'SUPERADMIN') return user.id !== currentUser.userId;
-        if (currentUser.role === 'PROPRIETAIRE') {
-            if (user.id === currentUser.userId) return true;
-            const userAtelierId = getUserAtelierId(user);
-            const isSubordinate = ['SECRETAIRE', 'TAILLEUR'].includes(user.role) && userAtelierId === currentUser.atelierId;
-            return isSubordinate;
-        }
-        if (['TAILLEUR', 'SECRETAIRE'].includes(currentUser.role)) {
-            return user.id === currentUser.userId;
-        }
-        return false;
-    };
-
-    const canDelete = (user) => {
-        if (currentUser.role === 'SUPERADMIN') return user.id !== currentUser.userId;
-        if (currentUser.role === 'PROPRIETAIRE') {
-            // Can delete employees of their atelier (Tailleur, Secretaire)
-            const userAtelierId = getUserAtelierId(user);
-            return userAtelierId === currentUser.atelierId && ['TAILLEUR', 'SECRETAIRE'].includes(user.role);
-        }
-        return false;
-    };
-
-    const canToggle = (user) => {
-        if (currentUser.role === 'SUPERADMIN') return user.id !== currentUser.userId;
-        if (currentUser.role === 'PROPRIETAIRE') {
-            const userAtelierId = getUserAtelierId(user);
-            const isSubordinate = ['SECRETAIRE', 'TAILLEUR'].includes(user.role) && userAtelierId === currentUser.atelierId;
-            return isSubordinate;
-        }
-        return false;
-    };
-
-    return (
-        <>
-            <div className="page-header">
-                <div className="container-fluid">
-                    <div className="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-                        <div className="breadcrumb-title pe-3">Paramètres</div>
-                        <div className="ps-3">
-                            <nav aria-label="breadcrumb">
-                                <ol className="breadcrumb mb-0 p-0">
-                                    <li className="breadcrumb-item"><a href="/"><i className="bx bx-home-alt"></i></a></li>
-                                    <li className="breadcrumb-item active" aria-current="page">Gestion des Utilisateurs</li>
-                                </ol>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
+      <div className="modal fade" ref={addModalRef} tabIndex="-1">
+        <div className="modal-dialog modal-lg">
+          <div className="modal-content">
+            <div className="modal-header bg-primary text-white">
+              <h5 className="modal-title">Ajouter un utilisateur</h5>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" />
             </div>
-
-            <div className="row">
-                <div className="col-12 col-lg-3">
-                    <div className="card">
-                        <div className="card-header bg-primary">
-                            <h6 className="mb-0 text-center text-white">Menu</h6>
-                        </div>
-                        <div className="card-body">
-                            <div className="fm-menu">
-                                <div className="list-group list-group-flush">
-                                     {/* Menu items would go here */}
-                                     <button className="list-group-item py-1 border-0 bg-transparent text-start w-100"><i className='bx bx-user me-2'></i>Utilisateurs</button>
-                                </div>
-                            </div>
-                        </div>
+            <form onSubmit={handleAddSubmit}>
+              <div className="modal-body">
+                <div className="row g-3">
+                  <div className="col-sm-6">
+                    <label className="form-label">Nom <span className="text-danger">*</span></label>
+                    <input type="text" name="nom" className="form-control" value={formData.nom} onChange={handleInputChange} required />
+                  </div>
+                  <div className="col-sm-6">
+                    <label className="form-label">Prénom <span className="text-danger">*</span></label>
+                    <input type="text" name="prenom" className="form-control" value={formData.prenom} onChange={handleInputChange} required />
+                  </div>
+                  <div className="col-sm-6">
+                    <label className="form-label">Email <span className="text-danger">*</span></label>
+                    <input type="email" name="email" className="form-control" value={formData.email} onChange={handleInputChange} required />
+                  </div>
+                  <div className="col-sm-6">
+                    <label className="form-label">Mot de passe <span className="text-danger">*</span></label>
+                    <input type="password" name="motdepasse" className="form-control" value={formData.motdepasse} onChange={handleInputChange} required />
+                  </div>
+                  {(currentUser?.role === 'SUPERADMIN' || currentUser?.role === 'PROPRIETAIRE') && (
+                    <div className="col-sm-6">
+                      <label className="form-label">Atelier</label>
+                      <select
+                        name="atelierId"
+                        className="form-select"
+                        value={formData.atelierId}
+                        onChange={handleInputChange}
+                        disabled={currentUser?.role === 'PROPRIETAIRE'}
+                      >
+                        <option value="">Sélectionner un atelier</option>
+                        {ateliers.map(atelier => (
+                          <option key={atelier.id} value={atelier.id}>{atelier.nom}</option>
+                        ))}
+                      </select>
                     </div>
+                  )}
+                  <div className="col-sm-6">
+                    <label className="form-label">Rôle <span className="text-danger">*</span></label>
+                    <select name="role" className="form-select" value={formData.role} onChange={handleInputChange} required>
+                      <option value="">Sélectionner un rôle</option>
+                      {availableRoles.map(role => (
+                        <option key={role} value={role}>{role}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" className="btn btn-primary">Enregistrer</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
 
-                <div className="col-12 col-lg-9">
-                    <div className="card">
-                        <div className="card-header bg-primary d-flex justify-content-between align-items-center">
-                            <h6 className="mb-0 text-center text-white flex-grow-1">Liste des utilisateurs</h6>
-                            {['SUPERADMIN', 'PROPRIETAIRE'].includes(currentUser.role) && (
-                                <button type="button" className="btn btn-light btn-sm" onClick={() => addModalInstance?.show()}>
-                                    Ajouter un utilisateur
-                                </button>
-                            )}
-                        </div>
-                        <div className="card-body">
-                            <div className="table-responsive">
-                                <table className="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>N°</th>
-                                            <th>Prenom</th>
-                                            <th>Nom</th>
-                                            <th>Email</th>
-                                            <th>Fonction</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {loading ? (
-                                            <tr><td colSpan="6" className="text-center">Chargement...</td></tr>
-                                        ) : users.length === 0 ? (
-                                            <tr><td colSpan="6" className="text-center">Aucun utilisateur trouvé</td></tr>
-                                        ) : (
-                                            users.map((user, index) => (
-                                                <tr key={user.id}>
-                                                    <td>{index + 1}</td>
-                                                    <td>{user.prenom}</td>
-                                                    <td>{user.nom}</td>
-                                                    <td>{user.email}</td>
-                                                    <td>{user.role}</td>
-                                                    <td>
-                                                        {canEdit(user) && (
-                                                            <button className="btn btn-sm btn-warning me-1" onClick={() => openEditModal(user)}>
-                                                                <i className="bx bx-pencil"></i>
-                                                            </button>
-                                                        )}
-                                                        {canDelete(user) && (
-                                                            <button className="btn btn-sm btn-danger me-1" onClick={() => handleDelete(user.id)}>
-                                                                <i className="bx bx-trash"></i>
-                                                            </button>
-                                                        )}
-                                                        {canToggle(user) && (
-                                                            <button 
-                                                                className={`btn btn-sm btn-${user.actif ? 'danger' : 'success'}`} 
-                                                                onClick={() => toggleActivation(user)}
-                                                                title={user.actif ? 'Désactiver' : 'Activer'}
-                                                            >
-                                                                <i className={`bx bx-user-${user.actif ? 'x' : 'check'}`}></i>
-                                                            </button>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+      <div className="modal fade" ref={editModalRef} tabIndex="-1">
+        <div className="modal-dialog">
+          <div className="modal-content">
+            <div className="modal-header bg-primary text-white">
+              <h5 className="modal-title">Modifier un utilisateur</h5>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" />
             </div>
-
-            {/* Add Modal */}
-            <div className="modal fade" ref={addModalRef} tabIndex="-1">
-                <div className="modal-dialog modal-lg">
-                    <div className="modal-content">
-                        <div className="modal-header bg-primary">
-                            <h5 className="modal-title text-white">Ajouter un utilisateur</h5>
-                            <button type="button" className="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div className="modal-body">
-                            <form id="addUserForm" onSubmit={handleAddSubmit}>
-                                <div className="row g-3">
-                                    <div className="col-sm-6">
-                                        <label className="form-label">Nom</label>
-                                        <input type="text" className="form-control" name="nom" value={formData.nom} onChange={handleInputChange} required />
-                                    </div>
-                                    <div className="col-sm-6">
-                                        <label className="form-label">Prénom</label>
-                                        <input type="text" className="form-control" name="prenom" value={formData.prenom} onChange={handleInputChange} required />
-                                    </div>
-                                    <div className="col-sm-6">
-                                        <label className="form-label">Email</label>
-                                        <input type="email" className="form-control" name="email" value={formData.email} onChange={handleInputChange} required />
-                                    </div>
-                                    <div className="col-sm-6">
-                                        <label className="form-label">Mot de passe</label>
-                                        <input type="password" className="form-control" name="motdepasse" value={formData.motdepasse} onChange={handleInputChange} required />
-                                    </div>
-                                    
-                                    {['SUPERADMIN', 'PROPRIETAIRE'].includes(currentUser.role) && (
-                                        <div className="col-sm-6">
-                                            <label className="form-label">Atelier</label>
-                                            <select className="form-select" name="atelierId" value={formData.atelierId} onChange={handleInputChange}>
-                                                <option value="">Sélectionner un atelier</option>
-                                                {ateliers.map(a => <option key={a.id} value={a.id}>{a.nom}</option>)}
-                                            </select>
-                                        </div>
-                                    )}
-
-                                    <div className="col-sm-6">
-                                        <label className="form-label">Rôle</label>
-                                        <select className="form-select" name="role" value={formData.role} onChange={handleInputChange} required>
-                                            <option value="">Sélectionner un rôle</option>
-                                            {currentUser.role === 'SUPERADMIN' && (
-                                                <>
-                                                    <option value="SUPERADMIN">Super Admin</option>
-                                                    <option value="PROPRIETAIRE">Propriétaire</option>
-                                                </>
-                                            )}
-                                            <option value="SECRETAIRE">Secrétaire</option>
-                                            <option value="TAILLEUR">Tailleur</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div className="modal-footer">
-                            <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                            <button type="submit" form="addUserForm" className="btn btn-primary">Enregistrer</button>
-                        </div>
-                    </div>
+            <form onSubmit={handleEditSubmit}>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label">Nom <span className="text-danger">*</span></label>
+                  <input type="text" name="nom" className="form-control" value={editFormData.nom} onChange={handleEditInputChange} required />
                 </div>
-            </div>
+                <div className="mb-3">
+                  <label className="form-label">Prénom <span className="text-danger">*</span></label>
+                  <input type="text" name="prenom" className="form-control" value={editFormData.prenom} onChange={handleEditInputChange} required />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Email <span className="text-danger">*</span></label>
+                  <input
+                    type="email"
+                    name="email"
+                    className="form-control"
+                    value={editFormData.email}
+                    onChange={handleEditInputChange}
+                    required
+                    disabled={['SECRETAIRE', 'TAILLEUR'].includes(currentUser?.role) && editFormData.id === currentUser?.userId}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Mot de passe (laisser vide si inchangé)</label>
+                  <input type="password" name="motdepasse" className="form-control" value={editFormData.motdepasse} onChange={handleEditInputChange} />
+                </div>
+                {(currentUser?.role === 'SUPERADMIN' || currentUser?.role === 'PROPRIETAIRE') && (
+                  <div className="mb-3">
+                    <label className="form-label">Atelier</label>
+                    <select
+                      name="atelierId"
+                      className="form-select"
+                      value={editFormData.atelierId || ''}
+                      onChange={handleEditInputChange}
+                      disabled={currentUser?.role === 'PROPRIETAIRE'}
+                    >
+                      <option value="">Sélectionner un atelier</option>
+                      {ateliers.map(atelier => (
+                        <option key={atelier.id} value={atelier.id}>{atelier.nom}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className="mb-3">
+                  <label className="form-label">Rôle <span className="text-danger">*</span></label>
+                  <select
+                    name="role"
+                    className="form-select"
+                    value={editFormData.role}
+                    onChange={handleEditInputChange}
+                    required
+                    disabled={currentUser?.role === 'PROPRIETAIRE' && editFormData.id === currentUser?.userId}
+                  >
+                    {availableRoles.map(role => (
+                      <option key={role} value={role}>{role}</option>
+                    ))}
+                    {!availableRoles.includes(editFormData.role) && editFormData.role && (
+                      <option value={editFormData.role}>{editFormData.role}</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" className="btn btn-primary">Enregistrer</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-            {/* Edit Modal */}
-                        <div className="modal fade" ref={editModalRef} tabIndex="-1">
-                            <div className="modal-dialog">
-                                <div className="modal-content">
-                                    <div className="modal-header bg-primary">
-                                        <h5 className="modal-title text-white">Modifier utilisateur</h5>
-                                        <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div className="modal-body">
-                                        <form id="editUserForm" onSubmit={handleEditSubmit}>
-                                            <div className="mb-3">
-                                                <label>Nom</label>
-                                                <input type="text" className="form-control" name="nom" value={editFormData.nom} onChange={handleEditInputChange} required />
-                                            </div>
-                                            <div className="mb-3">
-                                                <label>Prénom</label>
-                                                <input type="text" className="form-control" name="prenom" value={editFormData.prenom} onChange={handleEditInputChange} required />
-                                            </div>
-                                            <div className="mb-3">
-                                                <label>Email</label>
-                                                <input type="email" className="form-control" name="email" value={editFormData.email} onChange={handleEditInputChange} required disabled={['TAILLEUR', 'SECRETAIRE'].includes(currentUser.role)} />
-                                            </div>
-                                            <div className="mb-3">
-                                                <label>Mot de passe (laisser vide si inchangé)</label>
-                                                <input type="password" className="form-control" name="motdepasse" value={editFormData.motdepasse} onChange={handleEditInputChange} />
-                                            </div>
-
-                                            {['SUPERADMIN', 'PROPRIETAIRE'].includes(currentUser.role) && (
-                                                <>
-                                                    <div className="mb-3">
-                                                        <label>Atelier</label>
-                                                        <select className="form-select" name="atelierId" value={editFormData.atelierId} onChange={handleEditInputChange}>
-                                                            <option value="">Sélectionner un atelier</option>
-                                                            {ateliers.map(a => <option key={a.id} value={a.id}>{a.nom}</option>)}
-                                                        </select>
-                                                    </div>
-
-                                                    <div className="mb-3">
-                                                        <label>Rôle</label>
-                                                        <select
-                                                            className="form-select"
-                                                            name="role"
-                                                            value={editFormData.role}
-                                                            onChange={handleEditInputChange}
-                                                            disabled={currentUser.role === 'PROPRIETAIRE' && (editFormData.role === 'PROPRIETAIRE' || editFormData.role === 'SUPERADMIN')}
-                                                        >
-                                                            <option value="">Sélectionner un rôle</option>
-                                                            {currentUser.role === 'SUPERADMIN' && (
-                                                                <>
-                                                                    <option value="SUPERADMIN">Super Admin</option>
-                                                                    <option value="PROPRIETAIRE">Propriétaire</option>
-                                                                </>
-                                                            )}
-                                                            <option value="SECRETAIRE">Secrétaire</option>
-                                                            <option value="TAILLEUR">Tailleur</option>
-                                                        </select>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </form>
-                                    </div>
-                                    <div className="modal-footer">
-                                        <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                                        <button type="submit" form="editUserForm" className="btn btn-primary">Mettre à jour</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </>
-                );
-            };
-
-            export default Signup;
+export default Signup;

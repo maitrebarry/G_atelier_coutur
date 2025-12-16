@@ -55,38 +55,8 @@ const Sidebar = () => {
       id: 'parametres',
       title: 'Paramètres',
       icon: 'bx bx-cog',
-      permission: 'PARAMETRE_VOIR',
       roles: ['SUPERADMIN', 'PROPRIETAIRE'],
-      children: [
-        {
-            id: 'atelier',
-            title: 'Atelier',
-            href: '/parametres',
-            icon: 'bx bx-home-alt',
-            roles: ['SUPERADMIN', 'PROPRIETAIRE']
-        },
-        {
-            id: 'utilisateurs',
-            title: 'Utilisateurs',
-            href: '/signup',
-            icon: 'bx bx-user',
-            roles: ['SUPERADMIN', 'PROPRIETAIRE']
-        },
-        {
-            id: 'permissions',
-            title: 'Assigner Permission',
-            href: '/permissions',
-            icon: 'bx bx-user-pin',
-            roles: ['SUPERADMIN', 'PROPRIETAIRE']
-        },
-        {
-            id: 'liste_permissions',
-            title: 'Liste des Permissions',
-            href: '/liste-permissions',
-            icon: 'bx bx-list-ul',
-            roles: ['SUPERADMIN', 'PROPRIETAIRE']
-        }
-      ]
+      href: '/parametres'
     }
   ];
 

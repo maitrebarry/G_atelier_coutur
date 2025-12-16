@@ -77,6 +77,7 @@ public class ClientService {
         mesure.setAtelier(clientSauvegarde.getAtelier());
         mesure.setDateMesure(LocalDateTime.now());
         mesure.setSexe(dto.getSexe());
+        mesure.setDescription(dto.getDescription());
 
         // === CORRECTION CRITIQUE : GESTION MODÈLE EXISTANT ===
         if (dto.getSelectedModelId() != null) {
@@ -280,6 +281,7 @@ public class ClientService {
         mesure.setAtelier(client.getAtelier()); // ✅ Utiliser l'atelier du client
         mesure.setDateMesure(LocalDateTime.now());
         mesure.setSexe(dto.getSexe());
+        mesure.setDescription(dto.getDescription());
         // === NOUVEAU : GESTION MODÈLE EXISTANT POUR MODIFICATION ===
         if (dto.getSelectedModelId() != null) {
             // Récupérer le modèle existant
@@ -552,6 +554,7 @@ public class ClientService {
         dto.setDateMesure(mesure.getDateMesure());
         dto.setTypeVetement(mesure.getTypeVetement());
         dto.setPrix(mesure.getPrix());
+        dto.setDescription(mesure.getDescription());
         dto.setSexe(mesure.getSexe());
         dto.setPhotoPath(mesure.getPhotoPath());
 

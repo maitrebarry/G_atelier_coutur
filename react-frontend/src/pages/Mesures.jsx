@@ -69,6 +69,7 @@ const Mesures = () => {
   // Modal States
   const [showPriceModal, setShowPriceModal] = useState(false);
   const [price, setPrice] = useState('');
+  const [description, setDescription] = useState('');
   const [showModelPreviewModal, setShowModelPreviewModal] = useState(false);
   const [previewModelData, setPreviewModelData] = useState(null);
 
@@ -261,6 +262,8 @@ const Mesures = () => {
       });
 
       data.append('prix', price);
+      // Description (optional) for the pricing note
+      data.append('description', description.trim());
       
       if (photoFile) {
         data.append('photo', photoFile);
@@ -288,6 +291,7 @@ const Mesures = () => {
         homme_epaule: '', homme_manche: '', homme_longueur: '', homme_longueur_pantalon: '', homme_ceinture: '', homme_cuisse: '', homme_poitrine: '', homme_corps: '', homme_tour_manche: '',
         selectedModelId: '', modeleNom: '', genderPreview: 'Femme'
       });
+      setDescription('');
       setPhotoFile(null);
       setPrice('');
       setSelectedModel(null);
@@ -667,6 +671,16 @@ const Mesures = () => {
                     min="0" 
                   />
                 </div>
+                  <div className="mb-3">
+                    <label className="form-label">Description <small className="text-muted">(optionnel)</small></label>
+                    <textarea
+                      className="form-control"
+                      rows={3}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Ajouter une description ou note pour ce modèle..."
+                    />
+                  </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowPriceModal(false)}>Annuler</button>

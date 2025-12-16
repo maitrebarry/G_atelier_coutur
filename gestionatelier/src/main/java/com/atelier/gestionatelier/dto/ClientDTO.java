@@ -330,6 +330,7 @@ public class ClientDTO implements Serializable {
 
     // NOUVEAU : Prix du modèle
     private String prix;
+    private String description;
 
     // Getters et setters pour le prix
     public String getPrix() {
@@ -338,6 +339,13 @@ public class ClientDTO implements Serializable {
 
     public void setPrix(String prix) {
         this.prix = prix;
+    }
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
     // NOUVEAU : Getter et Setter pour selectedModelId
     public UUID getSelectedModelId() {

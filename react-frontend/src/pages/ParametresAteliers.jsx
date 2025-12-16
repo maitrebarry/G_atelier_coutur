@@ -1,24 +1,21 @@
 import React, { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import api from '../api/api';
 import Swal from 'sweetalert2';
-import Signup from './Signup';
-import Permissions from './Permissions';
-import ListePermissions from './ListePermissions';
 
 const menuItems = [
-    { key: 'ateliers', label: 'Ateliers', icon: 'bx bx-home-alt' },
-    { key: 'utilisateurs', label: 'Utilisateurs', icon: 'bx bx-user' },
-    { key: 'assigner', label: 'Assigner Permission', icon: 'bx bx-user-pin' },
-    { key: 'liste', label: 'Liste Permission', icon: 'bx bx-list-ul' }
+    { route: '/parametres/ateliers', label: 'Ateliers', icon: 'bx bx-home-alt' },
+    { route: '/signup', label: 'Utilisateurs', icon: 'bx bx-user' },
+    { route: '/permissions', label: 'Assigner Permission', icon: 'bx bx-user-pin' },
+    { route: '/liste-permissions', label: 'Liste Permission', icon: 'bx bx-list-ul' }
 ];
 
-const Parametres = () => {
-    const [currentUser, setCurrentUser] = useState(null);
-    const [selectedMenu, setSelectedMenu] = useState('ateliers');
+const ParametresAteliers = () => {
     const [ateliers, setAteliers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
     const [formData, setFormData] = useState({
         id: '',
         nom: '',
@@ -27,6 +24,7 @@ const Parametres = () => {
         telephone: '',
         dateCreation: ''
     });
+    const location = useLocation();
 
     useEffect(() => {
         const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
@@ -172,117 +170,105 @@ const Parametres = () => {
                         </div>
                         <div className="card-body p-0 param-menu">
                             <div className="list-group list-group-flush">
-                                {menuItems.map((item) => (
-                                    <button
-                                        key={item.key}
-                                        type="button"
-                                        className={`list-group-item list-group-item-action border-0 d-flex align-items-center gap-2 py-3 ${selectedMenu === item.key ? 'active' : ''}`}
-                                        onClick={() => setSelectedMenu(item.key)}
-                                    >
-                                        <i className={`${item.icon} fs-5`}></i>
-                                        <span>{item.label}</span>
-                                    </button>
-                                ))}
+                                {menuItems.map((item) => {
+                                    const isActive = location.pathname.startsWith(item.route);
+                                    return (
+                                        <Link
+                                            key={item.route}
+                                            to={item.route}
+                                            className={`list-group-item list-group-item-action border-0 d-flex align-items-center gap-2 py-3 ${isActive ? 'active' : ''}`}
+                                        >
+                                            <i className={`${item.icon} fs-5`}></i>
+                                            <span>{item.label}</span>
+                                        </Link>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="col-12 col-lg-9">
-                    {selectedMenu === 'ateliers' && (
-                        <div className="card">
-                            <div className="card-header bg-primary d-flex justify-content-between align-items-center">
-                                <h6 className="mb-0 text-white">Liste des Ateliers</h6>
-                                {currentUser.role === 'SUPERADMIN' && (
-                                    <button className="btn btn-light btn-sm" onClick={() => openModal()}>
-                                        <i className="bx bx-plus me-1"></i>Ajouter un atelier
-                                    </button>
-                                )}
-                            </div>
-                            <div className="card-body">
-                                <div className="table-responsive">
-                                    <table className="table table-bordered table-hover">
-                                        <thead className="table-light">
+                    <div className="card">
+                        <div className="card-header bg-primary d-flex justify-content-between align-items-center">
+                            <h6 className="mb-0 text-white">Liste des Ateliers</h6>
+                            {currentUser.role === 'SUPERADMIN' && (
+                                <button className="btn btn-light btn-sm" onClick={() => openModal()}>
+                                    <i className="bx bx-plus me-1"></i>Ajouter un atelier
+                                </button>
+                            )}
+                        </div>
+                        <div className="card-body">
+                            <div className="table-responsive">
+                                <table className="table table-bordered table-hover">
+                                    <thead className="table-light">
+                                        <tr>
+                                            <th>N°</th>
+                                            <th>Nom</th>
+                                            <th>Adresse</th>
+                                            <th>Email</th>
+                                            <th>Téléphone</th>
+                                            <th>Date de création</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {loading ? (
                                             <tr>
-                                                <th>N°</th>
-                                                <th>Nom</th>
-                                                <th>Adresse</th>
-                                                <th>Email</th>
-                                                <th>Téléphone</th>
-                                                <th>Date de création</th>
-                                                <th>Actions</th>
+                                                <td colSpan="7" className="text-center">
+                                                    <div className="spinner-border spinner-border-sm me-2" role="status">
+                                                        <span className="visually-hidden">Chargement...</span>
+                                                    </div>
+                                                    Chargement des ateliers...
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            {loading ? (
-                                                <tr>
-                                                    <td colSpan="7" className="text-center">
-                                                        <div className="spinner-border spinner-border-sm me-2" role="status">
-                                                            <span className="visually-hidden">Chargement...</span>
-                                                        </div>
-                                                        Chargement des ateliers...
-                                                    </td>
-                                                </tr>
-                                            ) : ateliers.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan="7" className="text-center">Aucun atelier enregistré</td>
-                                                </tr>
-                                            ) : (
-                                                ateliers.map((atelier, index) => {
-                                                    const canEdit = currentUser.role === 'SUPERADMIN'
-                                                        || (currentUser.role === 'PROPRIETAIRE' && currentUser.atelierId === atelier.id);
-                                                    const canDelete = currentUser.role === 'SUPERADMIN';
+                                        ) : ateliers.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="7" className="text-center">Aucun atelier enregistré</td>
+                                            </tr>
+                                        ) : (
+                                            ateliers.map((atelier, index) => {
+                                                const canEdit = currentUser.role === 'SUPERADMIN' ||
+                                                    (currentUser.role === 'PROPRIETAIRE' && currentUser.atelierId === atelier.id);
+                                                const canDelete = currentUser.role === 'SUPERADMIN';
 
-                                                    return (
-                                                        <tr key={atelier.id}>
-                                                            <td>{index + 1}</td>
-                                                            <td>{atelier.nom}</td>
-                                                            <td>{atelier.adresse}</td>
-                                                            <td>{atelier.email}</td>
-                                                            <td>{atelier.telephone}</td>
-                                                            <td>{atelier.dateCreation ? new Date(atelier.dateCreation).toLocaleDateString('fr-FR') : 'N/A'}</td>
-                                                            <td>
-                                                                {canEdit && (
-                                                                    <button
-                                                                        className="btn btn-sm btn-info me-1"
-                                                                        onClick={() => openModal(atelier)}
-                                                                        title="Modifier"
-                                                                    >
-                                                                        <i className="bx bx-pencil"></i>
-                                                                    </button>
-                                                                )}
-                                                                {canDelete && (
-                                                                    <button
-                                                                        className="btn btn-sm btn-danger"
-                                                                        onClick={() => handleDelete(atelier.id)}
-                                                                        title="Supprimer"
-                                                                    >
-                                                                        <i className="bx bx-trash"></i>
-                                                                    </button>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                                return (
+                                                    <tr key={atelier.id}>
+                                                        <td>{index + 1}</td>
+                                                        <td>{atelier.nom}</td>
+                                                        <td>{atelier.adresse}</td>
+                                                        <td>{atelier.email}</td>
+                                                        <td>{atelier.telephone}</td>
+                                                        <td>{atelier.dateCreation ? new Date(atelier.dateCreation).toLocaleDateString('fr-FR') : 'N/A'}</td>
+                                                        <td>
+                                                            {canEdit && (
+                                                                <button
+                                                                    className="btn btn-sm btn-info me-1"
+                                                                    onClick={() => openModal(atelier)}
+                                                                    title="Modifier"
+                                                                >
+                                                                    <i className="bx bx-pencil"></i>
+                                                                </button>
+                                                            )}
+                                                            {canDelete && (
+                                                                <button
+                                                                    className="btn btn-sm btn-danger"
+                                                                    onClick={() => handleDelete(atelier.id)}
+                                                                    title="Supprimer"
+                                                                >
+                                                                    <i className="bx bx-trash"></i>
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-                    )}
-
-                    {selectedMenu === 'utilisateurs' && (
-                        <Signup embedded />
-                    )}
-
-                    {selectedMenu === 'assigner' && (
-                        <Permissions embedded />
-                    )}
-
-                    {selectedMenu === 'liste' && (
-                        <ListePermissions embedded />
-                    )}
+                    </div>
                 </div>
             </div>
 
@@ -291,7 +277,7 @@ const Parametres = () => {
                     <div className="modal-dialog">
                         <div className="modal-content">
                             <div className="modal-header bg-primary text-white">
-                                <h5 className="modal-title">{isEditing ? "Modifier l'atelier" : 'Ajouter un atelier'}</h5>
+                                <h5 className="modal-title">{isEditing ? 'Modifier l\'atelier' : 'Ajouter un atelier'}</h5>
                                 <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
                             </div>
                             <form onSubmit={handleSubmit}>
@@ -367,4 +353,4 @@ const Parametres = () => {
     );
 };
 
-export default Parametres;
+export default ParametresAteliers;

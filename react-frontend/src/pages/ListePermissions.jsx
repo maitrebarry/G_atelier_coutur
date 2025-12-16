@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api, { getUserData } from '../api/api';
 import Swal from 'sweetalert2';
 
-const ListePermissions = () => {
+const ListePermissions = ({ embedded = false }) => {
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -126,18 +126,20 @@ const ListePermissions = () => {
   }, {});
 
   return (
-    <div className="page-content">
-      <div className="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-        <div className="breadcrumb-title pe-3">Paramètres</div>
-        <div className="ps-3">
-          <nav aria-label="breadcrumb">
-            <ol className="breadcrumb mb-0 p-0">
-              <li className="breadcrumb-item"><a href="/home"><i className="bx bx-home-alt"></i></a></li>
-              <li className="breadcrumb-item active" aria-current="page">Liste des Permissions</li>
-            </ol>
-          </nav>
+    <div className={embedded ? '' : 'page-content'}>
+      {!embedded && (
+        <div className="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+          <div className="breadcrumb-title pe-3">Paramètres</div>
+          <div className="ps-3">
+            <nav aria-label="breadcrumb">
+              <ol className="breadcrumb mb-0 p-0">
+                <li className="breadcrumb-item"><a href="/home"><i className="bx bx-home-alt"></i></a></li>
+                <li className="breadcrumb-item active" aria-current="page">Liste des Permissions</li>
+              </ol>
+            </nav>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="card">
         <div className="card-header bg-primary d-flex justify-content-between align-items-center">

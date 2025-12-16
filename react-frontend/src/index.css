@@ -11,3 +11,25 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.param-menu .list-group-item {
+  background-color: transparent;
+  border-radius: 0;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.param-menu .list-group-item:hover {
+  background-color: #edf3ff;
+  color: #0d6efd;
+}
+
+.param-menu .list-group-item.active,
+.param-menu .list-group-item.active:hover {
+  background-color: #d7e5ff;
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+.param-menu .list-group-item:focus {
+  box-shadow: none;
+}
