@@ -5041,6 +5041,13 @@ input::placeholder {
 	cursor: pointer;
 
 
+
+
+.sidebar-overlay {
+
+	display: none;
+
+}
 }
 
 
@@ -5302,7 +5309,7 @@ input::placeholder {
 	}
 
 	
-	.wrapper.toggled .overlay {
+	.wrapper.toggled .sidebar-overlay {
 
 
 		position: fixed;
@@ -5332,7 +5339,7 @@ input::placeholder {
 		display: block;
 
 
-		cursor: move;
+		cursor: pointer;
 
 
 		transition: all .2s ease-out;

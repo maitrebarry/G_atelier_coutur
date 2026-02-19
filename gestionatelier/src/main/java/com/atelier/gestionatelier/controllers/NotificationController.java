@@ -26,7 +26,7 @@ public class NotificationController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
         
-        return utilisateurRepository.findByEmail(email)
+        return utilisateurRepository.findByEmailIgnoreCase(email)
                 .map(user -> ResponseEntity.ok(notificationService.getUnreadNotifications(user.getId())))
                 .orElse(ResponseEntity.notFound().build());
     }

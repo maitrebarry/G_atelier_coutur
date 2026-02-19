@@ -3,6 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import api, { clearAuthData } from '../api/api';
 import Swal from 'sweetalert2';
 import Chart from 'chart.js/auto';
+import {
+  activateAdminAtelierSubscription,
+  approveAdminSubscriptionPayment,
+  fetchAdminAtelierSubscriptions,
+  fetchAdminSubscriptionPayments,
+  fetchAdminSubscriptionPlans,
+  rejectAdminSubscriptionPayment,
+  suspendAdminAtelierSubscription,
+  updateAdminAtelierSubscriptionDates
+} from '../api/adminSubscription';
 
 const Home = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -10,6 +20,15 @@ const Home = () => {
   const navigate = useNavigate();
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
+  const role = (JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData') || '{}')?.role || '').toUpperCase();
+
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+  const [atelierSubscriptions, setAtelierSubscriptions] = useState([]);
+  const [subscriptionPayments, setSubscriptionPayments] = useState([]);
+  const [planSelectionByAtelier, setPlanSelectionByAtelier] = useState({});
+  const [subscriptionsLoading, setSubscriptionsLoading] = useState(false);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [subscriptionsError, setSubscriptionsError] = useState('');
 
   useEffect(() => {
     loadDashboardData();
@@ -50,6 +69,168 @@ const Home = () => {
         }
     }
   }, [dashboardData]);
+
+  useEffect(() => {
+    if (role === 'SUPERADMIN') {
+      loadSubscriptions();
+      loadSubscriptionPayments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role]);
+
+  const subscriptionStatusLabel = (s) => {
+    const v = String(s || '').toUpperCase();
+    if (v === 'ACTIVE') return 'Actif';
+    if (v === 'CANCELED') return 'Suspendu';
+    if (v === 'PAST_DUE') return 'En retard';
+    if (v === 'EXPIRED') return 'Expiré';
+    return s || 'N/A';
+  };
+
+  const paymentStatusLabel = (s) => {
+    const v = String(s || '').toUpperCase();
+    if (v === 'PENDING') return 'En attente';
+    if (v === 'PAID') return 'Payé';
+    if (v === 'FAILED') return 'Rejeté';
+    return s || 'N/A';
+  };
+
+  const loadSubscriptions = async () => {
+    try {
+      setSubscriptionsLoading(true);
+      setSubscriptionsError('');
+
+      const [plansRes, ateliersRes] = await Promise.all([
+        fetchAdminSubscriptionPlans(),
+        fetchAdminAtelierSubscriptions()
+      ]);
+
+      const plans = Array.isArray(plansRes) ? plansRes : [];
+      const ateliers = Array.isArray(ateliersRes) ? ateliersRes : [];
+
+      setSubscriptionPlans(plans);
+      setAtelierSubscriptions(ateliers);
+
+      const map = {};
+      ateliers.forEach((a) => {
+        map[a.atelier_id] = a.plan_code || plans[0]?.code || 'MENSUEL';
+      });
+      setPlanSelectionByAtelier(map);
+    } catch (e) {
+      setSubscriptionsError(e?.response?.data?.message || e?.message || 'Erreur chargement abonnements');
+    } finally {
+      setSubscriptionsLoading(false);
+    }
+  };
+
+  const loadSubscriptionPayments = async () => {
+    try {
+      setPaymentsLoading(true);
+      const rows = await fetchAdminSubscriptionPayments();
+      setSubscriptionPayments(Array.isArray(rows) ? rows : []);
+    } catch (e) {
+      setSubscriptionsError(e?.response?.data?.message || e?.message || 'Erreur chargement paiements abonnement');
+    } finally {
+      setPaymentsLoading(false);
+    }
+  };
+
+  const onActivateSubscription = async (atelierId) => {
+    try {
+      const planCode = planSelectionByAtelier[atelierId] || subscriptionPlans[0]?.code || 'MENSUEL';
+      await activateAdminAtelierSubscription(atelierId, { planCode });
+      await loadSubscriptions();
+      Swal.fire('Succès', 'Abonnement activé', 'success');
+    } catch (e) {
+      setSubscriptionsError(e?.response?.data?.message || e?.message || 'Erreur activation abonnement');
+    }
+  };
+
+  const onSuspendSubscription = async (atelierId) => {
+    try {
+      await suspendAdminAtelierSubscription(atelierId);
+      await loadSubscriptions();
+      Swal.fire('Succès', 'Abonnement suspendu', 'success');
+    } catch (e) {
+      setSubscriptionsError(e?.response?.data?.message || e?.message || 'Erreur suspension abonnement');
+    }
+  };
+
+  const onEditSubscriptionDates = async (row) => {
+    const toDateTimeLocalValue = (raw) => {
+      if (!raw) return '';
+      const d = new Date(raw);
+      if (Number.isNaN(d.getTime())) return '';
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+    const startDefault = toDateTimeLocalValue(row.date_debut);
+    const endDefault = toDateTimeLocalValue(row.date_fin);
+
+    const result = await Swal.fire({
+      title: `Modifier les dates - ${row.atelier_nom || 'Atelier'}`,
+      html:
+        '<label class="form-label d-block text-start">Date début</label>' +
+        `<input id="swal-date-debut" type="datetime-local" class="swal2-input" value="${startDefault}">` +
+        '<label class="form-label d-block text-start">Date fin</label>' +
+        `<input id="swal-date-fin" type="datetime-local" class="swal2-input" value="${endDefault}">`,
+      showCancelButton: true,
+      confirmButtonText: 'Enregistrer',
+      preConfirm: () => {
+        const dateDebut = document.getElementById('swal-date-debut')?.value;
+        const dateFin = document.getElementById('swal-date-fin')?.value;
+        if (!dateDebut || !dateFin) {
+          Swal.showValidationMessage('Les deux dates sont requises');
+          return false;
+        }
+        if (new Date(dateFin).getTime() <= new Date(dateDebut).getTime()) {
+          Swal.showValidationMessage('La date de fin doit être après la date de début');
+          return false;
+        }
+        return { dateDebut, dateFin };
+      }
+    });
+
+    if (!result.isConfirmed || !result.value) return;
+
+    try {
+      await updateAdminAtelierSubscriptionDates(row.atelier_id, result.value);
+      await loadSubscriptions();
+      Swal.fire('Succès', 'Dates mises à jour', 'success');
+    } catch (e) {
+      setSubscriptionsError(e?.response?.data?.message || e?.message || 'Erreur mise à jour des dates');
+    }
+  };
+
+  const onApprovePayment = async (paymentId) => {
+    try {
+      await approveAdminSubscriptionPayment(paymentId);
+      await Promise.all([loadSubscriptions(), loadSubscriptionPayments()]);
+      Swal.fire('Succès', 'Paiement validé', 'success');
+    } catch (e) {
+      setSubscriptionsError(e?.response?.data?.message || e?.message || 'Erreur validation paiement');
+    }
+  };
+
+  const onRejectPayment = async (paymentId) => {
+    const result = await Swal.fire({
+      title: 'Motif du rejet',
+      input: 'text',
+      inputPlaceholder: 'Saisir le motif (optionnel)',
+      showCancelButton: true,
+      confirmButtonText: 'Rejeter'
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      await rejectAdminSubscriptionPayment(paymentId, result.value || '');
+      await loadSubscriptionPayments();
+      Swal.fire('Succès', 'Paiement rejeté', 'success');
+    } catch (e) {
+      setSubscriptionsError(e?.response?.data?.message || e?.message || 'Erreur rejet paiement');
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -602,6 +783,182 @@ const Home = () => {
     );
   };
 
+  const renderSuperAdminContent = () => {
+    return (
+      <>
+        <div className="row g-4 mt-1">
+          <div className="col-12">
+            <div className="card">
+              <div className="card-header d-flex align-items-center justify-content-between">
+                <h6 className="mb-0">Gestion des abonnements</h6>
+                <button className="btn btn-sm btn-outline-primary" onClick={loadSubscriptions}>
+                  <i className="bx bx-refresh me-1"></i>Rafraîchir
+                </button>
+              </div>
+              <div className="card-body">
+                {subscriptionsError && (
+                  <div className="alert alert-warning py-2">{subscriptionsError}</div>
+                )}
+
+                {subscriptionsLoading ? (
+                  <div className="text-muted">Chargement abonnements...</div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-sm align-middle">
+                      <thead>
+                        <tr>
+                          <th>Atelier</th>
+                          <th>Plan</th>
+                          <th>Statut</th>
+                          <th>Début</th>
+                          <th>Fin</th>
+                          <th style={{ width: 280 }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {atelierSubscriptions.map((row) => (
+                          <tr key={`sub-${row.atelier_id}`}>
+                            <td>{row.atelier_nom}</td>
+                            <td>{row.plan_libelle || '—'}</td>
+                            <td>
+                              <span className={`badge ${row.statut === 'ACTIVE' ? 'bg-success' : row.statut === 'CANCELED' ? 'bg-secondary' : 'bg-warning text-dark'}`}>
+                                {subscriptionStatusLabel(row.statut)}
+                              </span>
+                            </td>
+                            <td>{row.date_debut ? new Date(row.date_debut).toLocaleDateString('fr-FR') : '—'}</td>
+                            <td>{row.date_fin ? new Date(row.date_fin).toLocaleDateString('fr-FR') : '—'}</td>
+                            <td>
+                              <div className="d-flex align-items-center gap-2 flex-nowrap">
+                                <select
+                                  className="form-select form-select-sm"
+                                  style={{ minWidth: 170 }}
+                                  value={planSelectionByAtelier[row.atelier_id] || row.plan_code || subscriptionPlans[0]?.code || 'MENSUEL'}
+                                  onChange={(e) => setPlanSelectionByAtelier((prev) => ({ ...prev, [row.atelier_id]: e.target.value }))}
+                                >
+                                  {subscriptionPlans.map((p) => (
+                                    <option key={p.code} value={p.code}>{p.libelle} ({p.duree_mois}m)</option>
+                                  ))}
+                                </select>
+                                <button className="btn btn-sm btn-success" onClick={() => onActivateSubscription(row.atelier_id)} title="Activer le plan">
+                                  <i className="bx bx-check-circle"></i>
+                                </button>
+                                <button className="btn btn-sm btn-outline-danger" onClick={() => onSuspendSubscription(row.atelier_id)} title="Suspendre l'abonnement">
+                                  <i className="bx bx-pause-circle"></i>
+                                </button>
+                                <button className="btn btn-sm btn-outline-primary" onClick={() => onEditSubscriptionDates(row)} title="Modifier les dates">
+                                  <i className="bx bx-edit"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {atelierSubscriptions.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="text-muted text-center py-3">Aucune donnée abonnement</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="row g-4 mt-1">
+          <div className="col-12">
+            <div className="card">
+              <div className="card-header d-flex align-items-center justify-content-between">
+                <h6 className="mb-0">Paiements abonnement (manuel)</h6>
+                <button className="btn btn-sm btn-outline-primary" onClick={loadSubscriptionPayments}>
+                  <i className="bx bx-refresh me-1"></i>Rafraîchir
+                </button>
+              </div>
+              <div className="card-body">
+                {paymentsLoading ? (
+                  <div className="text-muted">Chargement paiements...</div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-sm align-middle">
+                      <thead>
+                        <tr>
+                          <th>N°</th>
+                          <th>Atelier</th>
+                          <th>Référence</th>
+                          <th>Réf. transfert</th>
+                          <th>Plan</th>
+                          <th>Montant</th>
+                          <th>Statut</th>
+                          <th>Provider</th>
+                          <th>Mode</th>
+                          <th>Preuve</th>
+                          <th>Créé le</th>
+                          <th style={{ width: 180 }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subscriptionPayments.map((p, index) => (
+                          <tr key={`pay-${p.id}`}>
+                            <td>{index + 1}</td>
+                            <td>{atelierSubscriptions.find((a) => String(a.atelier_id) === String(p.atelier_id))?.atelier_nom || '—'}</td>
+                            <td>{p.reference}</td>
+                            <td>{p.transaction_ref || '—'}</td>
+                            <td>{p.plan_code || '—'}</td>
+                            <td>{p.montant} {p.devise}</td>
+                            <td>
+                              <span className={`badge ${String(p.statut).toUpperCase() === 'PENDING' ? 'bg-warning text-dark' : String(p.statut).toUpperCase() === 'PAID' ? 'bg-success' : 'bg-secondary'}`}>
+                                {paymentStatusLabel(p.statut)}
+                              </span>
+                            </td>
+                            <td>{p.provider}</td>
+                            <td>{p.mode_paiement || '—'}</td>
+                            <td>
+                              {p.preuve_url ? (
+                                <button
+                                  className="btn btn-sm btn-outline-secondary"
+                                  onClick={() => Swal.fire({
+                                    title: `Preuve ${p.reference || ''}`.trim(),
+                                    imageUrl: `http://localhost:8081${p.preuve_url}`,
+                                    imageAlt: 'Preuve de paiement',
+                                    showCloseButton: true,
+                                    confirmButtonText: 'Fermer',
+                                  })}
+                                >
+                                  <i className="bx bx-image"></i>
+                                </button>
+                              ) : '—'}
+                            </td>
+                            <td>{p.created_at ? new Date(p.created_at).toLocaleString('fr-FR') : '—'}</td>
+                            <td>
+                              <div className="d-flex gap-2">
+                                <button className="btn btn-sm btn-success" disabled={String(p.statut).toUpperCase() !== 'PENDING'} onClick={() => onApprovePayment(p.id)} title="Valider paiement">
+                                  <i className="bx bx-check-circle"></i>
+                                </button>
+                                <button className="btn btn-sm btn-outline-danger" disabled={String(p.statut).toUpperCase() !== 'PENDING'} onClick={() => onRejectPayment(p.id)} title="Rejeter paiement">
+                                  <i className="bx bx-x-circle"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {subscriptionPayments.length === 0 && (
+                          <tr>
+                            <td colSpan={12} className="text-muted text-center py-3">Aucun paiement</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
+
   if (loading) {
     return (
       <div className="page-content">
@@ -638,7 +995,7 @@ const Home = () => {
       {dashboardData && dashboardData.chiffreAffairesMensuel !== undefined && renderProprietaireContent()}
       {dashboardData && dashboardData.affectationsEnAttente !== undefined && renderTailleurContent()}
       {dashboardData && dashboardData.nouveauxClientsSemaine !== undefined && renderSecretaireContent()}
-      {/* SuperAdmin content is mostly stats cards, but we can add more if needed */}
+      {dashboardData && dashboardData.totalAteliers !== undefined && renderSuperAdminContent()}
     </>
   );
 };

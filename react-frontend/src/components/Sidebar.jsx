@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
-const Sidebar = () => {
+const Sidebar = ({ onToggleSidebar }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [openMenus, setOpenMenus] = useState({});
   const location = useLocation();
@@ -196,7 +196,12 @@ const Sidebar = () => {
           <img src="/assets/images/logo_ateliko.png" className="logo-icon" alt="logo icon" />
           <h6 className="logo-text">ATELIKO</h6>
         </div>
-        <div className="toggle-icon ms-auto">
+        <div className="toggle-icon ms-auto" onClick={onToggleSidebar} role="button" tabIndex={0} onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onToggleSidebar();
+          }
+        }}>
           <i className='bx bx-arrow-to-left'></i>
         </div>
       </div>

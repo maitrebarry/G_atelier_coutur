@@ -34,6 +34,17 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.status === 402) {
+      try {
+        if (window.location.pathname !== '/abonnement') {
+          window.location.href = '/abonnement';
+        }
+      } catch (e) {
+        /* ignore */
+      }
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401) {
       // Token expired or unauthorized, clear auth and redirect to login
       localStorage.removeItem('authToken');
@@ -57,6 +68,16 @@ export const getUserData = () => {
 };
 
 export const setAuthData = (token, userData, remember = true) => {
+  // Ensure any previous "seen subscription modal" flag is cleared on auth change.
+  // sessionStorage is not affected by cookie clearing in the browser, so removing
+  // this key here guarantees the expiry-modal can reappear after a fresh login.
+  try {
+    sessionStorage.removeItem('__SUB_MODAL_KEY__');
+    localStorage.removeItem('__SUB_MODAL_KEY__');
+  } catch (e) {
+    /* ignore */
+  }
+
   if (remember) {
     // Clear session storage to avoid conflicts
     sessionStorage.removeItem('authToken');
@@ -75,10 +96,18 @@ export const setAuthData = (token, userData, remember = true) => {
 };
 
 export const clearAuthData = () => {
+  // Remove auth-related data and any session modal suppression flag so a
+  // subsequent login starts with a clean UI state.
   localStorage.removeItem('authToken');
   localStorage.removeItem('userData');
   sessionStorage.removeItem('authToken');
   sessionStorage.removeItem('userData');
+  try {
+    sessionStorage.removeItem('__SUB_MODAL_KEY__');
+    localStorage.removeItem('__SUB_MODAL_KEY__');
+  } catch (e) {
+    /* ignore */
+  }
 };
 
 export const hasRole = (allowedRoles) => {

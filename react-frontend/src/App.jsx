@@ -11,6 +11,7 @@ import Paiements from './pages/Paiements';
 import Permissions from './pages/Permissions';
 import ListePermissions from './pages/ListePermissions';
 import Parametres from './pages/Parametres';
+import Abonnement from './pages/Abonnement';
 // import Tailleurs from './pages/Tailleurs';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -75,6 +76,7 @@ function App() {
               <Parametres />
             </PrivateRoute>
           } />
+          <Route path="abonnement" element={<Abonnement />} />
           {/* <Route path="tailleurs" element={<Tailleurs />} /> */}
         </Route>
       </Routes>

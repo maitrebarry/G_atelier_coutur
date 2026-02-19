@@ -1,6 +1,7 @@
 package com.atelier.gestionatelier.config;
 
 import com.atelier.gestionatelier.security.JwtUtil;
+import com.atelier.gestionatelier.security.SubscriptionAccessFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -27,10 +28,12 @@ public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
+    private final SubscriptionAccessFilter subscriptionAccessFilter;
 
-    public SecurityConfig(JwtUtil jwtUtil, UserDetailsService userDetailsService) {
+    public SecurityConfig(JwtUtil jwtUtil, UserDetailsService userDetailsService, SubscriptionAccessFilter subscriptionAccessFilter) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
+        this.subscriptionAccessFilter = subscriptionAccessFilter;
     }
 
     @Bean
@@ -44,10 +47,13 @@ public class SecurityConfig {
 
                         // Routes publiques (uniquement l'authentification)
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/subscription/**").authenticated()
+                        .requestMatchers("/api/admin/subscriptions/**").authenticated()
 
                         // ✅ CORRECTION : Les routes photos doivent être publiques
                         .requestMatchers("/model_photo/**").permitAll()
                         .requestMatchers("/user_photo/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
 
                         // ✅ AJOUT : Autoriser l'accès aux ressources statiques
                         .requestMatchers("/assets/**").permitAll()
@@ -86,6 +92,7 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(subscriptionAccessFilter, JwtAuthenticationFilter.class)
                 .build();
     }
 

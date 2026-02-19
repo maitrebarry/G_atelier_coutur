@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
 
-const Header = () => {
+const Header = ({ onToggleSidebar }) => {
   const [userData, setUserData] = useState({ name: 'Chargement...', role: 'Connecté', avatar: '/assets/images/default-user.jpg' });
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -13,8 +13,12 @@ const Header = () => {
     loadUserData();
     fetchNotifications();
     
-    // Poll notifications every minute
-    const interval = setInterval(fetchNotifications, 60000);
+    // Poll notifications frequently for near-real-time topbar badge updates
+    const interval = setInterval(fetchNotifications, 25000);
+
+    const onSubscriptionNotificationUpdated = () => {
+      fetchNotifications();
+    };
 
     // Close dropdowns when clicking outside
     const handleClickOutside = (event) => {
@@ -24,8 +28,10 @@ const Header = () => {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('subscription-notification-updated', onSubscriptionNotificationUpdated);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('subscription-notification-updated', onSubscriptionNotificationUpdated);
       clearInterval(interval);
     };
   }, []);
@@ -53,10 +59,26 @@ const Header = () => {
   const markAsRead = async (id) => {
     try {
       await api.put(`/notifications/${id}/read`);
-      setNotifications(notifications.filter(n => n.id !== id));
+      setNotifications(prev => prev.filter(n => n.id !== id));
     } catch (error) {
       console.error("Erreur lors du marquage de la notification", error);
     }
+  };
+
+  const handleNotificationClick = async (notif) => {
+    await markAsRead(notif.id);
+    setActiveDropdown(null);
+    const type = String(notif?.type || '').toUpperCase();
+    if (type === 'ABONNEMENT') {
+      navigate('/abonnement');
+    }
+  };
+
+  const getNotificationTitle = (notif) => {
+    const type = String(notif?.type || '').toUpperCase();
+    if (type === 'RENDEZ_VOUS') return 'Rappel Rendez-vous';
+    if (type === 'ABONNEMENT') return 'Alerte abonnement';
+    return 'Notification';
   };
 
   const handleLogout = (e) => {
@@ -81,7 +103,14 @@ const Header = () => {
       <header ref={dropdownRef}>
         <div className="topbar d-flex align-items-center">
           <nav className="navbar navbar-expand">
-            <div className="mobile-toggle-menu"><i className='bx bx-menu'></i></div>
+            <div className="mobile-toggle-menu" onClick={onToggleSidebar} role="button" tabIndex={0} onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onToggleSidebar();
+              }
+            }}>
+              <i className='bx bx-menu'></i>
+            </div>
             <div className="top-menu ms-auto">
               <ul className="navbar-nav align-items-center">
                 <li className={`nav-item dropdown dropdown-large ${activeDropdown === 'notifications' ? 'show' : ''}`}>
@@ -107,12 +136,12 @@ const Header = () => {
                         <div className="text-center p-3">Aucune nouvelle notification</div>
                       ) : (
                         notifications.map(notif => (
-                          <a className="dropdown-item" href="javascript:;" key={notif.id} onClick={() => markAsRead(notif.id)}>
+                          <a className="dropdown-item" href="javascript:;" key={notif.id} onClick={() => handleNotificationClick(notif)}>
                             <div className="d-flex align-items-center">
                               <div className="notify bg-light-primary text-primary"><i className="bx bx-calendar"></i>
                               </div>
                               <div className="flex-grow-1">
-                                <h6 className="msg-name">{notif.type === 'RENDEZ_VOUS' ? 'Rappel Rendez-vous' : 'Notification'} <span className="msg-time float-end">{new Date(notif.dateCreation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></h6>
+                                <h6 className="msg-name">{getNotificationTitle(notif)} <span className="msg-time float-end">{new Date(notif.dateCreation).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></h6>
                                 <p className="msg-info">{notif.message}</p>
                               </div>
                             </div>

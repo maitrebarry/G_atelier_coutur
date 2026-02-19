@@ -22,15 +22,18 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final com.atelier.gestionatelier.services.SubscriptionPaymentService subscriptionPaymentService;
 
     public AuthService(UtilisateurRepository utilisateurRepository,
                       JwtUtil jwtUtil,
                       PasswordEncoder passwordEncoder,
-                      AuthenticationManager authenticationManager) {
+                      AuthenticationManager authenticationManager,
+                      com.atelier.gestionatelier.services.SubscriptionPaymentService subscriptionPaymentService) {
         this.utilisateurRepository = utilisateurRepository;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
+        this.subscriptionPaymentService = subscriptionPaymentService;
     }
 
 //    public LoginResponse authenticateUser(LoginRequest loginRequest) {
@@ -105,7 +108,22 @@ public class AuthService {
         // Générer le token JWT avec l'atelierId
         String jwt = jwtUtil.generateToken(authentication.getName(), atelierId);
 
-        // ✅ CORRECTION : INCLURE LES PERMISSIONS DANS LA RÉPONSE
+        // Déterminer l'état d'abonnement (blocked + message) pour inclure dans la réponse de login
+        boolean subscriptionBlocked = false;
+        String subscriptionMessage = null;
+        try {
+            var current = subscriptionPaymentService.getCurrentForUser(utilisateur);
+            if (current != null) {
+                Object b = current.get("blocked");
+                subscriptionBlocked = b instanceof Boolean && (Boolean) b;
+                Object m = current.get("message");
+                subscriptionMessage = m != null ? String.valueOf(m) : null;
+            }
+        } catch (Exception ignored) {
+            // ne pas empêcher l'authentification si la vérification d'abonnement échoue
+        }
+
+        // ✅ CORRECTION : INCLURE LES PERMISSIONS ET L'ÉTAT D'ABONNEMENT DANS LA RÉPONSE
         return new LoginResponse(
                 jwt,
                 utilisateur.getId(),
@@ -114,7 +132,9 @@ public class AuthService {
                 utilisateur.getNom(),
                 utilisateur.getRole().name(),
                 atelierId,
-                permissions  // <-- AJOUT DES PERMISSIONS
+                permissions, // <-- AJOUT DES PERMISSIONS
+                subscriptionBlocked,
+                subscriptionMessage
         );
     }
 }

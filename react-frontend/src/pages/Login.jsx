@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import api, { setAuthData } from '../api/api';
 import Swal from 'sweetalert2';
 import '../assets/css/index.css';
+import { fetchSubscriptionPlans, submitManualSubscriptionPayment } from '../api/subscription';
+import { fetchAdminSubscriptionPayments, approveAdminSubscriptionPayment, rejectAdminSubscriptionPayment } from '../api/adminSubscription';
 
 const backgroundImages = [
   { url: '/assets/images/jupe0.jpg', title: 'Collection Jupe' },
@@ -38,6 +40,18 @@ const Login = () => {
     }
   }, [navigate]);
 
+  // Si l'utilisateur est marqué comme bloqué (après un login précédent), afficher le modal bloqué
+  useEffect(() => {
+    try {
+      const blocked = localStorage.getItem('smb_sub_blocked') === '1';
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      if (!token || !blocked) return;
+      void showBlockedSubscriptionFlow();
+    } catch (e) {
+      /* ignore */
+    }
+  }, []);
+
   // Carousel auto-play
   useEffect(() => {
     const interval = setInterval(() => {
@@ -52,6 +66,268 @@ const Login = () => {
 
   const prevImage = () => {
     setCurrentImageIndex((prevIndex) => (prevIndex - 1 + backgroundImages.length) % backgroundImages.length);
+  };
+
+  // --- Bloqué / réabonnement (parité JAKO‑DANAYA) ---
+  const openRenewSubscriptionModal = async () => {
+    try {
+      const plans = await fetchSubscriptionPlans();
+      const planList = Array.isArray(plans) ? plans : [];
+      const defaultPlanCode = planList[0]?.code || 'MENSUEL';
+      const planOptions = planList.map(p => `<option value="${p.code}">${p.libelle} (${p.code}) - ${p.prix ?? '?'} ${p.devise ?? 'XOF'}</option>`).join('') || `<option value="MENSUEL">MENSUEL</option>`;
+
+      const ask = await Swal.fire({
+        title: 'Soumettre une preuve de réabonnement',
+        html: `
+          <label class="form-label mt-1">Formule d'abonnement</label>
+          <select id="swal-sub-plan" class="swal2-input" style="margin:0 0 10px 0;width:100%">${planOptions}</select>
+          <label class="form-label mt-1">Canal utilisé</label>
+          <select id="swal-sub-mode" class="swal2-input" style="margin:0 0 10px 0;width:100%">
+            <option value="ORANGE_MONEY">Orange Money</option>
+            <option value="WAVE">Wave</option>
+            <option value="MOBICASH">MobiCash</option>
+          </select>
+
+          <div id="swal-payment-numbers" style="margin:6px 0 10px 0; font-size:0.95rem; color:#444; display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+            <span style="color:#888; margin-right:6px">Numéros utiles :</span>
+            <span id="swal-pn-loading">chargement...</span>
+          </div>
+
+          <label class="form-label">Référence transfert (optionnel)</label>
+          <input id="swal-sub-ref" class="swal2-input" style="margin:0 0 10px 0;width:100%" placeholder="Ex: OM123456" />
+
+          <label class="form-label">Preuve (photo reçu) — vous pouvez <b>prendre une photo</b> ci‑dessous ou joindre un fichier</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div style="flex:1;min-width:220px">
+              <video id="swal-video" autoplay playsinline style="width:100%;background:#000;border:1px solid #e9ecef;max-height:360px"></video>
+              <div style="display:flex;gap:6px;margin-top:6px">
+                <button id="swal-capture-btn" type="button" class="swal2-confirm swal2-styled" style="background:#0d6efd;border:none;padding:6px 10px">Prendre la photo</button>
+                <button id="swal-reset-capture" type="button" class="swal2-cancel swal2-styled" style="background:#6c757d;border:none;padding:6px 10px">Réinitialiser</button>
+              </div>
+              <canvas id="swal-canvas" style="display:none"></canvas>
+              <input type="hidden" id="swal-sub-proof-dataurl" />
+            </div>
+            <div style="flex:1;min-width:220px">
+              <div style="margin-bottom:8px;color:#666">Aperçu :</div>
+              <img id="swal-preview" src="" alt="preuve" style="width:100%;max-height:360px;object-fit:contain;border:1px solid #e9ecef;padding:6px;background:#fff" />
+              <div style="margin-top:8px">
+                <label class="form-label">Ou joindre un fichier</label>
+                <input id="swal-sub-proof" type="file" accept="image/*" class="swal2-file" style="display:block;width:100%;margin-top:6px" />
+              </div>
+            </div>
+          </div>
+
+          <label class="form-label">Note (optionnel)</label>
+          <input id="swal-sub-note" class="swal2-input" style="margin:0;width:100%" placeholder="Infos utiles" />
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Soumettre',
+        cancelButtonText: 'Annuler',
+        didOpen: async (popup) => {
+          // load manual payment numbers
+          try {
+            const init = await (await import('../api/subscription')).initiateSubscriptionPayment({ planCode: defaultPlanCode });
+            const nums = init?.manualPaymentNumbers || null;
+            const container = popup.querySelector('#swal-payment-numbers');
+            const loading = popup.querySelector('#swal-pn-loading');
+            if (loading) loading.remove();
+            if (nums && typeof nums === 'object') {
+              Object.keys(nums).forEach((k) => {
+                const v = nums[k];
+                const el = document.createElement('a');
+                el.href = '#';
+                el.dataset.payNumber = v;
+                el.dataset.payProvider = k;
+                el.style.marginRight = '8px';
+                el.style.color = '#0d6efd';
+                el.style.textDecoration = 'underline';
+                el.innerText = `${k.replace('_', ' ')}: ${v}`;
+                el.addEventListener('click', (ev) => {
+                  ev.preventDefault();
+                  try { navigator.clipboard.writeText(v); } catch (e) { /* ignore */ }
+                  const refInput = popup.querySelector('#swal-sub-ref');
+                  if (refInput) refInput.value = v;
+                  el.innerText = `${k.replace('_', ' ')}: ${v} (copié)`;
+                  setTimeout(() => { el.innerText = `${k.replace('_', ' ')}: ${v}`; }, 1200);
+                });
+                container.appendChild(el);
+              });
+            } else {
+              const span = document.createElement('span');
+              span.style.color = '#888';
+              span.innerText = 'numéros indisponibles';
+              container.appendChild(span);
+            }
+          } catch (e) {
+            const popupEl = Swal.getPopup();
+            const container = popupEl && popupEl.querySelector('#swal-payment-numbers');
+            if (container) container.innerHTML = '<span style="color:#888">numéros indisponibles</span>';
+          }
+
+          // setup camera preview + capture
+          try {
+            const video = popup.querySelector('#swal-video');
+            const preview = popup.querySelector('#swal-preview');
+            const canvas = popup.querySelector('#swal-canvas');
+            const captureBtn = popup.querySelector('#swal-capture-btn');
+            const resetBtn = popup.querySelector('#swal-reset-capture');
+
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+              try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+                video.srcObject = stream;
+                video.play().catch(() => {});
+                popup._swalStream = stream;
+              } catch (err) {
+                if (captureBtn) captureBtn.style.display = 'none';
+                if (video) video.style.display = 'none';
+              }
+            } else {
+              if (captureBtn) captureBtn.style.display = 'none';
+              if (video) video.style.display = 'none';
+            }
+
+            captureBtn?.addEventListener('click', () => {
+              if (!video || !canvas) return;
+              canvas.width = video.videoWidth || 1280;
+              canvas.height = video.videoHeight || 720;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+              preview.src = dataUrl;
+              const hidden = popup.querySelector('#swal-sub-proof-dataurl');
+              if (hidden) hidden.value = dataUrl;
+              const fileInput = popup.querySelector('#swal-sub-proof');
+              if (fileInput) fileInput.value = '';
+            });
+
+            resetBtn?.addEventListener('click', () => {
+              const hidden = popup.querySelector('#swal-sub-proof-dataurl');
+              if (hidden) hidden.value = '';
+              const preview = popup.querySelector('#swal-preview');
+              if (preview) preview.src = '';
+            });
+          } catch (e) {
+            // ignore camera setup errors
+          }
+        },
+        willClose: () => {
+          const popup = Swal.getPopup();
+          if (popup && popup._swalStream) {
+            try { popup._swalStream.getTracks().forEach(t => t.stop()); } catch (e) { /* ignore */ }
+            popup._swalStream = null;
+          }
+        },
+        preConfirm: async () => {
+          const selectedPlanCode = document.getElementById('swal-sub-plan')?.value;
+          const mode = document.getElementById('swal-sub-mode')?.value;
+          const ref = document.getElementById('swal-sub-ref')?.value;
+          const note = document.getElementById('swal-sub-note')?.value;
+          const fileInput = document.getElementById('swal-sub-proof');
+          const dataUrl = document.getElementById('swal-sub-proof-dataurl')?.value;
+          let file = (fileInput && fileInput.files && fileInput.files[0]) || null;
+          if (!file && dataUrl) {
+            try { const blob = await (await fetch(dataUrl)).blob(); file = new File([blob], 'capture.jpg', { type: blob.type || 'image/jpeg' }); } catch (e) { file = null; }
+          }
+          if (!selectedPlanCode) { Swal.showValidationMessage('Veuillez choisir la formule'); return null; }
+          if (!mode) { Swal.showValidationMessage('Veuillez choisir le canal de paiement'); return null; }
+          if (!file) { Swal.showValidationMessage('Veuillez joindre la photo du reçu'); return null; }
+          return { selectedPlanCode, mode, ref: ref || '', note: note || '', file };
+        }
+      });
+
+      if (!ask.isConfirmed || !ask.value) return;
+
+      const payload = {
+        planCode: ask.value.selectedPlanCode,
+        modePaiement: ask.value.mode,
+        transactionRef: ask.value.ref,
+        ownerNote: ask.value.note,
+        receipt: ask.value.file
+      };
+      await submitManualSubscriptionPayment(payload);
+      await Swal.fire({ icon: 'success', title: 'Demande envoyée', text: 'Votre preuve a été soumise au SuperAdmin pour validation.' });
+    } catch (e) {
+      console.error(e);
+      await Swal.fire({ icon: 'error', title: 'Erreur', text: e?.message || 'Impossible de soumettre la preuve.' });
+    }
+  };
+
+  const showBlockedSubscriptionFlow = async (msg) => {
+    const r = await Swal.fire({
+      icon: 'warning',
+      title: 'Abonnement expiré',
+      text: msg || 'Votre abonnement est expiré. Veuillez renouveler pour continuer.',
+      confirmButtonText: 'Se réabonner',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    });
+    if (r.isConfirmed) {
+      await openRenewSubscriptionModal();
+    }
+  };
+
+  // SuperAdmin: show pending manual subscription payments at login (preview + approve/reject)
+  const showSuperAdminPendingPayments = async () => {
+    try {
+      const rows = await fetchAdminSubscriptionPayments('PENDING');
+      if (!Array.isArray(rows) || rows.length === 0) return;
+
+      for (const p of rows.slice(0, 8)) {
+        const html = `
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div style="flex:1">
+              <img src="${p.preuve_url || p.preuveUrl || ''}" alt="preuve" style="max-width:320px;max-height:320px;object-fit:contain;border:1px solid #e9ecef;padding:6px;background:#fff" />
+            </div>
+            <div style="flex:1;text-align:left">
+              <div><strong>Référence</strong>: ${p.reference || ''}</div>
+              <div><strong>Atelier</strong>: ${p.atelier_nom || p.atelierName || p.atelier_id || ''}</div>
+              <div><strong>Plan</strong>: ${p.plan_code || ''}</div>
+              <div><strong>Mode</strong>: ${p.mode_paiement || p.modePaiement || ''}</div>
+              <div><strong>Transaction</strong>: ${p.transaction_ref || p.transactionRef || ''}</div>
+              <div style="margin-top:8px;color:#555"><strong>Note propriétaire</strong>: ${p.owner_note || p.ownerNote || '—'}</div>
+              <div style="margin-top:8px;color:#777;font-size:0.9rem">Soumis le: ${p.created_at || p.createdAt || ''}</div>
+            </div>
+          </div>
+        `;
+
+        const res = await Swal.fire({
+          title: `Paiement en attente (${p.reference || p.id})`,
+          html,
+          showDenyButton: true,
+          denyButtonText: 'Rejeter',
+          confirmButtonText: 'Valider',
+          cancelButtonText: 'Fermer',
+          showCloseButton: true,
+          focusDeny: false,
+          width: 900
+        });
+
+        if (res.isConfirmed) {
+          await approveAdminSubscriptionPayment(p.id || p.paymentId);
+          await Swal.fire('Succès', 'Paiement validé', 'success');
+          continue; // show next pending
+        }
+        if (res.isDenied) {
+          const reason = await Swal.fire({
+            title: 'Motif du rejet',
+            input: 'text',
+            inputPlaceholder: 'Saisir le motif (optionnel)',
+            showCancelButton: true,
+            confirmButtonText: 'Rejeter'
+          });
+          if (reason.isConfirmed) {
+            await rejectAdminSubscriptionPayment(p.id || p.paymentId, reason.value || '');
+            await Swal.fire('Succès', 'Paiement rejeté', 'success');
+            continue;
+          }
+        }
+        // if cancelled/closed -> stop processing further payments
+        break;
+      }
+    } catch (e) {
+      console.error('SuperAdmin pending payments check failed:', e);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -123,7 +399,236 @@ const Login = () => {
       };
 
       setAuthData(token, userData, remember);
-      navigate('/home');
+
+      // Afficher modal bloqué + possibilité de soumettre une preuve (logique JAKO‑DANAYA)
+      const openRenewSubscriptionModal = async () => {
+        try {
+          const plans = await fetchSubscriptionPlans();
+          const planList = Array.isArray(plans) ? plans : [];
+          const defaultPlanCode = planList[0]?.code || 'MENSUEL';
+          const planOptions = planList.map(p => `<option value="${p.code}">${p.libelle} (${p.code}) - ${p.prix ?? '?'} ${p.devise ?? 'XOF'}</option>`).join('') || `<option value="MENSUEL">MENSUEL</option>`;
+
+          const ask = await Swal.fire({
+            title: 'Soumettre une preuve de réabonnement',
+            html: `
+              <label class="form-label mt-1">Formule d'abonnement</label>
+              <select id="swal-sub-plan" class="swal2-input" style="margin:0 0 10px 0;width:100%">${planOptions}</select>
+              <label class="form-label mt-1">Canal utilisé</label>
+              <select id="swal-sub-mode" class="swal2-input" style="margin:0 0 10px 0;width:100%">
+                <option value="ORANGE_MONEY">Orange Money</option>
+                <option value="WAVE">Wave</option>
+                <option value="MOBICASH">MobiCash</option>
+              </select>
+
+              <div id="swal-payment-numbers" style="margin:6px 0 10px 0; font-size:0.95rem; color:#444; display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+                <span style="color:#888; margin-right:6px">Numéros utiles :</span>
+                <span id="swal-pn-loading">chargement...</span>
+              </div>
+
+              <label class="form-label">Référence transfert (optionnel)</label>
+              <input id="swal-sub-ref" class="swal2-input" style="margin:0 0 10px 0;width:100%" placeholder="Ex: OM123456" />
+
+              <label class="form-label">Preuve (photo reçu) — vous pouvez <b>prendre une photo</b> ci‑dessous ou joindre un fichier</label>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <div style="flex:1;min-width:220px">
+                  <video id="swal-video" autoplay playsinline style="width:100%;background:#000;border:1px solid #e9ecef;max-height:360px"></video>
+                  <div style="display:flex;gap:6px;margin-top:6px">
+                    <button id="swal-capture-btn" type="button" class="swal2-confirm swal2-styled" style="background:#0d6efd;border:none;padding:6px 10px">Prendre la photo</button>
+                    <button id="swal-reset-capture" type="button" class="swal2-cancel swal2-styled" style="background:#6c757d;border:none;padding:6px 10px">Réinitialiser</button>
+                  </div>
+                  <canvas id="swal-canvas" style="display:none"></canvas>
+                  <input type="hidden" id="swal-sub-proof-dataurl" />
+                </div>
+                <div style="flex:1;min-width:220px">
+                  <div style="margin-bottom:8px;color:#666">Aperçu :</div>
+                  <img id="swal-preview" src="" alt="preuve" style="width:100%;max-height:360px;object-fit:contain;border:1px solid #e9ecef;padding:6px;background:#fff" />
+                  <div style="margin-top:8px">
+                    <label class="form-label">Ou joindre un fichier</label>
+                    <input id="swal-sub-proof" type="file" accept="image/*" class="swal2-file" style="display:block;width:100%;margin-top:6px" />
+                  </div>
+                </div>
+              </div>
+
+              <label class="form-label">Note (optionnel)</label>
+              <input id="swal-sub-note" class="swal2-input" style="margin:0;width:100%" placeholder="Infos utiles" />
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Soumettre',
+            cancelButtonText: 'Annuler',
+            didOpen: async (popup) => {
+              try {
+                const init = await (await import('../api/subscription')).initiateSubscriptionPayment({ planCode: defaultPlanCode });
+                const nums = init?.manualPaymentNumbers || null;
+                const container = popup.querySelector('#swal-payment-numbers');
+                const loading = popup.querySelector('#swal-pn-loading');
+                if (loading) loading.remove();
+                if (nums && typeof nums === 'object') {
+                  Object.keys(nums).forEach((k) => {
+                    const v = nums[k];
+                    const el = document.createElement('a');
+                    el.href = '#';
+                    el.dataset.payNumber = v;
+                    el.dataset.payProvider = k;
+                    el.style.marginRight = '8px';
+                    el.style.color = '#0d6efd';
+                    el.style.textDecoration = 'underline';
+                    el.innerText = `${k.replace('_', ' ')}: ${v}`;
+                    el.addEventListener('click', (ev) => {
+                      ev.preventDefault();
+                      try { navigator.clipboard.writeText(v); } catch (e) { /* ignore */ }
+                      const refInput = popup.querySelector('#swal-sub-ref');
+                      if (refInput) refInput.value = v;
+                      el.innerText = `${k.replace('_', ' ')}: ${v} (copié)`;
+                      setTimeout(() => { el.innerText = `${k.replace('_', ' ')}: ${v}`; }, 1200);
+                    });
+                    container.appendChild(el);
+                  });
+                } else {
+                  const span = document.createElement('span');
+                  span.style.color = '#888';
+                  span.innerText = 'numéros indisponibles';
+                  container.appendChild(span);
+                }
+              } catch (e) {
+                const popupEl = Swal.getPopup();
+                const container = popupEl && popupEl.querySelector('#swal-payment-numbers');
+                if (container) container.innerHTML = '<span style="color:#888">numéros indisponibles</span>';
+              }
+
+              try {
+                const video = popup.querySelector('#swal-video');
+                const preview = popup.querySelector('#swal-preview');
+                const canvas = popup.querySelector('#swal-canvas');
+                const captureBtn = popup.querySelector('#swal-capture-btn');
+                const resetBtn = popup.querySelector('#swal-reset-capture');
+
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                  try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+                    video.srcObject = stream;
+                    video.play().catch(() => {});
+                    popup._swalStream = stream;
+                  } catch (err) {
+                    if (captureBtn) captureBtn.style.display = 'none';
+                    if (video) video.style.display = 'none';
+                  }
+                } else {
+                  if (captureBtn) captureBtn.style.display = 'none';
+                  if (video) video.style.display = 'none';
+                }
+
+                captureBtn?.addEventListener('click', () => {
+                  if (!video || !canvas) return;
+                  canvas.width = video.videoWidth || 1280;
+                  canvas.height = video.videoHeight || 720;
+                  const ctx = canvas.getContext('2d');
+                  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                  preview.src = dataUrl;
+                  const hidden = popup.querySelector('#swal-sub-proof-dataurl');
+                  if (hidden) hidden.value = dataUrl;
+                  const fileInput = popup.querySelector('#swal-sub-proof');
+                  if (fileInput) fileInput.value = '';
+                });
+
+                resetBtn?.addEventListener('click', () => {
+                  const hidden = popup.querySelector('#swal-sub-proof-dataurl');
+                  if (hidden) hidden.value = '';
+                  const preview = popup.querySelector('#swal-preview');
+                  if (preview) preview.src = '';
+                });
+              } catch (e) {
+                // ignore camera setup errors
+              }
+            },
+            willClose: () => {
+              const popup = Swal.getPopup();
+              if (popup && popup._swalStream) {
+                try { popup._swalStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+                popup._swalStream = null;
+              }
+            },
+            preConfirm: async () => {
+              const selectedPlanCode = document.getElementById('swal-sub-plan')?.value;
+              const mode = document.getElementById('swal-sub-mode')?.value;
+              const ref = document.getElementById('swal-sub-ref')?.value;
+              const note = document.getElementById('swal-sub-note')?.value;
+              const fileInput = document.getElementById('swal-sub-proof');
+              const dataUrl = document.getElementById('swal-sub-proof-dataurl')?.value;
+              let file = (fileInput && fileInput.files && fileInput.files[0]) || null;
+              if (!file && dataUrl) {
+                try { const blob = await (await fetch(dataUrl)).blob(); file = new File([blob], 'capture.jpg', { type: blob.type || 'image/jpeg' }); } catch (e) { file = null; }
+              }
+              if (!selectedPlanCode) { Swal.showValidationMessage('Veuillez choisir la formule'); return null; }
+              if (!mode) { Swal.showValidationMessage('Veuillez choisir le canal de paiement'); return null; }
+              if (!file) { Swal.showValidationMessage('Veuillez joindre la photo du reçu'); return null; }
+              return { selectedPlanCode, mode, ref: ref || '', note: note || '', file };
+            }
+          });
+
+          if (!ask.isConfirmed || !ask.value) return;
+
+          const payload = {
+            planCode: ask.value.selectedPlanCode,
+            modePaiement: ask.value.mode,
+            transactionRef: ask.value.ref,
+            ownerNote: ask.value.note,
+            receipt: ask.value.file
+          };
+          await submitManualSubscriptionPayment(payload);
+          await Swal.fire({ icon: 'success', title: 'Demande envoyée', text: 'Votre preuve a été soumise au SuperAdmin pour validation.' });
+        } catch (e) {
+          console.error(e);
+          await Swal.fire({ icon: 'error', title: 'Erreur', text: e?.message || 'Impossible de soumettre la preuve.' });
+        }
+      };
+
+      const showBlockedSubscriptionFlow = async (msg) => {
+        const r = await Swal.fire({
+          icon: 'warning',
+          title: 'Abonnement expiré',
+          text: msg || 'Votre abonnement est expiré. Veuillez renouveler pour continuer.',
+          confirmButtonText: 'Se réabonner',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+        });
+        if (r.isConfirmed) {
+          await openRenewSubscriptionModal();
+        }
+      };
+
+      try {
+        if (response.subscriptionBlocked) {
+          localStorage.setItem('smb_sub_blocked', '1');
+          await showBlockedSubscriptionFlow(response.subscriptionMessage);
+          return; // bloquer la navigation vers /home
+        }
+
+        // fallback : interroger l'API subscription (ancienne logique)
+        const subRes = await api.get('/subscription/current', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (subRes?.data?.blocked) {
+          localStorage.setItem('smb_sub_blocked', '1');
+          await showBlockedSubscriptionFlow(subRes?.data?.message);
+          return;
+        } else {
+          localStorage.removeItem('smb_sub_blocked');
+          // if SuperAdmin, show pending manual payments preview before redirect
+          try {
+            const role = userData.role || '';
+            const perms = Array.isArray(userData.permissions) ? userData.permissions : [];
+            if (String(role).toUpperCase() === 'SUPERADMIN' || perms.includes('SUPERADMIN')) {
+              await showSuperAdminPendingPayments();
+            }
+          } catch (e) {
+            /* ignore */
+          }
+          navigate('/home');
+        }
+      } catch (e) {
+        navigate('/home');
+      }
     } catch (err) {
       console.error('Login exception:', err);
       let text = 'Échec de connexion';

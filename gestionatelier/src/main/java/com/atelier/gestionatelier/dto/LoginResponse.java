@@ -96,6 +96,8 @@ public class LoginResponse {
     private String role;
     private UUID atelierId;
     private Set<String> permissions; // <-- Champ permissions
+    private boolean subscriptionBlocked; // ajouté pour renvoyer l'état d'abonnement au login
+    private String subscriptionMessage;  // message optionnel (ex: "Votre abonnement est expiré...")
 
     // Constructeur existant (gardez-le pour compatibilité)
     public LoginResponse(String token, UUID id, String email, String prenom, String nom, String role, UUID atelierId) {
@@ -118,6 +120,20 @@ public class LoginResponse {
         this.role = role;
         this.atelierId = atelierId;
         this.permissions = permissions;
+    }
+
+    // ✅ NOUVEAU constructeur complet avec subscription info
+    public LoginResponse(String token, UUID id, String email, String prenom, String nom, String role, UUID atelierId, Set<String> permissions, boolean subscriptionBlocked, String subscriptionMessage) {
+        this.token = token;
+        this.id = id;
+        this.email = email;
+        this.prenom = prenom;
+        this.nom = nom;
+        this.role = role;
+        this.atelierId = atelierId;
+        this.permissions = permissions;
+        this.subscriptionBlocked = subscriptionBlocked;
+        this.subscriptionMessage = subscriptionMessage;
     }
 
     // Getters et Setters
@@ -145,4 +161,11 @@ public class LoginResponse {
     // ✅ Getter et Setter pour permissions
     public Set<String> getPermissions() { return permissions; }
     public void setPermissions(Set<String> permissions) { this.permissions = permissions; }
+
+    // ✅ Getter/Setter pour subscription info
+    public boolean isSubscriptionBlocked() { return subscriptionBlocked; }
+    public void setSubscriptionBlocked(boolean subscriptionBlocked) { this.subscriptionBlocked = subscriptionBlocked; }
+
+    public String getSubscriptionMessage() { return subscriptionMessage; }
+    public void setSubscriptionMessage(String subscriptionMessage) { this.subscriptionMessage = subscriptionMessage; }
 }

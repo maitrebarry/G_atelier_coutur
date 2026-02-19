@@ -12,6 +12,7 @@ import java.util.List;
 
 public interface UtilisateurRepository extends JpaRepository<Utilisateur, UUID> {
     Optional<Utilisateur> findByEmail(String email);
+    Optional<Utilisateur> findByEmailIgnoreCase(String email);
     List<Utilisateur> findByAtelierId(UUID atelierId); // ← Ajouter cette méthode
 
     long countByPermissionsContaining(Permission permission);

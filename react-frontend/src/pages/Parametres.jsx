@@ -7,6 +7,7 @@ import ListePermissions from './ListePermissions';
 
 const menuItems = [
     { key: 'ateliers', label: 'Ateliers', icon: 'bx bx-home-alt' },
+    { key: 'abonnement-tarifs', label: 'Tarifs abonnement', icon: 'bx bx-money' },
     { key: 'utilisateurs', label: 'Utilisateurs', icon: 'bx bx-user' },
     { key: 'assigner', label: 'Assigner Permission', icon: 'bx bx-user-pin' },
     { key: 'liste', label: 'Liste Permission', icon: 'bx bx-list-ul' }
@@ -19,6 +20,23 @@ const Parametres = () => {
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+    const [selectedPlanCode, setSelectedPlanCode] = useState('MENSUEL');
+    const [initialPlanCodeForEdit, setInitialPlanCodeForEdit] = useState(null);
+    const [initialSubscriptionIdForEdit, setInitialSubscriptionIdForEdit] = useState(null);
+    const [planCrudLoading, setPlanCrudLoading] = useState(false);
+    const [planSavingCode, setPlanSavingCode] = useState(null);
+    const [planMessage, setPlanMessage] = useState('');
+    const [planError, setPlanError] = useState('');
+    const [planEdits, setPlanEdits] = useState({});
+    const [newPlan, setNewPlan] = useState({
+        code: '',
+        libelle: '',
+        dureeMois: '1',
+        prix: '',
+        devise: 'XOF',
+        actif: true
+    });
     const [formData, setFormData] = useState({
         id: '',
         nom: '',
@@ -34,6 +52,9 @@ const Parametres = () => {
 
         if (userData && (userData.role === 'SUPERADMIN' || userData.role === 'PROPRIETAIRE')) {
             loadAteliers();
+            if (userData.role === 'SUPERADMIN') {
+                loadSubscriptionPlans();
+            }
         } else {
             setLoading(false);
         }
@@ -53,12 +74,149 @@ const Parametres = () => {
         }
     };
 
+    const loadSubscriptionPlans = async () => {
+        setPlanCrudLoading(true);
+        try {
+            const response = await api.get('/admin/subscriptions/plans');
+            const plans = Array.isArray(response.data) ? response.data : [];
+            setSubscriptionPlans(plans);
+
+            const nextEdits = {};
+            plans.forEach((p) => {
+                const code = String(p?.code || '');
+                if (!code) return;
+                nextEdits[code] = {
+                    libelle: p?.libelle != null ? String(p.libelle) : '',
+                    dureeMois: p?.duree_mois != null ? String(p.duree_mois) : '',
+                    prix: p?.prix != null ? String(p.prix) : '',
+                    devise: p?.devise != null ? String(p.devise) : 'XOF',
+                    actif: Boolean(p?.actif ?? true)
+                };
+            });
+            setPlanEdits(nextEdits);
+
+            if (plans.length > 0) {
+                setSelectedPlanCode(plans[0].code || 'MENSUEL');
+            }
+        } catch (error) {
+            console.error('Erreur chargement plans abonnement:', error);
+            setPlanError(error?.response?.data?.message || error?.message || 'Erreur chargement des tarifs abonnement');
+            setSubscriptionPlans([]);
+            setPlanEdits({});
+        } finally {
+            setPlanCrudLoading(false);
+        }
+    };
+
+    const onSaveSubscriptionPlan = async (code) => {
+        const current = planEdits[code];
+        if (!current) return;
+
+        const prixNum = Number(current.prix);
+        const dureeNum = Number(current.dureeMois);
+
+        if (!current.libelle.trim()) {
+            setPlanError('Le libellé est obligatoire');
+            return;
+        }
+        if (!Number.isFinite(dureeNum) || dureeNum <= 0) {
+            setPlanError('La durée (mois) doit être un nombre positif');
+            return;
+        }
+        if (!Number.isFinite(prixNum) || prixNum <= 0) {
+            setPlanError('Le prix doit être un nombre positif');
+            return;
+        }
+
+        setPlanSavingCode(code);
+        setPlanError('');
+        setPlanMessage('');
+
+        try {
+            await api.put(`/admin/subscriptions/plans/${encodeURIComponent(code)}`, {
+                libelle: current.libelle.trim(),
+                dureeMois: dureeNum,
+                prix: prixNum,
+                devise: (current.devise || 'XOF').trim().toUpperCase(),
+                actif: current.actif
+            });
+            setPlanMessage(`Tarif ${code} mis à jour avec succès.`);
+            await loadSubscriptionPlans();
+        } catch (error) {
+            setPlanError(error?.response?.data?.message || error?.message || `Erreur mise à jour du tarif ${code}`);
+        } finally {
+            setPlanSavingCode(null);
+        }
+    };
+
+    const onCreateSubscriptionPlan = async () => {
+        const code = newPlan.code.trim().toUpperCase();
+        const libelle = newPlan.libelle.trim();
+        const dureeNum = Number(newPlan.dureeMois);
+        const prixNum = Number(newPlan.prix);
+
+        if (!code) return setPlanError('Le code est obligatoire');
+        if (!libelle) return setPlanError('Le libellé est obligatoire');
+        if (!Number.isFinite(dureeNum) || dureeNum <= 0) return setPlanError('Durée invalide');
+        if (!Number.isFinite(prixNum) || prixNum <= 0) return setPlanError('Prix invalide');
+
+        setPlanError('');
+        setPlanMessage('');
+
+        try {
+            await api.post('/admin/subscriptions/plans', {
+                code,
+                libelle,
+                dureeMois: dureeNum,
+                prix: prixNum,
+                devise: (newPlan.devise || 'XOF').trim().toUpperCase(),
+                actif: newPlan.actif
+            });
+            setPlanMessage(`Plan ${code} créé avec succès.`);
+            setNewPlan({
+                code: '',
+                libelle: '',
+                dureeMois: '1',
+                prix: '',
+                devise: 'XOF',
+                actif: true
+            });
+            await loadSubscriptionPlans();
+        } catch (error) {
+            setPlanError(error?.response?.data?.message || error?.message || 'Erreur création du plan');
+        }
+    };
+
+    const onDeleteSubscriptionPlan = async (code) => {
+        const confirm = await Swal.fire({
+            icon: 'warning',
+            title: `Supprimer le plan ${code} ?`,
+            text: 'Si ce plan a déjà été utilisé, il sera désactivé automatiquement.',
+            showCancelButton: true,
+            confirmButtonText: 'Oui, continuer',
+            cancelButtonText: 'Annuler'
+        });
+        if (!confirm.isConfirmed) return;
+
+        setPlanError('');
+        setPlanMessage('');
+
+        try {
+            const res = await api.delete(`/admin/subscriptions/plans/${encodeURIComponent(code)}`);
+            const out = res?.data || {};
+            setPlanMessage(out?.disabled ? `Plan ${code} désactivé (historique conservé).` : `Plan ${code} supprimé.`);
+            await loadSubscriptionPlans();
+        } catch (error) {
+            setPlanError(error?.response?.data?.message || error?.message || `Erreur suppression du plan ${code}`);
+        }
+    };
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const openModal = (atelier = null) => {
+    const openModal = async (atelier = null) => {
         if (atelier) {
             setIsEditing(true);
             setFormData({
@@ -69,6 +227,21 @@ const Parametres = () => {
                 telephone: atelier.telephone,
                 dateCreation: atelier.dateCreation ? new Date(atelier.dateCreation).toISOString().slice(0, 16) : ''
             });
+
+            if (currentUser?.role === 'SUPERADMIN') {
+                try {
+                    const subRes = await api.get(`/admin/subscriptions/ateliers/${atelier.id}`);
+                    const currentPlanCode = subRes?.data?.plan_code || null;
+                    const currentSubscriptionId = subRes?.data?.abonnement_id || null;
+                    setSelectedPlanCode(currentPlanCode || subscriptionPlans[0]?.code || 'MENSUEL');
+                    setInitialPlanCodeForEdit(currentPlanCode);
+                    setInitialSubscriptionIdForEdit(currentSubscriptionId);
+                } catch (e) {
+                    setSelectedPlanCode('MENSUEL');
+                    setInitialPlanCodeForEdit(null);
+                    setInitialSubscriptionIdForEdit(null);
+                }
+            }
         } else {
             setIsEditing(false);
             setFormData({
@@ -79,6 +252,9 @@ const Parametres = () => {
                 telephone: '',
                 dateCreation: ''
             });
+            setSelectedPlanCode(subscriptionPlans[0]?.code || 'MENSUEL');
+            setInitialPlanCodeForEdit(null);
+            setInitialSubscriptionIdForEdit(null);
         }
         setShowModal(true);
     };
@@ -100,12 +276,39 @@ const Parametres = () => {
                 }
 
                 await api.put(`/ateliers/${formData.id}`, payload);
+
+                if (currentUser.role === 'SUPERADMIN' && selectedPlanCode) {
+                    const shouldActivate = !initialSubscriptionIdForEdit || selectedPlanCode !== initialPlanCodeForEdit;
+                    if (shouldActivate) {
+                        try {
+                            await api.post(`/admin/subscriptions/ateliers/${formData.id}/activate`, {
+                                planCode: selectedPlanCode
+                            });
+                        } catch (subError) {
+                            const detail = subError?.response?.data?.message || subError?.response?.data || subError?.message || '';
+                            await Swal.fire(
+                                'Attention',
+                                `Atelier modifié, mais le plan d'abonnement n'a pas pu être mis à jour.${detail ? `\n\nDétail: ${detail}` : ''}`,
+                                'warning'
+                            );
+                        }
+                    }
+                }
                 Swal.fire('Succès', 'Atelier modifié avec succès', 'success');
             } else {
-                await api.post('/ateliers', formData);
+                const created = await api.post('/ateliers', formData);
+                const atelierId = created?.data?.id;
+
+                if (currentUser.role === 'SUPERADMIN' && atelierId) {
+                    await api.post(`/admin/subscriptions/ateliers/${atelierId}/activate`, {
+                        planCode: selectedPlanCode
+                    });
+                }
+
                 Swal.fire('Succès', 'Atelier ajouté avec succès', 'success');
             }
             setShowModal(false);
+            setInitialSubscriptionIdForEdit(null);
             loadAteliers();
         } catch (error) {
             console.error('Erreur sauvegarde atelier:', error);
@@ -172,7 +375,9 @@ const Parametres = () => {
                         </div>
                         <div className="card-body p-0 param-menu">
                             <div className="list-group list-group-flush">
-                                {menuItems.map((item) => (
+                                {menuItems
+                                    .filter((item) => !(item.key === 'abonnement-tarifs' && currentUser.role !== 'SUPERADMIN'))
+                                    .map((item) => (
                                     <button
                                         key={item.key}
                                         type="button"
@@ -272,6 +477,162 @@ const Parametres = () => {
                         </div>
                     )}
 
+                    {selectedMenu === 'abonnement-tarifs' && currentUser.role === 'SUPERADMIN' && (
+                        <div className="card">
+                            <div className="card-header bg-primary d-flex justify-content-between align-items-center">
+                                <h6 className="mb-0 text-white">Configuration des tarifs d'abonnement</h6>
+                                <button className="btn btn-sm btn-light" onClick={loadSubscriptionPlans}>
+                                    <i className="bx bx-refresh me-1"></i>Rafraîchir
+                                </button>
+                            </div>
+                            <div className="card-body">
+                                {planMessage && <div className="alert alert-success py-2">{planMessage}</div>}
+                                {planError && <div className="alert alert-danger py-2">{planError}</div>}
+
+                                <div className="border rounded p-3 mb-3">
+                                    <h6 className="mb-3">Créer un plan d'abonnement</h6>
+                                    <div className="row g-2">
+                                        <div className="col-md-2">
+                                            <input className="form-control form-control-sm" placeholder="Code" value={newPlan.code} onChange={(e) => setNewPlan((prev) => ({ ...prev, code: e.target.value }))} />
+                                        </div>
+                                        <div className="col-md-3">
+                                            <input className="form-control form-control-sm" placeholder="Libellé" value={newPlan.libelle} onChange={(e) => setNewPlan((prev) => ({ ...prev, libelle: e.target.value }))} />
+                                        </div>
+                                        <div className="col-md-2">
+                                            <input type="number" min={1} className="form-control form-control-sm" placeholder="Durée" value={newPlan.dureeMois} onChange={(e) => setNewPlan((prev) => ({ ...prev, dureeMois: e.target.value }))} />
+                                        </div>
+                                        <div className="col-md-2">
+                                            <input type="number" min={1} className="form-control form-control-sm" placeholder="Montant" value={newPlan.prix} onChange={(e) => setNewPlan((prev) => ({ ...prev, prix: e.target.value }))} />
+                                        </div>
+                                        <div className="col-md-1">
+                                            <input className="form-control form-control-sm" placeholder="Devise" value={newPlan.devise} onChange={(e) => setNewPlan((prev) => ({ ...prev, devise: e.target.value }))} />
+                                        </div>
+                                        <div className="col-md-1 d-flex align-items-center">
+                                            <div className="form-check form-switch m-0">
+                                                <input className="form-check-input" type="checkbox" checked={newPlan.actif} onChange={(e) => setNewPlan((prev) => ({ ...prev, actif: e.target.checked }))} />
+                                            </div>
+                                        </div>
+                                        <div className="col-md-1">
+                                            <button className="btn btn-sm btn-primary w-100" onClick={onCreateSubscriptionPlan}>Créer</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {planCrudLoading ? (
+                                    <div className="text-muted">Chargement des plans...</div>
+                                ) : (
+                                    <div className="table-responsive">
+                                        <table className="table table-sm align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>Code</th>
+                                                    <th>Libellé</th>
+                                                    <th>Durée (mois)</th>
+                                                    <th>Montant</th>
+                                                    <th>Devise</th>
+                                                    <th>Actif</th>
+                                                    <th style={{ width: 140 }}>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {subscriptionPlans.map((p) => {
+                                                    const code = String(p?.code || '');
+                                                    const row = planEdits[code] || { libelle: '', dureeMois: '', prix: '', devise: 'XOF', actif: true };
+                                                    return (
+                                                        <tr key={`sub-plan-${code}`}>
+                                                            <td><strong>{code}</strong></td>
+                                                            <td>
+                                                                <input
+                                                                    type="text"
+                                                                    className="form-control form-control-sm"
+                                                                    value={row.libelle}
+                                                                    onChange={(e) => setPlanEdits((prev) => ({
+                                                                        ...prev,
+                                                                        [code]: { ...row, libelle: e.target.value }
+                                                                    }))}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <input
+                                                                    type="number"
+                                                                    min={1}
+                                                                    step="1"
+                                                                    className="form-control form-control-sm"
+                                                                    value={row.dureeMois}
+                                                                    onChange={(e) => setPlanEdits((prev) => ({
+                                                                        ...prev,
+                                                                        [code]: { ...row, dureeMois: e.target.value }
+                                                                    }))}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <input
+                                                                    type="number"
+                                                                    min={1}
+                                                                    step="1"
+                                                                    className="form-control form-control-sm"
+                                                                    value={row.prix}
+                                                                    onChange={(e) => setPlanEdits((prev) => ({
+                                                                        ...prev,
+                                                                        [code]: { ...row, prix: e.target.value }
+                                                                    }))}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <input
+                                                                    type="text"
+                                                                    maxLength={8}
+                                                                    className="form-control form-control-sm"
+                                                                    value={row.devise}
+                                                                    onChange={(e) => setPlanEdits((prev) => ({
+                                                                        ...prev,
+                                                                        [code]: { ...row, devise: e.target.value }
+                                                                    }))}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <div className="form-check form-switch m-0">
+                                                                    <input
+                                                                        className="form-check-input"
+                                                                        type="checkbox"
+                                                                        checked={row.actif}
+                                                                        onChange={(e) => setPlanEdits((prev) => ({
+                                                                            ...prev,
+                                                                            [code]: { ...row, actif: e.target.checked }
+                                                                        }))}
+                                                                    />
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <div className="d-flex gap-2">
+                                                                    <button
+                                                                        className="btn btn-sm btn-success"
+                                                                        onClick={() => onSaveSubscriptionPlan(code)}
+                                                                        disabled={planSavingCode === code}
+                                                                    >
+                                                                        {planSavingCode === code ? '...' : 'Enregistrer'}
+                                                                    </button>
+                                                                    <button className="btn btn-sm btn-outline-danger" onClick={() => onDeleteSubscriptionPlan(code)}>
+                                                                        Supprimer
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                                {subscriptionPlans.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan={7} className="text-muted text-center py-3">Aucun plan trouvé</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {selectedMenu === 'utilisateurs' && (
                         <Signup embedded />
                     )}
@@ -351,6 +712,33 @@ const Parametres = () => {
                                                 onChange={handleInputChange}
                                             />
                                             <div className="form-text">Optionnel - La date actuelle sera utilisée si vide</div>
+                                        </div>
+                                    )}
+
+                                    {currentUser.role === 'SUPERADMIN' && (
+                                        <div className="mb-3">
+                                            <label className="form-label">Plan d'abonnement {isEditing ? '(modification)' : '(initial)'}</label>
+                                            <select
+                                                className="form-select"
+                                                value={selectedPlanCode}
+                                                onChange={(e) => setSelectedPlanCode(e.target.value)}
+                                            >
+                                                {(subscriptionPlans.length > 0 ? subscriptionPlans : [
+                                                    { code: 'MENSUEL', libelle: 'Mensuel', duree_mois: 1 },
+                                                    { code: 'TRIMESTRIEL', libelle: 'Trimestriel', duree_mois: 3 },
+                                                    { code: 'SEMESTRIEL', libelle: 'Semestriel', duree_mois: 6 },
+                                                    { code: 'ANNUEL', libelle: 'Annuel', duree_mois: 12 }
+                                                ]).map((p) => (
+                                                    <option key={p.code} value={p.code}>
+                                                        {p.libelle} ({p.duree_mois}m)
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <div className="form-text">
+                                                {isEditing
+                                                    ? "Si vous changez ce plan, un nouvel abonnement actif sera appliqué à cet atelier."
+                                                    : "Ce plan sera activé automatiquement à la création de l'atelier."}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
