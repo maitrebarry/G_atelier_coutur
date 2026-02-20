@@ -33,3 +33,22 @@ code {
 .param-menu .list-group-item:focus {
   box-shadow: none;
 }
+
+/* Notifications dropdown: prevent overflow and keep messages inside card */
+.header-notifications-list {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.header-notifications-list .dropdown-item,
+.header-notifications-list .msg-info,
+.header-notifications-list .msg-name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.dropdown-menu.dropdown-menu-end {
+  max-width: 360px;
+}

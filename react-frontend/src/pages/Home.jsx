@@ -73,7 +73,8 @@ const Home = () => {
   useEffect(() => {
     if (role === 'SUPERADMIN') {
       loadSubscriptions();
-      loadSubscriptionPayments();
+      // pass `true` to display confirmation modal with image when payments are fetched
+      loadSubscriptionPayments(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role]);
@@ -123,11 +124,60 @@ const Home = () => {
     }
   };
 
-  const loadSubscriptionPayments = async () => {
+  // helper to build a full URL for uploaded files (images, preuves, etc.)
+  const buildUploadUrl = (p) => {
+    if (!p) return '';
+    const normalized = String(p).replace(/\\/g, '/');
+    if (normalized.startsWith('http')) return normalized;
+    // remove trailing /api from base URL if present
+    const base = api.defaults.baseURL.replace(/\/api$/i, '');
+    return `${base}${normalized.startsWith('/') ? normalized : `/${normalized}`}`;
+  };
+
+  /**
+   * When a superadmin loads payments we optionally present a modal
+   * describing the first pending request so that the image is visible
+   * and the user can approve/reject without drilling into the table.
+   */
+  const maybeShowSuperAdminPendingPaymentModal = async (rows) => {
+    if (!rows || rows.length === 0) return;
+    const first = rows[0] || {};
+    const img = buildUploadUrl(first.preuve_url || first.preuveUrl);
+    const r = await Swal.fire({
+      icon: 'info',
+      title: `${rows.length} demande(s) d'abonnement en attente`,
+      html: `
+        <div class="text-start">
+          <div><strong>Atelier:</strong> ${first.atelier_nom || first.boutique_nom || '—'}</div>
+          <div><strong>Canal:</strong> ${first.mode_paiement || first.provider || '—'}</div>
+          <div><strong>Référence transfert:</strong> ${first.transaction_ref || '—'}</div>
+          ${img ? `<div class="mt-2"><img src="${img}" alt="preuve" style="max-width:100%;max-height:260px;border:1px solid #ddd;border-radius:6px" /></div>` : '<div class="mt-2 text-muted">Aucune preuve image</div>'}
+          <small class="d-block mt-2">Vérifiez votre numéro, puis validez ou rejetez.</small>
+        </div>
+      `,
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: 'Valider',
+      denyButtonText: 'Rejeter',
+      cancelButtonText: 'Plus tard'
+    });
+
+    if (r.isConfirmed) {
+      await onApprovePayment(first.id);
+    } else if (r.isDenied) {
+      await onRejectPayment(first.id);
+    }
+  };
+
+  const loadSubscriptionPayments = async (showConfirmModal = false) => {
     try {
       setPaymentsLoading(true);
       const rows = await fetchAdminSubscriptionPayments();
       setSubscriptionPayments(Array.isArray(rows) ? rows : []);
+      if (showConfirmModal) {
+        const pending = (rows || []).filter((r) => String((r.statut || r.status || '').toUpperCase()) === 'PENDING');
+        await maybeShowSuperAdminPendingPaymentModal(pending);
+      }
     } catch (e) {
       setSubscriptionsError(e?.response?.data?.message || e?.message || 'Erreur chargement paiements abonnement');
     } finally {
@@ -919,7 +969,7 @@ const Home = () => {
                                   className="btn btn-sm btn-outline-secondary"
                                   onClick={() => Swal.fire({
                                     title: `Preuve ${p.reference || ''}`.trim(),
-                                    imageUrl: `http://localhost:8081${p.preuve_url}`,
+                                    imageUrl: buildUploadUrl(p.preuve_url),
                                     imageAlt: 'Preuve de paiement',
                                     showCloseButton: true,
                                     confirmButtonText: 'Fermer',

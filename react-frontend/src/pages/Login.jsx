@@ -4,7 +4,7 @@ import api, { setAuthData } from '../api/api';
 import Swal from 'sweetalert2';
 import '../assets/css/index.css';
 import { fetchSubscriptionPlans, submitManualSubscriptionPayment } from '../api/subscription';
-import { fetchAdminSubscriptionPayments, approveAdminSubscriptionPayment, rejectAdminSubscriptionPayment } from '../api/adminSubscription';
+import { fetchAdminAtelierSubscriptions, fetchAdminSubscriptionPayments, approveAdminSubscriptionPayment, rejectAdminSubscriptionPayment } from '../api/adminSubscription';
 
 const backgroundImages = [
   { url: '/assets/images/jupe0.jpg', title: 'Collection Jupe' },
@@ -273,20 +273,53 @@ const Login = () => {
       const rows = await fetchAdminSubscriptionPayments('PENDING');
       if (!Array.isArray(rows) || rows.length === 0) return;
 
+      const buildUploadUrl = (p) => {
+        if (!p) return '';
+        const normalized = String(p).replace(/\\/g, '/');
+        if (normalized.startsWith('http')) return normalized;
+        const base = api.defaults.baseURL.replace(/\/api$/i, '');
+        return `${base}${normalized.startsWith('/') ? normalized : `/${normalized}`}`;
+      };
+
+      const formatDateTime = (raw) => {
+        if (!raw) return '—';
+        const d = new Date(raw);
+        if (Number.isNaN(d.getTime())) return String(raw);
+        return d.toLocaleString('fr-FR');
+      };
+
+      const atelierNameById = {};
+      try {
+        const ateliers = await fetchAdminAtelierSubscriptions();
+        if (Array.isArray(ateliers)) {
+          ateliers.forEach((a) => {
+            const id = String(a.atelier_id || a.boutique_id || a.id || '');
+            const nom = a.atelier_nom || a.atelierNom || a.nom;
+            if (id && nom) atelierNameById[id] = nom;
+          });
+        }
+      } catch (e) {
+        // ignore if mapping cannot be loaded
+      }
+
       for (const p of rows.slice(0, 8)) {
+        const img = buildUploadUrl(p.preuve_url || p.preuveUrl);
+        const atelierId = String(p.atelier_id || '');
+        const atelierLabel = p.atelier_nom || p.atelierName || atelierNameById[atelierId] || atelierId || '—';
+        const createdLabel = formatDateTime(p.created_at || p.createdAt);
         const html = `
           <div style="display:flex;gap:12px;align-items:flex-start">
             <div style="flex:1">
-              <img src="${p.preuve_url || p.preuveUrl || ''}" alt="preuve" style="max-width:320px;max-height:320px;object-fit:contain;border:1px solid #e9ecef;padding:6px;background:#fff" />
+              ${img ? `<img src="${img}" alt="preuve" style="max-width:320px;max-height:320px;object-fit:contain;border:1px solid #e9ecef;padding:6px;background:#fff" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" /><div style="display:none;color:#888">Aperçu indisponible</div>` : '<div style="color:#888">Aucune preuve image</div>'}
             </div>
             <div style="flex:1;text-align:left">
               <div><strong>Référence</strong>: ${p.reference || ''}</div>
-              <div><strong>Atelier</strong>: ${p.atelier_nom || p.atelierName || p.atelier_id || ''}</div>
+              <div><strong>Atelier</strong>: ${atelierLabel}</div>
               <div><strong>Plan</strong>: ${p.plan_code || ''}</div>
               <div><strong>Mode</strong>: ${p.mode_paiement || p.modePaiement || ''}</div>
               <div><strong>Transaction</strong>: ${p.transaction_ref || p.transactionRef || ''}</div>
               <div style="margin-top:8px;color:#555"><strong>Note propriétaire</strong>: ${p.owner_note || p.ownerNote || '—'}</div>
-              <div style="margin-top:8px;color:#777;font-size:0.9rem">Soumis le: ${p.created_at || p.createdAt || ''}</div>
+              <div style="margin-top:8px;color:#777;font-size:0.9rem">Soumis le: ${createdLabel}</div>
             </div>
           </div>
         `;

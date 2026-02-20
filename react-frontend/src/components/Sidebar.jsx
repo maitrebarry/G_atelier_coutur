@@ -23,8 +23,8 @@ const Sidebar = ({ onToggleSidebar }) => {
     },
     {
       id: 'modeles',
-      title: 'Modèles',
-      icon: 'bx bx-cut',
+      title: 'Albums',
+      icon: 'bx bx-photo-album',
       href: '/modeles',
       permission: 'MODELE_VOIR'
     },

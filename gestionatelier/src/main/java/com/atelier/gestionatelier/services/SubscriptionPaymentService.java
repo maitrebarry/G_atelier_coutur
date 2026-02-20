@@ -53,18 +53,20 @@ public class SubscriptionPaymentService {
         String normalizedStatus = status == null ? null : status.trim().toUpperCase();
         if (normalizedStatus == null || normalizedStatus.isBlank()) {
             return jdbcTemplate.queryForList(
-                    "SELECT ap.id, ap.reference, ap.provider, ap.mode_paiement, ap.plan_code, ap.transaction_ref, ap.owner_note, ap.preuve_url, ap.review_note, ap.montant, ap.devise, ap.statut, ap.paid_at, ap.created_at, ap.reviewed_at, ab.atelier_id " +
-                            "FROM abonnement_paiement ap " +
-                            "JOIN abonnement_atelier ab ON ab.id = ap.abonnement_id " +
-                            "ORDER BY ap.id DESC"
+                "SELECT ap.id, ap.reference, ap.provider, ap.mode_paiement, ap.plan_code, ap.transaction_ref, ap.owner_note, ap.preuve_url, ap.review_note, ap.montant, ap.devise, ap.statut, ap.paid_at, ap.created_at, ap.reviewed_at, ab.atelier_id, at.nom AS atelier_nom " +
+                    "FROM abonnement_paiement ap " +
+                    "JOIN abonnement_atelier ab ON ab.id = ap.abonnement_id " +
+                    "LEFT JOIN ateliers at ON at.id = ab.atelier_id " +
+                    "ORDER BY ap.id DESC"
             );
         }
         return jdbcTemplate.queryForList(
-                "SELECT ap.id, ap.reference, ap.provider, ap.mode_paiement, ap.plan_code, ap.transaction_ref, ap.owner_note, ap.preuve_url, ap.review_note, ap.montant, ap.devise, ap.statut, ap.paid_at, ap.created_at, ap.reviewed_at, ab.atelier_id " +
-                        "FROM abonnement_paiement ap " +
-                        "JOIN abonnement_atelier ab ON ab.id = ap.abonnement_id " +
-                        "WHERE UPPER(ap.statut) = ? " +
-                        "ORDER BY ap.id DESC",
+            "SELECT ap.id, ap.reference, ap.provider, ap.mode_paiement, ap.plan_code, ap.transaction_ref, ap.owner_note, ap.preuve_url, ap.review_note, ap.montant, ap.devise, ap.statut, ap.paid_at, ap.created_at, ap.reviewed_at, ab.atelier_id, at.nom AS atelier_nom " +
+                "FROM abonnement_paiement ap " +
+                "JOIN abonnement_atelier ab ON ab.id = ap.abonnement_id " +
+                "LEFT JOIN ateliers at ON at.id = ab.atelier_id " +
+                "WHERE UPPER(ap.statut) = ? " +
+                "ORDER BY ap.id DESC",
                 normalizedStatus
         );
     }
@@ -75,7 +77,6 @@ public class SubscriptionPaymentService {
         nums.put("WAVE", "74745669");
         nums.put("MOBICASH", "67205736");
         nums.put("ORANGE", "74745669");
-        nums.put("MTN", "67205736");
         return nums;
     }
 
@@ -192,11 +193,25 @@ public class SubscriptionPaymentService {
         );
         if (!existingPending.isEmpty()) {
             Map<String, Object> row = existingPending.get(0);
+            Long existingId = ((Number) row.get("id")).longValue();
+            try {
+            jdbcTemplate.update(
+                "UPDATE abonnement_paiement SET transaction_ref = ?, owner_note = ?, preuve_url = ?, mode_paiement = ?, provider = ? WHERE id = ?",
+                (transactionRef == null || transactionRef.isBlank()) ? null : transactionRef.trim(),
+                (ownerNote == null || ownerNote.isBlank()) ? null : ownerNote.trim(),
+                preuveUrl,
+                normalizedMode,
+                normalizedMode,
+                existingId
+            );
+            } catch (Exception ex) {
+            // If optional columns don't exist in a legacy schema, keep the existing row as-is.
+            }
             return Map.of(
-                    "paymentId", ((Number) row.get("id")).longValue(),
+                "paymentId", existingId,
                     "reference", row.get("reference"),
                     "status", row.get("statut"),
-                    "message", "Une demande de paiement est déjà en attente de validation.",
+                "message", "Demande déjà en attente, preuve mise à jour.",
                     "manualPaymentNumbers", manualPaymentNumbers()
             );
         }
