@@ -32,6 +32,13 @@ const Login = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const apiBase = (api?.defaults?.baseURL || '').replace(/\/?api\/?$/, '');
+
+  const buildAvatarUrl = (photoPath) => {
+    if (!photoPath) return '/assets/images/default-user.jpg';
+    if (!apiBase) return '/assets/images/default-user.jpg';
+    return `${apiBase}/user_photo/${photoPath}`;
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
@@ -420,6 +427,7 @@ const Login = () => {
       console.log('Final Permissions loaded:', permissions);
 
       // Robust userData extraction to match Bootstrap logic
+      const photoPath = response.photoPath || response.user?.photoPath || response.photo || response.user?.photo || null;
       const userData = {
         token: token,
         userId: response.id || response.user?.id,
@@ -428,7 +436,9 @@ const Login = () => {
         nom: response.nom || response.user?.nom,
         role: response.role || response.user?.role,
         atelierId: response.atelierId || response.user?.atelierId,
-        permissions: permissions
+        permissions: permissions,
+        photoPath: photoPath,
+        avatar: buildAvatarUrl(photoPath)
       };
 
       setAuthData(token, userData, remember);

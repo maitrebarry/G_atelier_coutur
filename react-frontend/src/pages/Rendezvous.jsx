@@ -78,26 +78,88 @@ const Rendezvous = () => {
         }
     };
 
-    const handleClientSelect = async (client) => {
-        if (!client.email || !client.email.includes('@')) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Attention',
-                text: 'Ce client n\'a pas d\'adresse email valide. Le rendez-vous ne pourra pas être créé car une notification email est requise.',
-            });
-            return;
-        }
+    const EMAIL_REGEX = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
 
-        setSelectedClient(client);
-        setFormData(prev => ({ ...prev, clientId: client.id }));
-        
+    const isValidEmail = (value) => {
+        if (!value || typeof value !== 'string') return false;
+        const v = value.trim();
+        return EMAIL_REGEX.test(v);
+    };
+
+    const findEmailInObject = (obj) => {
+        if (!obj || typeof obj !== 'object') return '';
+        const queue = [obj];
+        const visited = new Set();
+        while (queue.length) {
+            const cur = queue.shift();
+            if (!cur || typeof cur !== 'object' || visited.has(cur)) continue;
+            visited.add(cur);
+            Object.values(cur).forEach((val) => {
+                if (typeof val === 'string') {
+                    const match = val.match(EMAIL_REGEX);
+                    if (match && match[0]) {
+                        throw new Error(`__EMAIL__${match[0]}`);
+                    }
+                } else if (val && typeof val === 'object') {
+                    queue.push(val);
+                }
+            });
+        }
+        return '';
+    };
+
+    const getClientEmail = (client, details) => {
+        const direct = (
+            client?.email ||
+            client?.emailClient ||
+            client?.mail ||
+            client?.email_client ||
+            details?.email ||
+            details?.client?.email ||
+            details?.client?.mail ||
+            details?.client?.email_client ||
+            ''
+        );
+        if (isValidEmail(direct)) return direct;
         try {
-            // Correction: Utiliser l'endpoint spécifique au module rendezvous
+            findEmailInObject(client);
+        } catch (e) {
+            if (String(e?.message || '').startsWith('__EMAIL__')) {
+                return String(e.message).replace('__EMAIL__', '');
+            }
+        }
+        try {
+            findEmailInObject(details);
+        } catch (e) {
+            if (String(e?.message || '').startsWith('__EMAIL__')) {
+                return String(e.message).replace('__EMAIL__', '');
+            }
+        }
+        return '';
+    };
+
+    const handleClientSelect = async (client) => {
+        let detailsData = null;
+        try {
             const details = await api.get(`/rendezvous/clients/${client.id}/details`);
+            detailsData = details.data;
             setClientDetails(details.data);
         } catch (error) {
             console.error("Erreur chargement détails client:", error);
+            setClientDetails(null);
         }
+
+        const emailValue = getClientEmail(client, detailsData);
+        if (!isValidEmail(emailValue)) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Attention',
+                text: 'Ce client n\'a pas d\'adresse email valide. Le rendez-vous sera créé sans notification email.',
+            });
+        }
+
+        setSelectedClient({ ...client, email: emailValue || client?.email || '' });
+        setFormData(prev => ({ ...prev, clientId: client.id }));
     };
 
     const handleInputChange = (e) => {
@@ -336,7 +398,7 @@ const Rendezvous = () => {
                                                             <div className="d-flex w-100 justify-content-between">
                                                                 <h6 className="mb-1">
                                                                     {client.prenom} {client.nom}
-                                                                    {client.email && client.email.includes('@') ? 
+                                                                    {isValidEmail(getClientEmail(client, clientDetails)) ? 
                                                                         <i className="bx bx-envelope text-success ms-2" title="Email valide"></i> : 
                                                                         <i className="bx bx-error-circle text-danger ms-2" title="Email manquant"></i>
                                                                     }

@@ -1,0 +1,1 @@
+{"ast":null,"code":"import App from \"./mobile/App\";\nexport default App;","map":{"version":3,"names":["App"],"sources":["/home/maitre/G_atelier_coutur/App.js"],"sourcesContent":["import App from './mobile/App';\n\nexport default App;\n"],"mappings":"AAAA,OAAOA,GAAG;AAEV,eAAeA,GAAG","ignoreList":[]},"metadata":{},"sourceType":"module","externalDependencies":[]}

@@ -47,6 +47,8 @@ public class SecurityConfig {
 
                         // Routes publiques (uniquement l'authentification)
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Expo dev server probes (avoid 403 spam)
+                        .requestMatchers("/error", "/error/**", "/inspector/**", "/message", "/message/**").permitAll()
                         .requestMatchers("/api/subscription/**").authenticated()
                         .requestMatchers("/api/admin/subscriptions/**").authenticated()
 

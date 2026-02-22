@@ -1,0 +1,44 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    # these values should be provided by the hosting platform (Render/Heroku)
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: openid,profile,email
+            redirect-uri: https://gateliercoutur.onrender.com/login/oauth2/code/google
+
+server:
+  forward-headers-strategy: framework
+
+app:
+  frontend:
+    base-url: ${APP_FRONTEND_BASE_URL:https://gateliercoutur.onrender.com}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

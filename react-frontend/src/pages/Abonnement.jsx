@@ -23,6 +23,12 @@ const Abonnement = () => {
   const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData') || '{}');
   const isSuperAdmin = (userData?.role || '').toUpperCase() === 'SUPERADMIN';
 
+  const manualNumbers = {
+    ORANGE_MONEY: '74745669',
+    WAVE: '74745669',
+    MOBICASH: '67205736'
+  };
+
   const [current, setCurrent] = useState(null);
   const [plans, setPlans] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -234,6 +240,12 @@ const Abonnement = () => {
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body">
               <h6 className="mb-3">Soumettre une preuve de paiement</h6>
+              <div className="alert alert-info mb-3">
+                <div className="fw-semibold mb-1">Numéros Mobile Money du service</div>
+                <div>Orange Money: {manualNumbers.ORANGE_MONEY}</div>
+                <div>Wave: {manualNumbers.WAVE}</div>
+                <div>MobiCash: {manualNumbers.MOBICASH}</div>
+              </div>
               <form onSubmit={handleSubmit}>
                 <div className="mb-2">
                   <label className="form-label">Plan</label>

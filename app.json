@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "g-atelier-mobile",
+    "slug": "g-atelier-mobile",
+    "version": "1.0.0",
+    "entryPoint": "./mobile/App.js",
+    "orientation": "portrait",
+    "icon": "./mobile/assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./mobile/assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "enabled": false
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./mobile/assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "usesCleartextTraffic": true
+    },
+    "web": {
+      "favicon": "./mobile/assets/favicon.png"
+    }
+  }
+}

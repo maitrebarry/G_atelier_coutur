@@ -1,13 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/api';
+import Swal from 'sweetalert2';
 
 const Header = ({ onToggleSidebar }) => {
   const [userData, setUserData] = useState({ name: 'Chargement...', role: 'Connecté', avatar: '/assets/images/default-user.jpg' });
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const apiBase = (api?.defaults?.baseURL || '').replace(/\/api\/?$/, '');
 
   useEffect(() => {
     loadUserData();
@@ -36,14 +42,145 @@ const Header = ({ onToggleSidebar }) => {
     };
   }, []);
 
-  const loadUserData = () => {
+  const loadUserData = async () => {
     const data = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
-    if (data) {
+    if (!data) return;
+
+    const storedPhotoPath = data.photoPath || data.photo || null;
+    const storedAvatar = storedPhotoPath
+      ? `${apiBase}/user_photo/${storedPhotoPath}?t=${Date.now()}`
+      : (data.avatar || '/assets/images/default-user.jpg');
+
+    setUserData({
+      name: data.nom || 'Utilisateur',
+      role: data.role || 'Connecté',
+      avatar: storedAvatar
+    });
+
+    try {
+      if (!data.userId) return;
+      const res = await api.get(`/utilisateurs/${data.userId}/profile`);
+      const profile = res?.data || {};
+      const photoPath = profile.photoPath || profile.photo || profile.photo_path || null;
+      const avatarUrl = photoPath ? `${apiBase}/user_photo/${photoPath}?t=${Date.now()}` : storedAvatar;
+      const updated = { ...data, photoPath, avatar: avatarUrl };
+      persistUserData(updated);
       setUserData({
-        name: data.nom || 'Utilisateur',
-        role: data.role || 'Connecté',
-        avatar: data.avatar || '/assets/images/default-user.jpg'
+        name: updated.nom || 'Utilisateur',
+        role: updated.role || 'Connecté',
+        avatar: avatarUrl
       });
+    } catch (e) {
+      /* ignore */
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    };
+  }, [photoPreviewUrl]);
+
+  const getStoredUser = () => {
+    const raw = localStorage.getItem('userData') || sessionStorage.getItem('userData');
+    return raw ? JSON.parse(raw) : null;
+  };
+
+  const persistUserData = (next) => {
+    const hasLocal = !!localStorage.getItem('userData');
+    if (hasLocal) {
+      localStorage.setItem('userData', JSON.stringify(next));
+    } else {
+      sessionStorage.setItem('userData', JSON.stringify(next));
+    }
+  };
+
+  const handleChoosePhoto = () => {
+    if (fileInputRef.current) fileInputRef.current.click();
+  };
+
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      Swal.fire({ icon: 'warning', title: 'Fichier invalide', text: 'Veuillez sélectionner une image.' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      Swal.fire({ icon: 'warning', title: 'Taille trop grande', text: 'La taille de l\'image ne doit pas dépasser 5MB.' });
+      return;
+    }
+    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    setPhotoFile(file);
+    setPhotoPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleSavePhoto = async () => {
+    if (!photoFile) {
+      Swal.fire({ icon: 'warning', title: 'Photo requise', text: 'Veuillez sélectionner une photo.' });
+      return;
+    }
+    const stored = getStoredUser();
+    if (!stored?.userId) {
+      Swal.fire({ icon: 'error', title: 'Erreur', text: 'Utilisateur non identifié.' });
+      return;
+    }
+    setPhotoBusy(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', photoFile);
+      const res = await api.post(`/utilisateurs/${stored.userId}/photo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const photoPath = res?.data?.photoPath || res?.data?.path || null;
+      const updated = {
+        ...stored,
+        photoPath,
+        avatar: photoPath ? `${apiBase}/user_photo/${photoPath}?t=${Date.now()}` : stored.avatar
+      };
+      persistUserData(updated);
+      setUserData({
+        name: updated.nom || 'Utilisateur',
+        role: updated.role || 'Connecté',
+        avatar: updated.avatar || '/assets/images/default-user.jpg'
+      });
+      setPhotoFile(null);
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+      setPhotoPreviewUrl(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      Swal.fire({ icon: 'success', title: 'Succès', text: 'Photo de profil mise à jour.' });
+    } catch (error) {
+      Swal.fire({ icon: 'error', title: 'Erreur', text: 'Impossible de mettre à jour la photo.' });
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    const stored = getStoredUser();
+    if (!stored?.userId) {
+      Swal.fire({ icon: 'error', title: 'Erreur', text: 'Utilisateur non identifié.' });
+      return;
+    }
+    setPhotoBusy(true);
+    try {
+      await api.delete(`/utilisateurs/${stored.userId}/photo`);
+      const updated = { ...stored, photoPath: null, avatar: '/assets/images/default-user.jpg' };
+      persistUserData(updated);
+      setUserData({
+        name: updated.nom || 'Utilisateur',
+        role: updated.role || 'Connecté',
+        avatar: updated.avatar
+      });
+      setPhotoFile(null);
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+      setPhotoPreviewUrl(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      Swal.fire({ icon: 'success', title: 'Supprimée', text: 'Photo supprimée.' });
+    } catch (error) {
+      Swal.fire({ icon: 'error', title: 'Erreur', text: 'Impossible de supprimer la photo.' });
+    } finally {
+      setPhotoBusy(false);
     }
   };
 
@@ -224,16 +361,23 @@ const Header = ({ onToggleSidebar }) => {
                 <div className="col-md-4 text-center border-end">
                   <img id="profileAvatar" src={userData.avatar} alt="Photo de profil"
                     className="rounded-circle shadow mb-3" width="150" height="150" style={{objectFit: 'cover'}} />
-                  <input type="file" id="photoUpload" accept="image/*" className="d-none" />
-                  <button className="btn btn-outline-primary btn-sm w-100 mb-2" id="changePhotoBtn">
+                  <input
+                    type="file"
+                    id="photoUpload"
+                    accept="image/*"
+                    className="d-none"
+                    ref={fileInputRef}
+                    onChange={handlePhotoSelect}
+                  />
+                  <button className="btn btn-outline-primary btn-sm w-100 mb-2" id="changePhotoBtn" onClick={handleChoosePhoto} disabled={photoBusy}>
                     <i className="bx bx-camera me-1"></i>Changer la photo
                   </button>
-                  <button className="btn btn-outline-danger btn-sm w-100" id="removePhotoBtn">
+                  <button className="btn btn-outline-danger btn-sm w-100" id="removePhotoBtn" onClick={handleRemovePhoto} disabled={photoBusy}>
                     <i className="bx bx-trash me-1"></i>Supprimer
                   </button>
-                  <div id="photoPreviewContainer" className="mt-3" style={{display: 'none'}}>
-                    <img id="previewImage" src="" className="rounded shadow" width="100" height="100" style={{objectFit: 'cover'}} />
-                    <button className="btn btn-success btn-sm w-100 mt-2" id="savePhotoBtn">
+                  <div id="photoPreviewContainer" className="mt-3" style={{display: photoPreviewUrl ? 'block' : 'none'}}>
+                    <img id="previewImage" src={photoPreviewUrl || ''} className="rounded shadow" width="100" height="100" style={{objectFit: 'cover'}} />
+                    <button className="btn btn-success btn-sm w-100 mt-2" id="savePhotoBtn" onClick={handleSavePhoto} disabled={photoBusy}>
                       <i className="bx bx-check me-1"></i>Enregistrer la photo
                     </button>
                   </div>
