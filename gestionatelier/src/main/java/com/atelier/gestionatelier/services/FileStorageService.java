@@ -96,6 +96,11 @@ public class FileStorageService {
         return contentType != null && contentType.startsWith("image/");
     }
 
+    public boolean isVideoFile(MultipartFile file) {
+        String contentType = file.getContentType();
+        return contentType != null && contentType.startsWith("video/");
+    }
+
     /**
      * Valider la taille du fichier
      */

@@ -30,6 +30,9 @@ public class Modele {
     @Column(name = "photo_path")
     private String photoPath; // Chemin de la photo du modèle
 
+    @Column(name = "video_path")
+    private String videoPath; // Chemin de la vidéo du modèle
+
     @Column(name = "categorie")
     @Enumerated(EnumType.STRING)
     private CategorieModele categorie;

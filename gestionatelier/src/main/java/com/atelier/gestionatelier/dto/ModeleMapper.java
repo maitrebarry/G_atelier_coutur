@@ -27,6 +27,7 @@ public class ModeleMapper {
                 .prix(dto.getPrix())
                 .categorie(dto.getCategorie())
                 .photoPath(dto.getPhotoPath())
+                .videoPath(dto.getVideoPath())
                 .estActif(dto.getEstActif() != null ? dto.getEstActif() : true)
                 .atelier(atelierRepository.findById(dto.getAtelierId())
                         .orElseThrow(() -> new IllegalArgumentException("Atelier non trouvé")))
@@ -51,6 +52,9 @@ public class ModeleMapper {
         if (dto.getPhotoPath() != null) {
             modele.setPhotoPath(dto.getPhotoPath());
         }
+        if (dto.getVideoPath() != null) {
+            modele.setVideoPath(dto.getVideoPath());
+        }
         if (dto.getEstActif() != null) {
             modele.setEstActif(dto.getEstActif());
         }
@@ -67,6 +71,7 @@ public class ModeleMapper {
         dto.setDescription(modele.getDescription());
         dto.setPrix(modele.getPrix());
         dto.setPhotoPath(modele.getPhotoPath());
+        dto.setVideoPath(modele.getVideoPath());
         dto.setCategorie(modele.getCategorie());
         dto.setEstActif(modele.getEstActif());
         dto.setDateCreation(modele.getDateCreation());
@@ -91,6 +96,7 @@ public class ModeleMapper {
                 modele.getDescription(),
                 modele.getPrix(),
                 modele.getPhotoPath(),
+                modele.getVideoPath(),
                 modele.getCategorie(),
                 modele.getEstActif()
         );

@@ -48,7 +48,8 @@ public class AuthController {
             System.out.println("Token: " + response.getToken());
             System.out.println("User: " + response.getEmail());
             System.out.println("Role: " + response.getRole());
-            System.out.println("Atelier: " + response.getAtelierId());
+            System.out.println("Atelier ID: " + response.getAtelierId());
+            System.out.println("Atelier name: " + response.getAtelierName());
             System.out.println("===========================");
             
             return ResponseEntity.ok(response);

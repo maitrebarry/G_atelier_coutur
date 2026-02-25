@@ -28,6 +28,7 @@ public class CreateModeleDTO {
     private CategorieModele categorie;
 
     private String photoPath; // Optionnel - géré via upload
+    private String videoPath; // Optionnel - géré via upload
 
     @NotNull(message = "L'atelier est obligatoire")
     private UUID atelierId;

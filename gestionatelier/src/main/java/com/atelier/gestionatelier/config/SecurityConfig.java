@@ -54,6 +54,7 @@ public class SecurityConfig {
 
                         // ✅ CORRECTION : Les routes photos doivent être publiques
                         .requestMatchers("/model_photo/**").permitAll()
+                        .requestMatchers("/modeles/videos/**").permitAll()
                         .requestMatchers("/user_photo/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
 

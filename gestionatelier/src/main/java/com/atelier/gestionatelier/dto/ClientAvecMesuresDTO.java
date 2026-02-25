@@ -55,5 +55,7 @@ public class ClientAvecMesuresDTO {
         private Double corps;
 
         private String photoPath;
+        // chemin vers la photo de l'habit à coudre
+        private String habitPhotoPath;
     }
 }

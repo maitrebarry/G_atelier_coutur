@@ -96,10 +96,12 @@ public class AuthService {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Récupérer l'ID de l'atelier (en UUID)
+        // Récupérer l'ID de l'atelier (en UUID) et son nom
         UUID atelierId = null;
+        String atelierName = null;
         if (utilisateur.getAtelier() != null) {
             atelierId = utilisateur.getAtelier().getId();
+            atelierName = utilisateur.getAtelier().getNom();
         }
 
         // ✅ CORRECTION : RÉCUPÉRER LES PERMISSIONS
@@ -123,7 +125,7 @@ public class AuthService {
             // ne pas empêcher l'authentification si la vérification d'abonnement échoue
         }
 
-        // ✅ CORRECTION : INCLURE LES PERMISSIONS ET L'ÉTAT D'ABONNEMENT DANS LA RÉPONSE
+        // ✅ CORRECTION : INCLURE LES PERMISSIONS, LE NOM D'ATELIER ET L'ÉTAT D'ABONNEMENT DANS LA RÉPONSE
         return new LoginResponse(
                 jwt,
                 utilisateur.getId(),
@@ -132,6 +134,7 @@ public class AuthService {
                 utilisateur.getNom(),
                 utilisateur.getRole().name(),
                 atelierId,
+                atelierName, // include name for mobile UI
                 permissions, // <-- AJOUT DES PERMISSIONS
                 subscriptionBlocked,
                 subscriptionMessage

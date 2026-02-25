@@ -25,6 +25,14 @@ const Clients = () => {
     return mesure.sexe === 'Homme' ? '/assets/images/default_homme.png' : '/assets/images/default_femme.png';
   };
 
+  // helper to build URL for habit photo stored on server
+  const getHabitPhotoUrl = (mesure) => {
+    if (!mesure || !mesure.habitPhotoPath) return null;
+    if (mesure.habitPhotoPath.startsWith('http')) return mesure.habitPhotoPath;
+    const cleanPath = mesure.habitPhotoPath.replace(/^\/+/, "").replace("habit_photo/", "");
+    return `http://localhost:8081/habit_photo/${cleanPath}`;
+  };
+
   useEffect(() => {
     fetchClients();
   }, []);
@@ -386,6 +394,21 @@ const Clients = () => {
                           );
                         }
                       })()}
+
+                      {/* Habit photo displayed after measurements */}
+                      {selectedClientMeasure.habitPhotoPath && (
+                        <li className="list-group-item">
+                          <strong>Photo de l'habit:</strong>
+                          <div className="mt-2 text-center">
+                            <img
+                              src={getHabitPhotoUrl(selectedClientMeasure)}
+                              alt="Habit"
+                              className="img-fluid"
+                              style={{ maxWidth: '200px' }}
+                            />
+                          </div>
+                        </li>
+                      )}
                     </ul>
                   ) : (
                     <div className="alert alert-info">Aucune mesure disponible</div>

@@ -36,10 +36,11 @@ public class ModeleController {
     public ResponseEntity<ModeleDTO> creerModele(
             @RequestPart("modele") @Valid CreateModeleDTO createModeleDTO,
             @RequestPart(value = "photo", required = false) MultipartFile photoFile,
+            @RequestPart(value = "video", required = false) MultipartFile videoFile,
             Authentication authentication) {
         try {
             String email = authentication.getName();
-            ModeleDTO modele = modeleService.creerModeleWithPermissions(createModeleDTO, photoFile, email);
+            ModeleDTO modele = modeleService.creerModeleWithPermissions(createModeleDTO, photoFile, videoFile, email);
             return ResponseEntity.ok(modele);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -81,10 +82,11 @@ public class ModeleController {
             @PathVariable UUID atelierId,
             @RequestPart("modele") @Valid UpdateModeleDTO updateModeleDTO,
             @RequestPart(value = "photo", required = false) MultipartFile photoFile,
+            @RequestPart(value = "video", required = false) MultipartFile videoFile,
             Authentication authentication) {
         try {
             String email = authentication.getName();
-            ModeleDTO modele = modeleService.updateModeleWithPermissions(id, atelierId, updateModeleDTO, photoFile, email);
+            ModeleDTO modele = modeleService.updateModeleWithPermissions(id, atelierId, updateModeleDTO, photoFile, videoFile, email);
             return ResponseEntity.ok(modele);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
@@ -170,6 +172,32 @@ public class ModeleController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    // endpoint pour distribuer les vidéos de modèles
+    @GetMapping("/videos/{filename:.+}")
+    public ResponseEntity<Resource> getModeleVideo(@PathVariable String filename) {
+        try {
+            Resource resource = fileStorageService.loadFile(filename, "model_video");
+
+            // détection simple du type vidéo
+            String contentType = "video/mp4"; // default
+            if (filename.toLowerCase().endsWith(".webm")) {
+                contentType = "video/webm";
+            } else if (filename.toLowerCase().endsWith(".ogg")) {
+                contentType = "video/ogg";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+
+        } catch (FileNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
     @PostMapping("/{id}/atelier/{atelierId}/photo")
     public ResponseEntity<String> updateModelePhoto(
             @PathVariable UUID id,
@@ -185,7 +213,7 @@ public class ModeleController {
             // Créer un DTO de mise à jour avec seulement la photo
             UpdateModeleDTO updateDTO = new UpdateModeleDTO();
 
-            ModeleDTO modele = modeleService.updateModeleWithPermissions(id, atelierId, updateDTO, photoFile, email);
+            ModeleDTO modele = modeleService.updateModeleWithPermissions(id, atelierId, updateDTO, photoFile, null, email);
 
             return ResponseEntity.ok("Photo mise à jour avec succès");
 
@@ -211,7 +239,7 @@ public class ModeleController {
             UpdateModeleDTO updateDTO = new UpdateModeleDTO();
             updateDTO.setPhotoPath(null);
 
-            modeleService.updateModeleWithPermissions(id, atelierId, updateDTO, null, email);
+            modeleService.updateModeleWithPermissions(id, atelierId, updateDTO, null, null, email);
 
             return ResponseEntity.ok("Photo supprimée avec succès");
 

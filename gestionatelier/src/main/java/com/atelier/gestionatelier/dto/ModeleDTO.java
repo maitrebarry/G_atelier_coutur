@@ -18,6 +18,7 @@ public class ModeleDTO {
     private String description;
     private Double prix;
     private String photoPath;
+    private String videoPath; // chemin vers une vidéo du modèle (optionnel)
     private CategorieModele categorie;
     private Boolean estActif;
     private LocalDateTime dateCreation;
@@ -29,6 +30,13 @@ public class ModeleDTO {
     public String getPhotoUrl() {
         if (photoPath != null && !photoPath.trim().isEmpty()) {
             return "/api/modeles/photos/" + photoPath;
+        }
+        return null;
+    }
+
+    public String getVideoUrl() {
+        if (videoPath != null && !videoPath.trim().isEmpty()) {
+            return "/api/modeles/videos/" + videoPath;
         }
         return null;
     }

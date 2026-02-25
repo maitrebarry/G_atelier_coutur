@@ -135,6 +135,19 @@ public class ClientService {
             }
         }
 
+        // Nouvelle photo de l'habit
+        MultipartFile habitPhoto = dto.getHabitPhoto();
+        if (habitPhoto != null && !habitPhoto.isEmpty()) {
+            try {
+                String habitFileName = fileStorageService.storeFile(habitPhoto, "habit_photo");
+                mesure.setHabitPhotoPath(habitFileName);
+                System.out.println("✅ Photo de l'habit sauvegardée: " + habitFileName);
+            } catch (Exception e) {
+                System.err.println("❌ Erreur upload photo habit: " + e.getMessage());
+                throw new RuntimeException("Erreur lors de l'upload de la photo de l'habit: " + e.getMessage());
+            }
+        }
+
         // Si pas de photo uploadée et pas de modèle sélectionné avec photo, photoPath reste null
         if (mesure.getPhotoPath() == null) {
             System.out.println("Aucune photo définie (ni upload, ni modèle avec photo)");
@@ -557,6 +570,7 @@ public class ClientService {
         dto.setDescription(mesure.getDescription());
         dto.setSexe(mesure.getSexe());
         dto.setPhotoPath(mesure.getPhotoPath());
+        dto.setHabitPhotoPath(mesure.getHabitPhotoPath());
 
         // Mesures communes
         dto.setEpaule(mesure.getEpaule());

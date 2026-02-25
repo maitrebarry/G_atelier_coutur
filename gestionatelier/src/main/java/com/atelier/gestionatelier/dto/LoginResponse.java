@@ -95,6 +95,7 @@ public class LoginResponse {
     private String nom;
     private String role;
     private UUID atelierId;
+    private String atelierName; // name of the atelier for display in mobile app
     private Set<String> permissions; // <-- Champ permissions
     private boolean subscriptionBlocked; // ajouté pour renvoyer l'état d'abonnement au login
     private String subscriptionMessage;  // message optionnel (ex: "Votre abonnement est expiré...")
@@ -111,7 +112,7 @@ public class LoginResponse {
     }
 
     // ✅ NOUVEAU constructeur avec permissions
-    public LoginResponse(String token, UUID id, String email, String prenom, String nom, String role, UUID atelierId, Set<String> permissions) {
+    public LoginResponse(String token, UUID id, String email, String prenom, String nom, String role, UUID atelierId, String atelierName, Set<String> permissions) {
         this.token = token;
         this.id = id;
         this.email = email;
@@ -119,11 +120,12 @@ public class LoginResponse {
         this.nom = nom;
         this.role = role;
         this.atelierId = atelierId;
+        this.atelierName = atelierName;
         this.permissions = permissions;
     }
 
     // ✅ NOUVEAU constructeur complet avec subscription info
-    public LoginResponse(String token, UUID id, String email, String prenom, String nom, String role, UUID atelierId, Set<String> permissions, boolean subscriptionBlocked, String subscriptionMessage) {
+    public LoginResponse(String token, UUID id, String email, String prenom, String nom, String role, UUID atelierId, String atelierName, Set<String> permissions, boolean subscriptionBlocked, String subscriptionMessage) {
         this.token = token;
         this.id = id;
         this.email = email;
@@ -131,6 +133,7 @@ public class LoginResponse {
         this.nom = nom;
         this.role = role;
         this.atelierId = atelierId;
+        this.atelierName = atelierName;
         this.permissions = permissions;
         this.subscriptionBlocked = subscriptionBlocked;
         this.subscriptionMessage = subscriptionMessage;
@@ -157,6 +160,10 @@ public class LoginResponse {
 
     public UUID getAtelierId() { return atelierId; }
     public void setAtelierId(UUID atelierId) { this.atelierId = atelierId; }
+
+    // nouveau getter/setter pour nom atelier
+    public String getAtelierName() { return atelierName; }
+    public void setAtelierName(String atelierName) { this.atelierName = atelierName; }
 
     // ✅ Getter et Setter pour permissions
     public Set<String> getPermissions() { return permissions; }

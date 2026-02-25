@@ -541,6 +541,18 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            <!-- Champ photo de l'habit à coudre (obligatoire) placé ici pour visibilité -->
+                                            <div class="row mb-3">
+                                                <div class="col-md-12">
+                                                    <label class="form-label">Photo de l'habit à coudre <span class="-star">*</span></label>
+                                                    <input type="file" class="form-control required-field" name="habitPhoto" id="habitPhotoInput" accept="image/*" capture="environment" required />
+                                                    <div class="invalid-feedback">Veuillez ajouter une photo de l'habit.</div>
+                                                    <!-- aperçu de la photo -->
+                                                    <div id="habitPhotoPreviewContainer" class="mt-2" style="display:none; text-align:center;">
+                                                        <img id="habitPhotoPreview" src="" alt="Prévisualisation" class="img-fluid" style="max-height:150px;" />
+                                                    </div>
+                                                </div>
+                                            </div>
 
                                             <!-- Options de vêtement pour femme -->
                                             <div class="form-section" id="femmeOptions" style="display:none;">
@@ -772,6 +784,7 @@
                                                     </div>
                                                 </div>
                                             </div>
+
 
                                             <!-- Bouton -->
                                             <div class="row mt-4">

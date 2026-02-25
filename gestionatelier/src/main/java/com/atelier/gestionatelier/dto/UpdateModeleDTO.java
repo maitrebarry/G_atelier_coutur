@@ -21,5 +21,6 @@ public class UpdateModeleDTO {
 
     private CategorieModele categorie;
     private String photoPath;
+    private String videoPath;
     private Boolean estActif;
 }

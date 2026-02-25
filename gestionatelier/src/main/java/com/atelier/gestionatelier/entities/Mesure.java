@@ -57,8 +57,11 @@ private UUID id;
     private Double cuisse;
     private Double corps;
 
-    // Chemin d'accès de la photo
+    // Chemin d'accès de la photo (client/modèle)
     private String photoPath;
+    // Nouvelle photo de l'habit à coudre
+    @Column(name = "habit_photo_path")
+    private String habitPhotoPath;
     // NOUVEAU : Référence au modèle existant
     @Column(name = "modele_reference_id")
     private UUID modeleReferenceId;

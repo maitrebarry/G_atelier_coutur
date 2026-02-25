@@ -16,10 +16,15 @@ const Modeles = () => {
         categorie: '',
         prix: '',
         description: '',
-        photo: null
+        photo: null,
+        video: null,
+        photoURL: '',
+        videoURL: ''
     });
     const [photoPreview, setPhotoPreview] = useState(null);
+    const [videoPreview, setVideoPreview] = useState(null);
     const fileInputRef = useRef(null);
+    const videoInputRef = useRef(null);
     const uploadRectangleRef = useRef(null);
 
     const loadModeles = useCallback(async (atelierId) => {
@@ -132,13 +137,36 @@ const Modeles = () => {
             return;
         }
 
-        setFormData(prev => ({ ...prev, photo: file }));
+        setFormData(prev => ({ ...prev, photo: file, photoURL: '' }));
 
         const reader = new FileReader();
         reader.onload = (e) => {
             setPhotoPreview(e.target.result);
         };
         reader.readAsDataURL(file);
+    };
+
+    const handleVideoUpload = (file) => {
+        if (!file.type.startsWith('video/')) {
+            Swal.fire('Erreur', 'Veuillez sélectionner une vidéo valide', 'error');
+            return;
+        }
+        if (file.size > 50 * 1024 * 1024) {
+            Swal.fire('Erreur', 'La vidéo est trop volumineuse (max 50MB)', 'error');
+            return;
+        }
+        setFormData(prev => ({ ...prev, video: file, videoURL: '' }));
+        const url = URL.createObjectURL(file);
+        setVideoPreview(url);
+    };
+
+    const handlePhotoURLChange = (url) => {
+        setFormData(prev => ({ ...prev, photoURL: url, photo: null }));
+        setPhotoPreview(url || null);
+    };
+    const handleVideoURLChange = (url) => {
+        setFormData(prev => ({ ...prev, videoURL: url, video: null }));
+        setVideoPreview(url || null);
     };
 
     const handleDragOver = (e) => {
@@ -162,7 +190,12 @@ const Modeles = () => {
         }
 
         if (e.dataTransfer.files.length > 0) {
-            handleFileUpload(e.dataTransfer.files[0]);
+            const file = e.dataTransfer.files[0];
+            if (file.type.startsWith('video/')) {
+                handleVideoUpload(file);
+            } else {
+                handleFileUpload(file);
+            }
         }
     };
 
@@ -172,27 +205,43 @@ const Modeles = () => {
             categorie: '',
             prix: '',
             description: '',
-            photo: null
+            photo: null,
+            video: null,
+            photoURL: '',
+            videoURL: ''
         });
         setPhotoPreview(null);
+        setVideoPreview(null);
         setEditingModele(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
+        }
+        if (videoInputRef.current) {
+            videoInputRef.current.value = '';
         }
     };
 
     const openModal = (modele = null) => {
         if (modele) {
             setEditingModele(modele);
+            // Détecte si photoPath ou videoPath sont des URLs externes (http/https)
+            const isPhotoURL = modele.photoPath && (modele.photoPath.startsWith('http://') || modele.photoPath.startsWith('https://'));
+            const isVideoURL = modele.videoPath && (modele.videoPath.startsWith('http://') || modele.videoPath.startsWith('https://'));
             setFormData({
                 nom: modele.nom || '',
                 categorie: modele.categorie || '',
                 prix: modele.prix || '',
                 description: modele.description || '',
-                photo: null
+                photo: null,
+                video: null,
+                photoURL: isPhotoURL ? modele.photoPath : '',
+                videoURL: isVideoURL ? modele.videoPath : ''
             });
             if (modele.photoPath) {
-                setPhotoPreview(`http://localhost:8081/model_photo/${modele.photoPath}`);
+                setPhotoPreview(isPhotoURL ? modele.photoPath : `http://localhost:8081/model_photo/${modele.photoPath}`);
+            }
+            if (modele.videoPath) {
+                setVideoPreview(isVideoURL ? modele.videoPath : `http://localhost:8081/modeles/videos/${modele.videoPath}`);
             }
         } else {
             resetForm();
@@ -239,12 +288,23 @@ const Modeles = () => {
                 modeleData.atelierId = currentAtelierId;
             }
 
+            // inject urls if provided (files take precedence)
+            if (!formData.photo && formData.photoURL) {
+                modeleData.photoPath = formData.photoURL.trim();
+            }
+            if (!formData.video && formData.videoURL) {
+                modeleData.videoPath = formData.videoURL.trim();
+            }
+
             formDataToSend.append('modele', new Blob([JSON.stringify(modeleData)], {
                 type: 'application/json'
             }));
 
             if (formData.photo) {
                 formDataToSend.append('photo', formData.photo);
+            }
+            if (formData.video) {
+                formDataToSend.append('video', formData.video);
             }
 
             if (editingModele) {
@@ -414,14 +474,42 @@ const Modeles = () => {
                             <div className="card modele-card radius-10">
                                 <div className="card-body p-0">
                                     <div className="modele-photo-container">
-                                        <img
-                                            src={modele.photoPath ? `http://localhost:8081/model_photo/${modele.photoPath}` : '/images/default_model.png'}
-                                            className="modele-photo"
-                                            alt={modele.nom || 'Modèle'}
-                                            onError={(e) => {
-                                                e.target.src = '/images/default_model.png';
-                                            }}
-                                        />
+                                        {modele.videoPath ? (
+                                            <video
+                                                src={
+                                                    modele.videoPath.startsWith('http://') || modele.videoPath.startsWith('https://')
+                                                        ? modele.videoPath
+                                                        : `http://localhost:8081/modeles/videos/${modele.videoPath}`
+                                                }
+                                                className="modele-photo"
+                                                controls
+                                                onError={(e) => {
+                                                    // fallback to image if video fails
+                                                    e.target.outerHTML = `<img src='${
+                                                        modele.photoPath
+                                                            ? (modele.photoPath.startsWith('http://') || modele.photoPath.startsWith('https://')
+                                                                ? modele.photoPath
+                                                                : `http://localhost:8081/model_photo/${modele.photoPath}`)
+                                                            : '/images/default_model.png'
+                                                    }' class='modele-photo' />`;
+                                                }}
+                                            />
+                                        ) : (
+                                            <img
+                                                src={
+                                                    modele.photoPath
+                                                        ? (modele.photoPath.startsWith('http://') || modele.photoPath.startsWith('https://')
+                                                            ? modele.photoPath
+                                                            : `http://localhost:8081/model_photo/${modele.photoPath}`)
+                                                        : '/images/default_model.png'
+                                                }
+                                                className="modele-photo"
+                                                alt={modele.nom || 'Modèle'}
+                                                onError={(e) => {
+                                                    e.target.src = '/images/default_model.png';
+                                                }}
+                                            />
+                                        )}
                                         {canEdit() && (
                                             <div className="modele-actions">
                                                 <button
@@ -550,6 +638,101 @@ const Modeles = () => {
                                             </div>
                                         </div>
 
+                                        <div className="mb-3 col-md-12">
+                                            <label className="form-label">Ou URL de l'image</label>
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                value={formData.photoURL}
+                                                onChange={(e) => handlePhotoURLChange(e.target.value)}
+                                                placeholder="https://..."
+                                            />
+                                        </div>
+
+                                        {/* video section start */}
+                                        <div className="col-md-6">
+                                            <div className="mb-3">
+                                                <label className="form-label">Vidéo du modèle</label>
+                                                <div
+                                                    className="upload-container"
+                                                    onClick={() => videoInputRef.current?.click()}
+                                                    style={{
+                                                        border: '2px dashed #dee2e6',
+                                                        borderRadius: '8px',
+                                                        padding: '20px',
+                                                        textAlign: 'center',
+                                                        cursor: 'pointer',
+                                                        backgroundColor: videoPreview ? '#f8f9fa' : '#fff',
+                                                        minHeight: '200px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }}
+                                                >
+                                                    <input
+                                                        type="file"
+                                                        ref={videoInputRef}
+                                                        accept="video/*"
+                                                        style={{ display: 'none' }}
+                                                        onChange={(e) => {
+                                                            if (e.target.files.length > 0) {
+                                                                handleVideoUpload(e.target.files[0]);
+                                                            }
+                                                        }}
+                                                    />
+
+                                                    {videoPreview ? (
+                                                        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                                                            <video
+                                                                src={videoPreview}
+                                                                controls
+                                                                style={{
+                                                                    maxWidth: '100%',
+                                                                    maxHeight: '180px',
+                                                                    objectFit: 'contain'
+                                                                }}
+                                                            />
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                top: '10px',
+                                                                right: '10px'
+                                                            }}>
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-sm btn-light"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        videoInputRef.current?.click();
+                                                                    }}
+                                                                >
+                                                                    <i className="bx bx-reset me-1"></i>Changer
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div>
+                                                            <i className="bx bx-cloud-upload display-4 text-muted mb-3"></i>
+                                                            <p className="fw-semibold mb-1">Cliquez pour choisir une vidéo</p>
+                                                            <p className="text-muted small mb-0">Formats: MP4, WEBM, OGG • Max : 50 MB</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="mb-3 col-md-12">
+                                                <label className="form-label">Ou URL de la vidéo</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    value={formData.videoURL}
+                                                    onChange={(e) => handleVideoURLChange(e.target.value)}
+                                                    placeholder="https://..."
+                                                />
+                                            </div>
+                                        </div>
+                                        {/* video section end */}
+                                    </div> {/* end row with uploads */}
+
+                                    <div className="row">
                                         <div className="col-md-6">
                                             <div className="mb-3">
                                                 <label className="form-label">Nom du modèle (optionnel)</label>
@@ -561,7 +744,8 @@ const Modeles = () => {
                                                     placeholder="Ex: Robe de soirée, Costume homme..."
                                                 />
                                             </div>
-
+                                        </div>
+                                        <div className="col-md-6">
                                             <div className="mb-3">
                                                 <label className="form-label">Catégorie</label>
                                                 <select
@@ -578,7 +762,11 @@ const Modeles = () => {
                                                     <option value="AUTRE">Autre</option>
                                                 </select>
                                             </div>
+                                        </div>
+                                    </div>
 
+                                    <div className="row">
+                                        <div className="col-md-6">
                                             <div className="mb-3">
                                                 <label className="form-label">Prix de convention (FCFA)</label>
                                                 <input
@@ -591,7 +779,8 @@ const Modeles = () => {
                                                     required
                                                 />
                                             </div>
-
+                                        </div>
+                                        <div className="col-md-6">
                                             <div className="mb-3">
                                                 <label className="form-label">Description (optionnel)</label>
                                                 <textarea

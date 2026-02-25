@@ -17,6 +17,7 @@ public class ModeleListDTO {
     private String description;
     private Double prix;
     private String photoPath;
+    private String videoPath;
     private CategorieModele categorie;
     private Boolean estActif;
 
@@ -24,6 +25,13 @@ public class ModeleListDTO {
     public String getPhotoUrl() {
         if (photoPath != null && !photoPath.trim().isEmpty()) {
             return "/api/modeles/photos/" + photoPath;
+        }
+        return null;
+    }
+
+    public String getVideoUrl() {
+        if (videoPath != null && !videoPath.trim().isEmpty()) {
+            return "/api/modeles/videos/" + videoPath;
         }
         return null;
     }

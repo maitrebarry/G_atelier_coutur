@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="en" class="semi-dark">
+  <head>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <head>
+        <!--  meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <!--favicon-->
+       <link rel="icon" href="assets/images/logo_ateliko.png" type="image/png" />
+        <!--plugins-->
+        <link href="assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
+        <link href="assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css" rel="stylesheet" />
+        <link href="assets/plugins/highcharts/css/highcharts.css" rel="stylesheet" />
+        <link href="assets/plugins/vectormap/jquery-jvectormap-2.0.2.css" rel="stylesheet" />
+        <link href="assets/plugins/metismenu/css/metisMenu.min.css" rel="stylesheet" />
+        <!-- loader-->
+        <link href="assets/css/pace.min.css" rel="stylesheet" />
+        <link href="assets/css/mesure.css" rel="stylesheet" />
+        <script src="assets/js/pace.min.js"></script>
+        <!-- Bootstrap CSS -->
+        <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+        <link href="assets/css/app.css" rel="stylesheet">
+        <link href="assets/css/icons.css" rel="stylesheet">
+        <!-- Theme Style CSS -->
+        <link rel="stylesheet" href="assets/css/dark-theme.css" />
+        <link rel="stylesheet" href="assets/css/semi-dark.css" />
+        <link rel="stylesheet" href="assets/css/header-colors.css" />
+        <link href="assets/css/logo_icon.css" rel="stylesheet" />
+        <title>ATELIKO</title>
+        <script src="partials/includes.js"></script>
+    </head>
+    <body>
+        <style>
+               /* ===== CORRECTION GRILLE MODÈLES - 2 PAR LIGNE ===== */
+
+/* Grille des modèles - 2 COLONNES FIXES */
+.models-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* FORCE 2 colonnes */
+    gap: 10px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 8px 5px;
+    margin-bottom: 15px;
+}
+
+/* Cartes de modèle - TAILLE UNIFORME */
+.model-card {
+    border: 2px solid transparent;
+    border-radius: 8px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100px; /* Hauteur fixe */
+    aspect-ratio: 1 / 1.2; /* Ratio cohérent */
+}
+
+.model-card:hover {
+    border-color: #007bff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.model-card.selected {
+    border-color: #007bff;
+    background: linear-gradient(135deg, #e7f3ff, #d4e7ff);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.25);
+}
+
+/* Image - Taille fixe */
+.model-image {
+    width: 100%;
+    height: 60px; /* Hauteur fixe */
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 6px;
+    flex-shrink: 0; /* Empêche le rétrécissement */
+}
+
+/* Nom du modèle */
+.model-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin: 0;
+    text-align: center;
+    line-height: 1.3;
+    color: #495057;
+    display: -webkit-box;
+    /* -webkit-line-clamp: 2; 2 lignes max */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex-grow: 1; /* Prend l'espace disponible */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.6em; /* Hauteur minimale pour 2 lignes */
+}
+
+/* Prix */
+.model-price {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #28a745;
+    margin-top: 4px;
+    flex-shrink: 0; /* Reste en bas */
+}
+
+/* État de chargement - Prend toute la largeur */
+.models-grid .text-center {
+    grid-column: 1 / -1; /* Prend les 2 colonnes */
+    padding: 20px;
+    color: #6c757d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* Messages d'erreur/vide - Prend toute la largeur */
+.models-grid .alert {
+    grid-column: 1 / -1; /* Prend les 2 colonnes */
+    margin: 0;
+    font-size: 0.85rem;
+    padding: 15px;
+    text-align: center;
+}
+
+/* Scrollbar */
+.models-grid::-webkit-scrollbar {
+    width: 5px;
+}
+
+.models-grid::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 3px;
+}
+
+.models-grid::-webkit-scrollbar-thumb {
+    background: #adb5bd;
+    border-radius: 3px;
+}
+
+.models-grid::-webkit-scrollbar-thumb:hover {
+    background: #6c757d;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .models-grid {
+        grid-template-columns: repeat(2, 1fr); /* Garde 2 colonnes */
+        gap: 8px;
+        max-height: 200px;
+    }
+    
+    .model-card {
+        min-height: 90px;
+        padding: 6px;
+    }
+    
+    .model-image {
+        height: 50px;
+    }
+    
+    .model-name {
+        font-size: 0.7rem;
+        min-height: 2.4em;
+    }
+}
+
+@media (max-width: 576px) {
+    .models-grid {
+        grid-template-columns: repeat(2, 1fr); /* TOUJOURS 2 colonnes */
+        gap: 6px;
+        max-height: 180px;
+    }
+    
+    .model-card {
+        min-height: 85px;
+        padding: 5px;
+    }
+    
+    .model-image {
+        height: 45px;
+    }
+    
+    .model-name {
+        font-size: 0.65rem;
+        min-height: 2.2em;
+    }
+}
+
+/* Pour les très petits écrans */
+@media (max-width: 400px) {
+    .models-grid {
+        grid-template-columns: repeat(2, 1fr); /* Maintient 2 colonnes */
+        gap: 5px;
+    }
+    
+    .model-card {
+        min-height: 80px;
+        padding: 4px;
+    }
+    
+    .model-image {
+        height: 40px;
+    }
+    
+    .model-name {
+        font-size: 0.6rem;
+        min-height: 2em;
+    }
+}
+
+/* Correction pour s'assurer que la grille reste à 2 colonnes */
+.models-grid {
+    /* Force 2 colonnes même avec peu d'éléments */
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Assure que chaque carte a la même largeur */
+.model-card {
+    width: 100%;
+    box-sizing: border-box;
+}
+        </style>
+        <!--wrapper-->
+        <div class="wrapper">
+            <!--sidebar wrapper -->
+            <div class="sidebar-wrapper" data-simplebar="true">
+                <div class="sidebar-header">
+                    <div class="branding">
+                        <img src="assets/images/logo_ateliko.png" class="logo-icon" alt="logo icon">
+                        <h6 class="logo-text">ATELIKO</h6>
+                    </div>
+                    <div class="toggle-icon ms-auto">
+                        <i class='bx bx-arrow-to-left'></i>
+                    </div>
+                </div>
+                <!--navigation-->
+              <ul class="metismenu" id="menu">
+				
+			</ul>
+			    <!--end navigation-->
+            </div>
+            <!--end sidebar wrapper -->
+            <!--start header -->
+          <header>
+			<div class="topbar d-flex align-items-center">
+				<nav class="navbar navbar-expand">
+					<div class="mobile-toggle-menu"><i class='bx bx-menu'></i>
+					</div>
+					<div class="top-menu ms-auto">
+						<ul class="navbar-nav align-items-center">
+							<li class="nav-item dropdown dropdown-large">
+								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
+									role="button" data-bs-toggle="dropdown" aria-expanded="false"> <span
+										class="alert-count">7</span>
+									<i class='bx bx-bell'></i>
+								</a>
+								<div class="dropdown-menu dropdown-menu-end">
+									<a href="javascript:;">
+										<div class="msg-header">
+											<p class="msg-header-title">Notifications</p>
+											<p class="msg-header-clear ms-auto">Marks all as read</p>
+										</div>
+									</a>
+									<div class="header-notifications-list">
+
+
+									</div>
+									<a href="javascript:;">
+										<div class="text-center msg-footer">View All Notifications</div>
+									</a>
+								</div>
+							</li>
+							<li class="nav-item dropdown dropdown-large">
+								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
+									role="button" data-bs-toggle="dropdown" aria-expanded="false">
+								</a>
+								<div class="dropdown-menu dropdown-menu-end">
+									<a href="javascript:;">
+
+									</a>
+									<div class="header-message-list">
+									</div>
+
+								</div>
+							</li>
+						</ul>
+					</div>
+					<!-- Bouton / Menu utilisateur -->
+					<div class="user-box dropdown">
+						<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#"
+							role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<!-- CHANGEMENT : src avec image par défaut -->
+							<img src="/assets/images/default-user.jpg" class="user-img" alt="user avatar" id="headerUserImg">
+							<div class="user-info ps-3">
+								<p class="user-name mb-0" id="user-name">Chargement...</p>
+								<p class="designattion mb-0" id="user-role">Connecté</p>
+							</div>
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end">
+							<li>
+								<a class="dropdown-item" href="javascript:;" onclick="openProfileModal()">
+									<i class="bx bx-user"></i><span>Mon Profil</span>
+								</a>
+							</li>
+							<li><div class="dropdown-divider mb-0"></div></li>
+							<li>
+								<a class="dropdown-item" href="#" id="logoutBtn">
+									<i class='bx bx-log-out-circle'></i><span>Déconnexion</span>
+								</a>
+							</li>
+						</ul>
+					</div>
+
+				</nav>
+			</div>
+		 </header>
+            <!--end header -->
+            <!-- ================= MODALE PROFIL UTILISATEUR ================= -->
+		<div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+			<div class="modal-header bg-primary text-white">
+				<h5 class="modal-title" id="profileModalLabel">
+				<i class="bx bx-user-circle me-2"></i>Mon Profil
+				</h5>
+				<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+			</div>
+
+			<div class="modal-body">
+				<div class="row">
+				<!-- ====== SECTION PHOTO ====== -->
+				<div class="col-md-4 text-center border-end">
+					<!-- CHANGEMENT : chemin corrigé -->
+					<img id="profileAvatar" src="/assets/images/default-user.jpg" alt="Photo de profil"
+						class="rounded-circle shadow mb-3" width="150" height="150" style="object-fit:cover;">
+					
+					<input type="file" id="photoUpload" accept="image/*" class="d-none">
+
+					<button class="btn btn-outline-primary btn-sm w-100 mb-2" id="changePhotoBtn">
+						<i class="bx bx-camera me-1"></i>Changer la photo
+					</button>
+
+					<button class="btn btn-outline-danger btn-sm w-100" id="removePhotoBtn">
+						<i class="bx bx-trash me-1"></i>Supprimer
+					</button>
+
+					<div id="photoPreviewContainer" class="mt-3" style="display:none;">
+						<img id="previewImage" src="" class="rounded shadow" width="100" height="100" style="object-fit:cover;">
+						<button class="btn btn-success btn-sm w-100 mt-2" id="savePhotoBtn">
+							<i class="bx bx-check me-1"></i>Enregistrer la photo
+						</button>
+					</div>
+				</div>
+
+				<!-- ====== SECTION MOT DE PASSE ====== -->
+				<div class="col-md-8">
+					<h6 class="mb-3"><i class="bx bx-lock me-2"></i>Changer le mot de passe</h6>
+					<form id="changePasswordForm">
+					<div class="row g-3">
+						<div class="col-12">
+						<label>Mot de passe actuel</label>
+						<input type="password" class="form-control" id="currentPassword" required>
+						</div>
+						<div class="col-12">
+						<label>Nouveau mot de passe</label>
+						<input type="password" class="form-control" id="newPassword" required>
+						</div>
+						<div class="col-12">
+						<label>Confirmer le mot de passe</label>
+						<input type="password" class="form-control" id="confirmPassword" required>
+						</div>
+					</div>
+					</form>
+				</div>
+				</div>
+			</div>
+
+			<div class="modal-footer">
+				<button class="btn btn-secondary" data-bs-dismiss="modal">
+				<i class="bx bx-x me-1"></i>Fermer
+				</button>
+				<button type="submit" form="changePasswordForm" class="btn btn-success">
+				<i class="bx bx-check-shield me-1"></i>Changer mot de passe
+				</button>
+			</div>
+			</div>
+		</div>
+		</div>
+            <!--start page wrapper -->
+            <div class="page-wrapper">
+                <div class="page-content">
+                        <div class="page-header">
+                            <div class="container-fluid">
+                                <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+                                    <div class="breadcrumb-title pe-3">Mesure</div>
+                                    <div class="ps-3">
+                                        <nav aria-label="breadcrumb">
+                                            <ol class="breadcrumb mb-0 p-0">
+                                                <li class="breadcrumb-item"><a href="#"><i class="bx bx-home-alt"></i></a></li>
+                                                <li class="breadcrumb-item active" aria-current="page">Prise de mesure</li>
+                                            </ol>
+                                        </nav>
+                                    </div>
+                                    <div class="ms-auto">        
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="instructions">
+                                <h5><i class="fas fa-info-circle"></i>Instructions</h5>
+                                <p class="mb-0">Remplissez tous les champs marqués d'un astérisque (<span class="-star">*</span>) qui sont obligatoires. Les mesures doivent être en centimètres. Cliquez sur l'image pour ajouter une photo du modèle.</p>
+                            </div>
+                            <div class="card-body"> 
+                                <form id="measurementForm" method="POST" enctype="multipart/form-data">
+                                    <div class="row">
+                                        <!-- Colonne photo -->
+                                        <div class="col-md-4">
+                                            <div class="d-flex flex-column align-items-center text-center">
+                                                <div class="image-preview-container">
+                                                    <label for="photoInput">
+                                                        <img src="assets/images/model1.png" 
+                                                            id="avatar" 
+                                                            class="img-fluid rounded rectangle-image" 
+                                                            alt="Modèle par défaut" />
+                                                        <div class="overlay-text">Cliquer pour ajouter une photo</div>
+                                                    </label>
+                                                    <!-- <input type="file" id="photoInput" accept="image/*" style="display: none" /> -->
+                                                    <input type="file" id="photoInput" name="photo" accept="image/*" style="display: none" />
+                                                </div>
+                                                  <!-- NOUVEAU : Séparateur -->
+                                                <div class="divider mb-3">
+                                                    <span class="divider-text">OU</span>
+                                                </div>
+
+                                                <!-- NOUVEAU : Section Modèles Existants (collapsible) -->
+                                                <div class="existing-models-section">
+                                                    <button class="btn btn-light w-100 d-flex justify-content-between align-items-center mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#existingModelsCollapse" aria-expanded="false" aria-controls="existingModelsCollapse">
+                                                        <h6 class="mb-0">Choisir un modèle existant</h6>
+                                                        <i class="bx bx-chevron-down" id="existingModelsToggleIcon"></i>
+                                                    </button>
+
+                                                    <div class="collapse" id="existingModelsCollapse">
+                                                        <!-- Filtre par catégorie -->
+                                                        <div class="mb-3">
+                                                            <label class="form-label small">Catégorie:</label>
+                                                            <select class="form-select form-select-sm" id="categorieModele">
+                                                                <option value="all">Toutes les catégories</option>
+                                                                <option value="ROBE">Robe</option>
+                                                                <option value="JUPE">Jupe</option>
+                                                                <option value="HOMME">Vêtement Homme</option>
+                                                                <option value="ENFANT">Vêtement Enfant</option>
+                                                                <option value="AUTRE">Autre</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <!-- Liste des modèles -->
+                                                        <div class="models-grid" id="modelsGrid">
+                                                            <div class="text-center py-3">
+                                                                <div class="spinner-border spinner-border-sm" role="status">
+                                                                    <span class="visually-hidden">Chargement...</span>
+                                                                </div>
+                                                                <span class="ms-2">Chargement des modèles...</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- ✅ CORRECTION : Champs cachés avec les BONS noms -->
+                                                        <input type="hidden" name="selectedModelId" id="selectedModelId" value="">
+                                                        <input type="hidden" name="modeleNom" id="modeleNom" value="">
+                                                    </div>
+                                                </div>
+                                                <div class="mt-3">
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input" type="radio" name="genderPreview" id="previewFemale" value="Femme" checked>
+                                                        <label class="form-check-label" for="previewFemale">Femme</label>
+                                                    </div>
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input" type="radio" name="genderPreview" id="previewMale" value="Homme">
+                                                        <label class="form-check-label" for="previewMale">Homme</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Colonne formulaire -->
+                                        <div class="col-md-8">
+                                            <!-- Infos Générales -->
+                                            <div class="form-section">
+                                                <h5><i class="fas fa-user"></i> Informations Générales</h5>
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Nom <span class="-star">*</span></label>
+                                                        <input type="text" class="form-control -field" name="nom" id="nom_cl" />
+                                                        <div class="invalid-feedback">Veuillez saisir le nom du client.</div>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Prénom <span class="-star">*</span></label>
+                                                        <input type="text" class="form-control -field" name="prenom" id="prenom_cl" />
+                                                        <div class="invalid-feedback">Veuillez saisir le prénom du client.</div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Contact <span class="-star">*</span></label>
+                                                        <input type="tel" class="form-control -field" name="contact" id="contact_cl"  placeholder="Ex: 76XXXXXXX" />
+                                                        <div class="invalid-feedback">Veuillez saisir un numéro de contact valide.</div>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Adresse ou Localite</label>
+                                                        <input type="text" class="form-control" name="adresse" id="adresse_cl" />
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="row">
+                                                     <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Email <span class="-star">*</span></label>
+                                                        <input type="email" class="form-control" name="email" id="email_cl" />
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Sexe <span class="-star">*</span></label>
+                                                        <select class="form-select -field" name="sexe" id="sexe" >
+                                                            <option value="">-- Sélectionner --</option>
+                                                            <option value="Femme">Femme</option>
+                                                            <option value="Homme">Homme</option>
+                                                        </select>
+                                                        <div class="invalid-feedback">Veuillez sélectionner le sexe du client.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Options de vêtement pour femme -->
+                                            <div class="form-section" id="femmeOptions" style="display:none;">
+                                                <h5><i class="fas fa-tshirt"></i> Type de vêtement <span class="-star">*</span></h5>
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <div class="option-card" data-option="robe">
+                                                            <h6><i class="fas fa-vest"></i> Option Robe</h6>
+                                                            <p class="small">Sélectionnez cette option pour les mesures de robe</p>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="femme_type" id="femme_type_robe" value="robe" >
+                                                                <label class="form-check-label" for="femme_type_robe">
+                                                                    Choisir cette option
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <div class="option-card" data-option="jupe">
+                                                            <h6><i class="fas fa-skating"></i> Option Jupe</h6>
+                                                            <p class="small">Sélectionnez cette option pour les mesures de jupe</p>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="femme_type" id="femme_type_jupe" value="jupe" >
+                                                                <label class="form-check-label" for="femme_type_jupe">
+                                                                    Choisir cette option
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Mesures Femme - Option Robe -->
+                                            <div class="form-section" id="mesuresRobe" style="display:none;">
+                                                <h5><i class="fas fa-ruler-combined"></i> Mesures pour Robe</h5>
+                                                
+                                                <div class="measurement-group">
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Épaule <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="robe_epaule" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Manche <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="robe_manche" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Poitrine <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="robe_poitrine" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Taille <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="robe_taille" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Longueur de robe <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="robe_longueur" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Fesse <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="robe_fesse" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Tour de manche</label>
+                                                            <input type="text" class="form-control" name="robe_tour_manche" />
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Longueur de poitrine</label>
+                                                            <input type="text" class="form-control" name="robe_longueur_poitrine" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Longueur de taille</label>
+                                                            <input type="text" class="form-control" name="robe_longueur_taille" />
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Longueur de fesse</label>
+                                                            <input type="text" class="form-control" name="robe_longueur_fesse" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Mesures Femme - Option Jupe -->
+                                            <div class="form-section" id="mesuresJupe" style="display:none;">
+                                                <h5><i class="fas fa-ruler-combined"></i> Mesures pour Jupe</h5>
+                                                
+                                                <div class="measurement-group">
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Épaule <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="jupe_epaule" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Manche <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="jupe_manche" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Poitrine <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="jupe_poitrine" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Taille <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="jupe_taille" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Longueur <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="jupe_longueur" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Longueur de jupe <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="jupe_longueur_jupe" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Ceinture <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="jupe_ceinture" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Fesse <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="jupe_fesse" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Tour de manche</label>
+                                                            <input type="text" class="form-control" name="jupe_tour_manche" />
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Longueur de poitrine</label>
+                                                            <input type="text" class="form-control" name="jupe_longueur_poitrine" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Longueur de taille</label>
+                                                            <input type="text" class="form-control" name="jupe_longueur_taille" />
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Longueur de fesse</label>
+                                                            <input type="text" class="form-control" name="jupe_longueur_fesse" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Mesures Homme -->
+                                            <div class="form-section" id="mesuresHomme" style="display:none;">
+                                                <h5><i class="fas fa-ruler-combined"></i> Mesures pour Homme</h5>
+                                                
+                                                <div class="measurement-group">
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Épaule <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="homme_epaule" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Manche <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="homme_manche" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Longueur <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="homme_longueur" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Longueur pantalon <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="homme_longueur_pantalon" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Ceinture <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="homme_ceinture" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Cuisse <span class="-star">*</span></label>
+                                                            <input type="text" class="form-control -field" name="homme_cuisse" />
+                                                            <div class="invalid-feedback">Ce champ est obligatoire.</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Poitrine</label>
+                                                            <input type="text" class="form-control" name="homme_poitrine" />
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Coude</label>
+                                                            <input type="text" class="form-control" name="homme_corps" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">Tour de manche</label>
+                                                            <input type="text" class="form-control" name="homme_tour_manche" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+
+                                            <!-- Bouton -->
+                                            <div class="row mt-4">
+                                                <div class="col-md-12 text-end">
+                                                    <button type="submit" class="btn btn-primary px-4">                                                  
+                                                        <i class="fas fa-save me-2"></i>Enregistrer
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Modal pour le prix -->
+                                    <div class="modal fade" id="priceModal" tabindex="-1" aria-labelledby="priceModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="priceModalLabel">Prix du modèle</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label for="modelPrice" class="form-label">Prix du modèle (FCFA) <span class="text-danger">*</span></label>
+                                                        <input type="number" class="form-control" id="modelPrice" name="modelPrice" placeholder="Entrez le prix en FCFA" min="0" step="100">
+                                                        <div class="invalid-feedback">Veuillez saisir un prix valide.</div>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="modelDescription" class="form-label">Description / Commentaire</label>
+                                                        <textarea class="form-control" id="modelDescription" name="modelDescription" rows="2" placeholder="Optionnel"></textarea>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="habitPhotoModalInput" class="form-label">Photo de l'habit à coudre <span class="text-danger">*</span></label>
+                                                        <input type="file" class="form-control" id="habitPhotoModalInput" name="habitPhoto" accept="image/*" capture="environment" required />
+                                                        <div class="invalid-feedback">Veuillez fournir une photo de l'habit.</div>
+                                                        <div id="habitPhotoModalPreviewContainer" class="mt-2" style="display:none; text-align:center;">
+                                                            <img id="habitPhotoModalPreview" src="" alt="Prévisualisation" class="img-fluid" style="max-height:150px;" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                    <button type="button" class="btn btn-primary" id="confirmSave">Confirmer l'enregistrement</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <!-- NOUVEAU : Modal pour visualiser un modèle -->
+                      
+                            <div class="modal fade" id="modelPreviewModal" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="modelPreviewModalLabel">Détails du modèle</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body text-center">
+                                            <!-- ✅ Vérifiez que ces éléments existent -->
+                                            <img id="modelPreviewImage" src="" class="img-fluid rounded mb-3" alt="Modèle" style="max-height: 400px;">
+                                            <h6 id="modelPreviewName"></h6>
+                                            <p id="modelPreviewDescription" class="text-muted small"></p>
+                                            <div class="model-details">
+                                                <span class="badge bg-primary" id="modelPreviewCategory"></span>
+                                                <span class="badge bg-secondary ms-1" id="modelPreviewPrice"></span>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                            <button type="button" class="btn btn-primary" id="selectModelBtn">Sélectionner ce modèle</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                </div>
+            </div>
+            <!--end page wrapper -->
+            <!--start overlay-->
+            <div class="overlay toggle-icon"></div>
+            <!--end overlay-->
+            <!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
+            <!--End Back To Top Button-->
+            <footer class="page-footer">
+                <p class="mb-0">Copyright © 2021. All right reserved.</p>
+            </footer>
+        </div>
+        <!--end wrapper-->
+        <!--start switcher-->
+        <div class="switcher-wrapper">
+            <div class="switcher-btn"> <i class='bx bx-cog bx-spin'></i>
+            </div>
+            <div class="switcher-body">
+                <div class="d-flex align-items-center">
+                    <h5 class="mb-0 text-uppercase">Theme Customizer</h5>
+                    <button type="button" class="btn-close ms-auto close-switcher" aria-label="Close"></button>
+                </div>
+                <hr/>
+                <h6 class="mb-0">Theme Styles</h6>
+                <hr/>
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="flexRadioDefault" id="lightmode" checked>
+                        <label class="form-check-label" for="lightmode">Light</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="flexRadioDefault" id="darkmode">
+                        <label class="form-check-label" for="darkmode">Dark</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="flexRadioDefault" id="semidark">
+                        <label class="form-check-label" for="semidark">Semi Dark</label>
+                    </div>
+                </div>
+                <hr/>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" id="minimaltheme" name="flexRadioDefault">
+                    <label class="form-check-label" for="minimaltheme">Minimal Theme</label>
+                </div>
+                <hr/>
+                <h6 class="mb-0">Header Colors</h6>
+                <hr/>
+                <div class="header-colors-indigators">
+                    <div class="row row-cols-auto g-3">
+                        <div class="col">
+                            <div class="indigator headercolor1" id="headercolor1"></div>
+                        </div>
+                        <div class="col">
+                            <div class="indigator headercolor2" id="headercolor2"></div>
+                        </div>
+                        <div class="col">
+                            <div class="indigator headercolor3" id="headercolor3"></div>
+                        </div>
+                        <div class="col">
+                            <div class="indigator headercolor4" id="headercolor4"></div>
+                        </div>
+                        <div class="col">
+                            <div class="indigator headercolor5" id="headercolor5"></div>
+                        </div>
+                        <div class="col">
+                            <div class="indigator headercolor6" id="headercolor6"></div>
+                        </div>
+                        <div class="col">
+                            <div class="indigator headercolor7" id="headercolor7"></div>
+                        </div>
+                        <div class="col">
+                            <div class="indigator headercolor8" id="headercolor8"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end switcher-->
+        <!-- Bootstrap JS -->
+        <script src="assets/js/bootstrap.bundle.min.js"></script>
+	<!--plugins-->
+	<script src="assets/js/jquery.min.js"></script>
+	<script src="assets/plugins/simplebar/js/simplebar.min.js"></script>
+	<script src="assets/plugins/metismenu/js/metisMenu.min.js"></script>
+	<script src="assets/plugins/perfect-scrollbar/js/perfect-scrollbar.js"></script>
+	<script src="assets/plugins/vectormap/jquery-jvectormap-2.0.2.min.js"></script>
+	<script src="assets/plugins/vectormap/jquery-jvectormap-world-mill-en.js"></script>
+	<script src="assets/plugins/highcharts/js/highcharts.js"></script>
+	<script src="assets/plugins/highcharts/js/exporting.js"></script>
+	<script src="assets/plugins/highcharts/js/variable-pie.js"></script>
+	<script src="assets/plugins/highcharts/js/export-data.js"></script>
+	<script src="assets/plugins/highcharts/js/accessibility.js"></script>
+	<script src="assets/plugins/apexcharts-bundle/js/apexcharts.min.js"></script>
+	<script src="assets/js/index.js"></script>
+	<!--app JS-->
+	<script src="assets/js/app.js"></script>
+	<script>
+		new PerfectScrollbar('.customers-list');
+		new PerfectScrollbar('.store-metrics');
+		new PerfectScrollbar('.product-list');
+	</script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			const sidebar = document.querySelector('.sidebar-wrapper');
+			if (sidebar) {
+				new PerfectScrollbar(sidebar);
+			} else {
+				console.warn("⚠️ Aucun élément .sidebar-wrapper trouvé pour PerfectScrollbar");
+			}
+		});
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+   <script src="assets/js/common.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/sidebar.js"></script>
+    <script src="assets/js/profil.js"></script>
+    <script src="assets/js/home_permission.js"></script>
+    <script src="assets/js/notifications.js"></script>
+    <script src="assets/js/mesures.js"></script>
+    <script>
+        // Toggle the chevron icon when the collapse shows/hides
+        document.addEventListener('DOMContentLoaded', function () {
+            var collapseEl = document.getElementById('existingModelsCollapse');
+            var icon = document.getElementById('existingModelsToggleIcon');
+            if (!collapseEl || !icon) return;
+
+            collapseEl.addEventListener('show.bs.collapse', function () {
+                icon.classList.remove('bx-chevron-down');
+                icon.classList.add('bx-chevron-up');
+            });
+            collapseEl.addEventListener('hide.bs.collapse', function () {
+                icon.classList.remove('bx-chevron-up');
+                icon.classList.add('bx-chevron-down');
+            });
+        });
+    </script>
+    <script>
+    // ✅ CORRECTION : Vérifier que Common existe AVANT d'appeler checkPageAccess
+    document.addEventListener('DOMContentLoaded', function() {
+        // Attendre que Common soit chargé
+        const checkCommon = () => {
+            if (typeof Common !== 'undefined' && Common.checkPageAccess) {
+                Common.checkPageAccess();
+            } else {
+                setTimeout(checkCommon, 100);
+            }
+        };
+        checkCommon();
+    });
+</script>
+<script>
+	// Correction d'urgence - À mettre avant les autres scripts
+	document.addEventListener('DOMContentLoaded', function() {
+// Empêcher les erreurs de graphiques
+if (typeof ApexCharts !== 'undefined') {
+	const originalRender = ApexCharts.prototype.render;
+	ApexCharts.prototype.render = function() {
+		if (!this.el || !document.body.contains(this.el)) {
+			console.warn('ApexCharts: Élément non trouvé, rendu annulé');
+			return Promise.resolve();
+		}
+		return originalRender.call(this);
+	};
+}
+
+// Empêcher les erreurs Highcharts
+if (typeof Highcharts !== 'undefined') {
+	const originalChart = Highcharts.chart;
+	Highcharts.chart = function(container, options) {
+		const element = typeof container === 'string' ? 
+			document.getElementById(container) : container;
+		if (!element) {
+			console.warn('Highcharts: Conteneur non trouvé:', container);
+			return null;
+		}
+		return originalChart.call(this, container, options);
+	};
+}
+});
+</script>
+    </body>
+</html>

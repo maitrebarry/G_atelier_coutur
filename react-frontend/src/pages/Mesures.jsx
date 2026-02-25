@@ -70,6 +70,12 @@ const Mesures = () => {
   const [showPriceModal, setShowPriceModal] = useState(false);
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
+  const [habitPhotoFile, setHabitPhotoFile] = useState(null);
+  const [habitPreview, setHabitPreview] = useState(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [showModelPreviewModal, setShowModelPreviewModal] = useState(false);
   const [previewModelData, setPreviewModelData] = useState(null);
 
@@ -110,6 +116,12 @@ const Mesures = () => {
     if (!photoPath) return 'assets/images/default-model.png';
     if (photoPath.startsWith('http')) return photoPath;
     return `http://localhost:8081/model_photo/${photoPath}`;
+  };
+
+  const getVideoUrl = (videoPath) => {
+    if (!videoPath) return null;
+    if (videoPath.startsWith('http')) return videoPath;
+    return `http://localhost:8081/modeles/videos/${videoPath}`;
   };
 
   const fetchModels = async () => {
@@ -176,6 +188,29 @@ const Mesures = () => {
     }
   };
 
+
+  const captureFromCamera = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(blob => {
+      if (blob) {
+        const file = new File([blob], 'habit.jpg', { type: 'image/jpeg' });
+        setHabitPhotoFile(file);
+        setHabitPreview(URL.createObjectURL(blob));
+      }
+    }, 'image/jpeg');
+    // stop stream
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(t => t.stop());
+      setCameraStream(null);
+    }
+  };
+
   const handleModelClick = (model) => {
     setPreviewModelData(model);
     setShowModelPreviewModal(true);
@@ -235,7 +270,58 @@ const Mesures = () => {
       return;
     }
 
+    // clear previous modal fields
+    setPrice('');
+    setDescription('');
+    setHabitPhotoFile(null);
+    setHabitPreview(null);
+
+
     setShowPriceModal(true);
+  };
+
+  const openCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      setCameraStream(stream);
+      setIsCameraOpen(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+    } catch (err) {
+      console.error('Camera access denied or not available', err);
+      Swal.fire('Erreur', 'Impossible d\'accéder à la caméra. Assurez-vous d\'avoir autorisé l\'accès.', 'error');
+    }
+  };
+
+  const closeCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(t => t.stop());
+      setCameraStream(null);
+    }
+    if (videoRef.current) {
+      try { videoRef.current.pause(); videoRef.current.srcObject = null; } catch(e) {}
+    }
+    setIsCameraOpen(false);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      const file = new File([blob], `habit-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
+      setHabitPhotoFile(file);
+      setHabitPreview(URL.createObjectURL(file));
+      closeCamera();
+    }, 'image/jpeg', 0.9);
   };
 
   const handleFinalSubmit = async () => {
@@ -248,7 +334,20 @@ const Mesures = () => {
       return;
     }
 
+    if (!habitPhotoFile) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Photo requise',
+        text: 'Veuillez prendre/enregistrer une photo de l\'habit à coudre.',
+      });
+      return;
+    }
+
     setShowPriceModal(false);
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(t => t.stop());
+      setCameraStream(null);
+    }
     setLoading(true);
 
     try {
@@ -267,6 +366,9 @@ const Mesures = () => {
       
       if (photoFile) {
         data.append('photo', photoFile);
+      }
+      if (habitPhotoFile) {
+        data.append('habitPhoto', habitPhotoFile);
       }
 
       await api.post('/clients/ajouter', data, {
@@ -292,6 +394,8 @@ const Mesures = () => {
         selectedModelId: '', modeleNom: '', genderPreview: 'Femme'
       });
       setDescription('');
+      setHabitPhotoFile(null);
+      setHabitPreview(null);
       setPhotoFile(null);
       setPrice('');
       setSelectedModel(null);
@@ -660,6 +764,38 @@ const Mesures = () => {
                 <button type="button" className="btn-close" onClick={() => setShowPriceModal(false)}></button>
               </div>
               <div className="modal-body">
+                {/* button to open camera */}
+                <div className="mb-3 text-center">
+                  {!isCameraOpen && (
+                    <button type="button" className="btn btn-primary" onClick={openCamera}>
+                      Ouvrir la caméra
+                    </button>
+                  )}
+                  {isCameraOpen && (
+                    <button type="button" className="btn btn-danger" onClick={closeCamera}>
+                      Fermer la caméra
+                    </button>
+                  )}
+                </div>
+                {/* camera preview and capture */}
+                {isCameraOpen && (
+                  <div className="mb-3 text-center">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      style={{ width: '100%', maxHeight: '300px' }}
+                    />
+                    <canvas ref={canvasRef} style={{ display: 'none' }} />
+                    <button type="button" className="btn btn-success mt-2" onClick={capturePhoto}>
+                      Prendre la photo
+                    </button>
+                  </div>
+                )}
+                {!isCameraOpen && !cameraStream && (
+                  <div className="mb-3 text-center text-muted">Caméra non ouverte</div>
+                )}
+
                 <div className="mb-3">
                   <label className="form-label">Prix du modèle (FCFA) <span className="text-danger">*</span></label>
                   <input 
@@ -701,13 +837,31 @@ const Mesures = () => {
                 <button type="button" className="btn-close" onClick={() => setShowModelPreviewModal(false)}></button>
               </div>
               <div className="modal-body text-center">
-                <img 
-                  src={getImageUrl(previewModelData.photoPath)}
-                  className="img-fluid rounded mb-3" 
-                  alt="Modèle" 
-                  style={{ maxHeight: '400px' }}
-                  onError={(e) => { e.target.src = 'assets/images/default-model.png'; }}
-                />
+                {/* affiche la vidéo si le modèle en possède une, sinon la photo */}
+                {previewModelData.videoPath ? (
+                  <video
+                    src={getVideoUrl(previewModelData.videoPath)}
+                    className="img-fluid rounded mb-3"
+                    controls
+                    style={{ maxHeight: '400px' }}
+                    onError={(e) => {
+                      // en cas d'erreur vidéo, retomber sur l'image
+                      const img = document.createElement('img');
+                      img.src = getImageUrl(previewModelData.photoPath);
+                      img.className = 'img-fluid rounded mb-3';
+                      img.style.maxHeight = '400px';
+                      e.target.replaceWith(img);
+                    }}
+                  />
+                ) : (
+                  <img 
+                    src={getImageUrl(previewModelData.photoPath)}
+                    className="img-fluid rounded mb-3" 
+                    alt="Modèle" 
+                    style={{ maxHeight: '400px' }}
+                    onError={(e) => { e.target.src = 'assets/images/default-model.png'; }}
+                  />
+                )}
                 <h6>{previewModelData.nom}</h6>
                 <p className="text-muted small">{previewModelData.description || 'Modèle de l\'atelier'}</p>
                 <div className="model-details">

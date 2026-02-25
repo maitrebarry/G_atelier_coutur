@@ -85,6 +85,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const sexe = document.getElementById("sexe");
   const mesuresFemme = document.getElementById("mesuresFemme");
   const mesuresHomme = document.getElementById("mesuresHomme");
+  const habitPhotoInput = document.getElementById("habitPhotoInput");
   const form = document.getElementById("measurementForm");
   const defaultImage = "assets/images/model1.png";
 
@@ -107,6 +108,26 @@ document.addEventListener("DOMContentLoaded", function () {
     mesuresFemme.style.display = val === "Femme" ? "block" : "none";
     mesuresHomme.style.display = val === "Homme" ? "block" : "none";
   });
+
+  // preview habit photo
+  if (habitPhotoInput) {
+    habitPhotoInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      const container = document.getElementById("habitPhotoPreviewContainer");
+      const img = document.getElementById("habitPhotoPreview");
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          img.src = event.target.result;
+          container.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+      } else {
+        container.style.display = "none";
+        img.src = "";
+      }
+    });
+  }
 
  form.addEventListener("submit", async function (e) {
    e.preventDefault();
@@ -145,6 +166,17 @@ document.addEventListener("DOMContentLoaded", function () {
      formData.append("photo", photo);
    } else {
      alert("Veuillez ajouter une photo !");
+     return;
+   }
+
+   // habit photo obligatoire
+   const habitPhoto = habitPhotoInput.files[0];
+   if (habitPhoto) {
+     formData.append("habitPhoto", habitPhoto);
+   } else {
+     alert("Veuillez ajouter une photo de l'habit.");
+     habitPhotoInput.classList.add("is-invalid");
+     habitPhotoInput.focus();
      return;
    }
 

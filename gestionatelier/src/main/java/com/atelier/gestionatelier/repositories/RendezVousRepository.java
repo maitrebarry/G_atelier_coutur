@@ -25,8 +25,13 @@ public interface RendezVousRepository extends JpaRepository<RendezVous, UUID> {
     List<RendezVous> findByAtelierIdAndStatutOrderByDateRDVAsc(UUID atelierId, String statut);
 
     // Rendez-vous aujourd'hui pour un atelier
-    @Query("SELECT r FROM RendezVous r WHERE r.atelier.id = :atelierId AND DATE(r.dateRDV) = CURRENT_DATE ORDER BY r.dateRDV")
-    List<RendezVous> findRendezVousAujourdhui(@Param("atelierId") UUID atelierId);
+    // implementation uses date range to avoid JPQL type mismatch errors
+    default List<RendezVous> findRendezVousAujourdhui(UUID atelierId) {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDateTime start = today.atStartOfDay();
+        java.time.LocalDateTime end = start.plusDays(1);
+        return findByAtelierIdAndDateRDVBetween(atelierId, start, end);
+    }
 
     // Rendez-vous dans une période
     List<RendezVous> findByAtelierIdAndDateRDVBetween(UUID atelierId, LocalDateTime start, LocalDateTime end);

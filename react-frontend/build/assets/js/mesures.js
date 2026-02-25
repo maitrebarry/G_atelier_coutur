@@ -480,6 +480,8 @@ document.addEventListener("DOMContentLoaded", async function () {
   // Éléments du modal de prix
   const priceModal = new bootstrap.Modal(document.getElementById('priceModal'));
   const modelPriceInput = document.getElementById('modelPrice');
+  const modelDescriptionInput = document.getElementById('modelDescription');
+  const habitPhotoModalInput = document.getElementById('habitPhotoModalInput');
   const confirmSaveBtn = document.getElementById('confirmSave');
 
   // Gestion de l'avatar
@@ -496,6 +498,26 @@ document.addEventListener("DOMContentLoaded", async function () {
       reader.readAsDataURL(file);
     }
   });
+
+  // modal habit photo preview
+  if (habitPhotoModalInput) {
+    habitPhotoModalInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      const container = document.getElementById('habitPhotoModalPreviewContainer');
+      const img = document.getElementById('habitPhotoModalPreview');
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          img.src = evt.target.result;
+          container.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        container.style.display = 'none';
+        img.src = '';
+      }
+    });
+  }
 
   // Gestion du changement de sexe
   sexe.addEventListener("change", () => {
@@ -583,6 +605,15 @@ document.addEventListener("DOMContentLoaded", async function () {
       return false;
     }
     modelPriceInput.classList.remove('is-invalid');
+
+    // habit photo required
+    if (!habitPhotoModalInput || habitPhotoModalInput.files.length === 0) {
+      habitPhotoModalInput.classList.add('is-invalid');
+      return false;
+    } else {
+      habitPhotoModalInput.classList.remove('is-invalid');
+    }
+
     return true;
   }
 
@@ -590,6 +621,15 @@ document.addEventListener("DOMContentLoaded", async function () {
   function resetModal() {
     modelPriceInput.value = '';
     modelPriceInput.classList.remove('is-invalid');
+    if (modelDescriptionInput) modelDescriptionInput.value = '';
+    if (habitPhotoModalInput) {
+      habitPhotoModalInput.value = '';
+      habitPhotoModalInput.classList.remove('is-invalid');
+      const cont = document.getElementById('habitPhotoModalPreviewContainer');
+      if (cont) cont.style.display = 'none';
+      const img = document.getElementById('habitPhotoModalPreview');
+      if (img) img.src = '';
+    }
   }
 
   // Soumission du formulaire
@@ -657,6 +697,15 @@ document.addEventListener("DOMContentLoaded", async function () {
     // Ajouter les informations du modèle sélectionné
     const selectedModelId = document.getElementById('selectedModelId').value;
     const modeleNom = document.getElementById('modeleNom').value;
+
+    // prix + description + habit photo venus du modal
+    formData.append('modelPrice', modelPriceInput.value);
+    if (modelDescriptionInput && modelDescriptionInput.value) {
+      formData.append('modelDescription', modelDescriptionInput.value);
+    }
+    if (habitPhotoModalInput && habitPhotoModalInput.files[0]) {
+      formData.append('habitPhoto', habitPhotoModalInput.files[0]);
+    }
 
     if (selectedModelId) {
       formData.append("selectedModelId", selectedModelId);

@@ -73,6 +73,7 @@ public class ClientController {
             System.out.println("GenderPreview: " + clientDTO.getGenderPreview());
             System.out.println("Femme_type: " + clientDTO.getFemme_type());
             System.out.println("Photo: " + (clientDTO.getPhoto() != null ? clientDTO.getPhoto().getOriginalFilename() : "null"));
+            System.out.println("Habit photo: " + (clientDTO.getHabitPhoto() != null ? clientDTO.getHabitPhoto().getOriginalFilename() : "null"));
             System.out.println("Homme_tour_manche: " + clientDTO.getHomme_tour_manche());
             // ✅ AJOUT : LOGGING POUR MODÈLE
             System.out.println("=== INFORMATIONS MODÈLE ===");
@@ -442,6 +443,10 @@ public class ClientController {
         // Validation contact : exactement 8 chiffres
         if (dto.getContact() == null || !dto.getContact().matches("\\d{8}"))
             return "Le contact doit contenir exactement 8 chiffres";
+
+        // Validation habit photo obligatoire
+        if (dto.getHabitPhoto() == null || dto.getHabitPhoto().isEmpty())
+            return "La photo de l'habit est obligatoire";
 
         // Validation mesures numériques facultatives
         String[] mesures = {

@@ -33,10 +33,11 @@ public class ModeleService {
     private final FileStorageService fileStorageService;
 
     private static final long MAX_PHOTO_SIZE = 5 * 1024 * 1024;
+    private static final long MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 
     // ==================== MÉTHODES AVEC PERMISSIONS ====================
 
-    public ModeleDTO creerModeleWithPermissions(CreateModeleDTO dto, MultipartFile photoFile, String emailCurrentUser) throws Exception {
+    public ModeleDTO creerModeleWithPermissions(CreateModeleDTO dto, MultipartFile photoFile, MultipartFile videoFile, String emailCurrentUser) throws Exception {
         Utilisateur currentUser = utilisateurRepository.findByEmail(emailCurrentUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
@@ -45,7 +46,7 @@ public class ModeleService {
             throw new Exception("Permission refusée pour créer un modèle");
         }
 
-        return creerModele(dto, photoFile);
+        return creerModele(dto, photoFile, videoFile);
     }
 
     public List<ModeleListDTO> getModelesByAtelierWithPermissions(UUID atelierId, String emailCurrentUser) throws Exception {
@@ -72,7 +73,7 @@ public class ModeleService {
         return getModeleById(id, atelierId);
     }
 
-    public ModeleDTO updateModeleWithPermissions(UUID id, UUID atelierId, UpdateModeleDTO dto, MultipartFile nouvellePhoto, String emailCurrentUser) throws Exception {
+    public ModeleDTO updateModeleWithPermissions(UUID id, UUID atelierId, UpdateModeleDTO dto, MultipartFile nouvellePhoto, MultipartFile nouvelleVideo, String emailCurrentUser) throws Exception {
         Utilisateur currentUser = utilisateurRepository.findByEmail(emailCurrentUser)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
@@ -81,7 +82,7 @@ public class ModeleService {
             throw new Exception("Permission refusée pour modifier ce modèle");
         }
 
-        return updateModele(id, atelierId, dto, nouvellePhoto);
+        return updateModele(id, atelierId, dto, nouvellePhoto, nouvelleVideo);
     }
 
     public void deleteModeleWithPermissions(UUID id, UUID atelierId, String emailCurrentUser) throws Exception {
@@ -216,7 +217,7 @@ public class ModeleService {
 //    }
 
     @Transactional
-    public ModeleDTO creerModele(CreateModeleDTO dto, MultipartFile photoFile) throws Exception {
+    public ModeleDTO creerModele(CreateModeleDTO dto, MultipartFile photoFile, MultipartFile videoFile) throws Exception {
         System.out.println("=== DÉBUT CRÉATION MODÈLE ===");
         System.out.println("📝 Données reçues: " + dto.toString());
 
@@ -231,8 +232,12 @@ public class ModeleService {
         // }
         System.out.println("✅ Vérification doublon désactivée");
 
-        // Gérer l'upload de la photo
-        String photoPath = null;
+        // Gérer l'upload de la photo et récupérer les URLs éventuellement fournies dans le DTO
+        // on commence par prendre les valeurs (URL ou chemin) déjà présentes dans le DTO
+        String photoPath = dto.getPhotoPath();
+        String videoPath = dto.getVideoPath();
+
+        // si un fichier est uploadé, il prend la priorité et remplace la valeur précédente
         if (photoFile != null && !photoFile.isEmpty()) {
             try {
                 // Valider que c'est une image
@@ -250,10 +255,27 @@ public class ModeleService {
                 throw new IllegalArgumentException("Erreur lors de l'upload de la photo: " + e.getMessage());
             }
         }
+        if (videoFile != null && !videoFile.isEmpty()) {
+            try {
+                // Valider que c'est une vidéo
+                if (!fileStorageService.isVideoFile(videoFile)) {
+                    throw new IllegalArgumentException("Le fichier doit être une vidéo");
+                }
+                fileStorageService.validateFileSize(videoFile, MAX_VIDEO_SIZE);
+                videoPath = fileStorageService.storeFile(videoFile, "model_video");
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Erreur lors de l'upload de la vidéo: " + e.getMessage());
+            }
+        }
 
-        // Créer le modèle
+        // Créer le modèle en conservant éventuellement les URLs fournies
         Modele modele = modeleMapper.toEntity(dto);
-        modele.setPhotoPath(photoPath);
+        if (photoPath != null) {
+            modele.setPhotoPath(photoPath);
+        }
+        if (videoPath != null) {
+            modele.setVideoPath(videoPath);
+        }
 
         Modele savedModele = modeleRepository.save(modele);
 
@@ -347,7 +369,7 @@ public class ModeleService {
 //        return modeleMapper.toDTO(updatedModele);
 //    }
 @Transactional
-public ModeleDTO updateModele(UUID id, UUID atelierId, UpdateModeleDTO dto, MultipartFile nouvellePhoto) throws Exception {
+public ModeleDTO updateModele(UUID id, UUID atelierId, UpdateModeleDTO dto, MultipartFile nouvellePhoto, MultipartFile nouvelleVideo) throws Exception {
     Modele modele = modeleRepository.findByIdAndAtelierId(id, atelierId)
             .orElseThrow(() -> new IllegalArgumentException("Modèle non trouvé"));
 
@@ -385,6 +407,23 @@ public ModeleDTO updateModele(UUID id, UUID atelierId, UpdateModeleDTO dto, Mult
         }
     }
 
+    // Gérer la nouvelle vidéo si fournie
+    if (nouvelleVideo != null && !nouvelleVideo.isEmpty()) {
+        try {
+            if (!fileStorageService.isVideoFile(nouvelleVideo)) {
+                throw new IllegalArgumentException("Le fichier doit être une vidéo");
+            }
+            fileStorageService.validateFileSize(nouvelleVideo, MAX_VIDEO_SIZE);
+            if (modele.getVideoPath() != null) {
+                fileStorageService.deleteFile(modele.getVideoPath(), "model_video");
+            }
+            String nouvelleVideoPath = fileStorageService.storeFile(nouvelleVideo, "model_video");
+            modele.setVideoPath(nouvelleVideoPath);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Erreur lors de l'upload de la nouvelle vidéo: " + e.getMessage());
+        }
+    }
+
     // Mettre à jour les autres champs
     modeleMapper.updateEntityFromDTO(dto, modele);
 
@@ -412,6 +451,12 @@ public ModeleDTO updateModele(UUID id, UUID atelierId, UpdateModeleDTO dto, Mult
                 boolean photoSupprimee = fileStorageService.deleteFile(modele.getPhotoPath(), "model_photo");
                 if (photoSupprimee) {
                     System.out.println("🗑️ Photo supprimée: " + modele.getPhotoPath());
+                }
+            }
+            if (modele.getVideoPath() != null) {
+                boolean videoSupprimee = fileStorageService.deleteFile(modele.getVideoPath(), "model_video");
+                if (videoSupprimee) {
+                    System.out.println("🗑️ Vidéo supprimée: " + modele.getVideoPath());
                 }
             }
 

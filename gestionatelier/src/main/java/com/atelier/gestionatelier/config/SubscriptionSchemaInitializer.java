@@ -21,34 +21,36 @@ public class SubscriptionSchemaInitializer implements CommandLineRunner {
     public void run(String... args) {
         try {
             jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS abonnement_plan (" +
-                    "id BIGINT PRIMARY KEY AUTO_INCREMENT," +
+                    // PostgreSQL uses BIGSERIAL for auto-increment primary key
+                    "id BIGSERIAL PRIMARY KEY," +
                     "code VARCHAR(50) NOT NULL UNIQUE," +
                     "libelle VARCHAR(120) NOT NULL," +
                     "duree_mois INT NOT NULL," +
                     "prix DECIMAL(12,2) NOT NULL DEFAULT 0," +
                     "devise VARCHAR(10) NOT NULL DEFAULT 'XOF'," +
                     "actif BOOLEAN NOT NULL DEFAULT TRUE," +
-                    "created_at DATETIME NULL," +
-                    "updated_at DATETIME NULL" +
+                    "created_at TIMESTAMP NULL," +
+                    "updated_at TIMESTAMP NULL" +
                     ")");
 
                 jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS abonnement_atelier (" +
-                    "id BIGINT PRIMARY KEY AUTO_INCREMENT," +
+                    "id BIGSERIAL PRIMARY KEY," +
                     "atelier_id VARCHAR(36) NOT NULL," +
                     "plan_id BIGINT NOT NULL," +
                     "statut VARCHAR(30) NOT NULL DEFAULT 'ACTIVE'," +
-                    "date_debut DATETIME NOT NULL," +
-                    "date_fin DATETIME NOT NULL," +
-                    "grace_end_at DATETIME NULL," +
+                    "date_debut TIMESTAMP NOT NULL," +
+                    "date_fin TIMESTAMP NOT NULL," +
+                    "grace_end_at TIMESTAMP NULL," +
                     "auto_renew BOOLEAN NOT NULL DEFAULT FALSE," +
-                    "created_at DATETIME NULL," +
-                    "updated_at DATETIME NULL," +
-                    "INDEX idx_abonnement_atelier_atelier (atelier_id)," +
-                    "INDEX idx_abonnement_atelier_plan (plan_id)" +
+                    "created_at TIMESTAMP NULL," +
+                    "updated_at TIMESTAMP NULL" +
                     ")");
+            // create indexes separately for PostgreSQL
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_abonnement_atelier_atelier ON abonnement_atelier(atelier_id)");
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_abonnement_atelier_plan ON abonnement_atelier(plan_id)");
 
             jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS abonnement_paiement (" +
-                    "id BIGINT PRIMARY KEY AUTO_INCREMENT," +
+                    "id BIGSERIAL PRIMARY KEY," +
                     "abonnement_id BIGINT NOT NULL," +
                     "reference VARCHAR(100) NOT NULL UNIQUE," +
                     "provider VARCHAR(40) NULL," +
@@ -61,13 +63,13 @@ public class SubscriptionSchemaInitializer implements CommandLineRunner {
                     "montant DECIMAL(12,2) NOT NULL DEFAULT 0," +
                     "devise VARCHAR(10) NOT NULL DEFAULT 'XOF'," +
                     "statut VARCHAR(30) NOT NULL DEFAULT 'PENDING'," +
-                    "paid_at DATETIME NULL," +
-                    "created_at DATETIME NULL," +
+                    "paid_at TIMESTAMP NULL," +
+                    "created_at TIMESTAMP NULL," +
                     "reviewed_by VARCHAR(36) NULL," +
-                    "reviewed_at DATETIME NULL," +
-                    "INDEX idx_abonnement_paiement_abonnement (abonnement_id)," +
-                    "INDEX idx_abonnement_paiement_statut (statut)" +
+                    "reviewed_at TIMESTAMP NULL" +
                     ")");
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_abonnement_paiement_abonnement ON abonnement_paiement(abonnement_id)");
+            jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_abonnement_paiement_statut ON abonnement_paiement(statut)");
 
             ensureDefaultPlan("MENSUEL", "Mensuel", 1);
             ensureDefaultPlan("TRIMESTRIEL", "Trimestriel", 3);

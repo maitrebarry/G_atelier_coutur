@@ -18,8 +18,10 @@ public class ClientDTO implements Serializable {
     private String genderPreview;
     private String femme_type;
 
-    // Fichier photo
+    // Fichier photo du modèle ou client
     private MultipartFile photo;
+    // Fichier photo de l'habit à coudre (nouveau)
+    private MultipartFile habitPhoto;
     private String robe_epaule;
     private String robe_manche;
     private String robe_poitrine;
@@ -108,6 +110,12 @@ public class ClientDTO implements Serializable {
     }
     public void setPhoto(MultipartFile photo) {
         this.photo = photo;
+    }
+    public MultipartFile getHabitPhoto() {
+        return habitPhoto;
+    }
+    public void setHabitPhoto(MultipartFile habitPhoto) {
+        this.habitPhoto = habitPhoto;
     }
     public String getFemme_type() {
         return femme_type;
