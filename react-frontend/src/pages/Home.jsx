@@ -426,7 +426,7 @@ const Home = () => {
                 <div className="d-flex align-items-center">
                   <div className="flex-grow-1">
                     <h4 className="mb-0">{formatCurrency(data.chiffreAffairesMensuel || 0)}</h4>
-                    <span className="text-muted">CA Mensuel</span>
+                    <span className="text-muted">Chiffre d'affaires mensuel</span>
                   </div>
                   <div className="flex-shrink-0">
                     <i className="bx bx-money text-primary h1"></i>

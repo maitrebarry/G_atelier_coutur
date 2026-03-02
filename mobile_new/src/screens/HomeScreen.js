@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, Button, Alert, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, ScrollView, Alert, StyleSheet, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+import api from '../api/backend';
 
 export default function HomeScreen({ navigation }) {
   const [userData, setUserData] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false); // dropdown under avatar
 
@@ -20,39 +23,171 @@ export default function HomeScreen({ navigation }) {
     })();
   }, []);
 
-  // Dashboard essentials: chiffre d'affaires mensuel, prochain RDV, nombre de tailleurs
-  const dashboardCards = [
-    {
-      title: "Chiffre d'affaires mensuel",
-      value: userData?.chiffreAffairesMensuel || '—',
-      icon: '💰',
-      color: '#20c997',
-      screen: null
-    },
-    {
-      title: 'Prochain RDV',
-      value: userData?.prochainRDV || '—',
-      icon: '📅',
-      color: '#0d6efd',
-      screen: 'Rendezvous'
-    },
-    {
-      title: 'Nombre de tailleurs',
-      value: userData?.nombreTailleurs || '—',
-      icon: '✂️',  // scissors icon replaces thread
-      color: '#fd7e14',
-      screen: 'Tailleurs'
+  useFocusEffect(
+    React.useCallback(() => {
+      let active = true;
+      (async () => {
+        try {
+          const token = await AsyncStorage.getItem('authToken');
+          if (active && !token) {
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            return;
+          }
+
+          if (active) {
+            const res = await api.get('/dashboard');
+            setDashboardData(res.data || null);
+          }
+        } catch (e) {
+          console.log('Erreur dashboard mobile:', e?.response?.data || e?.message || e);
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [navigation])
+  );
+
+  const role = (userData?.role || '').toUpperCase();
+
+  const formatCurrency = (amount) => {
+    const n = Number(amount || 0);
+    try {
+      return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(n);
+    } catch (e) {
+      return `${n} XOF`;
     }
-  ];
+  };
+
+  const formatRdv = (rdv) => {
+    if (!rdv) return '—';
+    try {
+      const d = new Date(rdv.date);
+      const when = Number.isNaN(d.getTime()) ? String(rdv.date || '') : d.toLocaleString('fr-FR');
+      return `${rdv.clientNom || 'Client'} • ${when}`;
+    } catch (e) {
+      return '—';
+    }
+  };
+
+  const dashboardCards =
+    role === 'TAILLEUR'
+      ? [
+          {
+            title: 'Affectations en attente',
+            value: dashboardData?.affectationsEnAttente ?? '0',
+            icon: '⏳',
+            color: '#fd7e14',
+            screen: null,
+          },
+          {
+            title: 'Affectations en cours',
+            value: dashboardData?.affectationsEnCours ?? '0',
+            icon: '🧵',
+            color: '#0d6efd',
+            screen: null,
+          },
+          {
+            title: 'Revenus mensuels',
+            value: formatCurrency(dashboardData?.revenusMensuels || 0),
+            icon: '💰',
+            color: '#20c997',
+            screen: null,
+          },
+        ]
+      : role === 'SECRETAIRE'
+      ? [
+          {
+            title: 'Nouveaux clients (7j)',
+            value: dashboardData?.nouveauxClientsSemaine ?? '0',
+            icon: '👥',
+            color: '#20c997',
+            screen: 'Clients',
+          },
+          {
+            title: "Rendez-vous d'aujourd'hui",
+            value: dashboardData?.rendezVousAujourdhui ?? '0',
+            icon: '📅',
+            color: '#0d6efd',
+            screen: 'Rendezvous',
+          },
+          {
+            title: 'Affectations en attente',
+            value: dashboardData?.affectationsEnAttente ?? '0',
+            icon: '📌',
+            color: '#fd7e14',
+            screen: null,
+          },
+        ]
+      : role === 'SUPERADMIN'
+      ? [
+          {
+            title: 'Total ateliers',
+            value: dashboardData?.totalAteliers ?? '0',
+            icon: '🏭',
+            color: '#20c997',
+            screen: null,
+          },
+          {
+            title: 'Total clients',
+            value: dashboardData?.totalClients ?? '0',
+            icon: '👥',
+            color: '#0d6efd',
+            screen: null,
+          },
+          {
+            title: "Chiffre d'affaires",
+            value: formatCurrency(dashboardData?.chiffreAffairesTotal || 0),
+            icon: '💰',
+            color: '#fd7e14',
+            screen: null,
+          },
+        ]
+      : [
+          {
+            title: "Chiffre d'affaires mensuel",
+            value: formatCurrency(dashboardData?.chiffreAffairesMensuel || 0),
+            icon: '💰',
+            color: '#20c997',
+            screen: null,
+          },
+          {
+            title: 'Prochain RDV',
+            value: formatRdv(dashboardData?.rendezVousProchains?.[0]),
+            icon: '📅',
+            color: '#0d6efd',
+            screen: 'Rendezvous',
+          },
+          {
+            title: 'Nombre de tailleurs',
+            value: dashboardData?.totalTailleurs ?? '0',
+            icon: '✂️',
+            color: '#fd7e14',
+            screen: null,
+          },
+        ];
 
   const handleLogout = async () => {
     Alert.alert('Déconnexion', 'Voulez-vous vraiment vous déconnecter ?', [
       { text: 'Annuler', style: 'cancel' },
-      { text: 'Oui', onPress: async () => {
-          await AsyncStorage.removeItem('authToken');
-          await AsyncStorage.removeItem('userData');
-          navigation.replace('Login');
-        }
+      {
+        text: 'Oui',
+        onPress: async () => {
+          try {
+            await AsyncStorage.multiRemove([
+              'authToken',
+              'userData',
+              'authRemember',
+              'smb_sub_blocked',
+            ]);
+          } catch (e) {
+            // ignore storage error but still force logout navigation
+          } finally {
+            setShowProfileMenu(false);
+            setSidebarVisible(false);
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          }
+        },
       }
     ]);
   };
@@ -232,7 +367,7 @@ export default function HomeScreen({ navigation }) {
           <View style={{marginBottom: 12}}>
             {dashboardCards.map((card, idx) => (
               <DashboardButton
-                key={card.title}
+                key={`${card.title}-${idx}`}
                 title={card.title}
                 value={card.value}
                 icon={card.icon}
@@ -246,7 +381,7 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Actions rapides</Text>
           <View style={styles.row}>
-            <MenuCard title="Nouvelle mesure" value="" color="#0d6efd" icon="🧵" onPress={() => navigation.navigate('MesureAdd')} />
+            <MenuCard title="Nouveau client" value="" color="#0d6efd" icon="🧵" onPress={() => navigation.navigate('MesureAdd')} />
             <MenuCard title="Rendez-vous" value="" color="#0d6efd" icon="📅" onPress={() => navigation.navigate('Rendezvous')} />
           </View>
         </View>

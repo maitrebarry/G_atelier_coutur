@@ -7,14 +7,24 @@ import api from '../api/backend';
 export default function ProfileScreen() {
   const [profile, setProfile] = useState(null);
 
+  const getStoredUserId = async () => {
+    const raw = await AsyncStorage.getItem('userData');
+    const userData = JSON.parse(raw || '{}') || {};
+    return userData.userId || userData.id || null;
+  };
+
   useEffect(() => {
     (async () => {
       try {
-        const userData = JSON.parse(await AsyncStorage.getItem('userData')) || {};
-        const res = await api.get(`/utilisateurs/${userData.id}/profile`);
+        const raw = await AsyncStorage.getItem('userData');
+        const userData = JSON.parse(raw || '{}') || {};
+        const userId = userData.userId || userData.id;
+        if (!userId) throw new Error('Utilisateur introuvable');
+        const res = await api.get(`/utilisateurs/${userId}/profile`);
         setProfile(res.data || userData);
       } catch (e) {
-        const userData = JSON.parse(await AsyncStorage.getItem('userData')) || {};
+        const raw = await AsyncStorage.getItem('userData');
+        const userData = JSON.parse(raw || '{}') || {};
         setProfile(userData);
       }
     })();
@@ -28,16 +38,19 @@ export default function ProfileScreen() {
       if (result.cancelled) return;
 
       const uri = result.assets ? result.assets[0].uri : result.uri;
-      const userData = JSON.parse(await AsyncStorage.getItem('userData')) || {};
+      const raw = await AsyncStorage.getItem('userData');
+      const userData = JSON.parse(raw || '{}') || {};
+      const userId = (await getStoredUserId()) || userData.userId || userData.id;
+      if (!userId) return Alert.alert('Erreur', 'Utilisateur introuvable');
       const form = new FormData();
       const filename = uri.split('/').pop();
       const match = filename.match(/\.([0-9a-z]+)$/i);
       const type = match ? `image/${match[1]}` : 'image/jpeg';
       form.append('file', { uri, name: filename, type });
 
-      await api.post(`/utilisateurs/${userData.id}/photo`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      await api.post(`/utilisateurs/${userId}/photo`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
       // refresh profile
-      const res = await api.get(`/utilisateurs/${userData.id}/profile`);
+      const res = await api.get(`/utilisateurs/${userId}/profile`);
       const updated = res.data || {};
       setProfile(updated);
       // persist userData avatar if available
