@@ -6,6 +6,7 @@ const Rendezvous = () => {
     const [rendezvousList, setRendezvousList] = useState([]);
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [selectedClient, setSelectedClient] = useState(null);
     const [clientDetails, setClientDetails] = useState(null);
@@ -150,13 +151,6 @@ const Rendezvous = () => {
         }
 
         const emailValue = getClientEmail(client, detailsData);
-        if (!isValidEmail(emailValue)) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Attention',
-                text: 'Ce client n\'a pas d\'adresse email valide. Le rendez-vous sera créé sans notification email.',
-            });
-        }
 
         setSelectedClient({ ...client, email: emailValue || client?.email || '' });
         setFormData(prev => ({ ...prev, clientId: client.id }));
@@ -169,6 +163,10 @@ const Rendezvous = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (saving) {
+            return;
+        }
+        setSaving(true);
         try {
             const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
             const atelierId = userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
@@ -209,6 +207,8 @@ const Rendezvous = () => {
             console.error("Erreur création rendez-vous:", error);
             const errorMessage = error.response?.data?.message || error.message || 'Impossible de créer le rendez-vous';
             Swal.fire('Erreur', errorMessage, 'error');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -231,6 +231,30 @@ const Rendezvous = () => {
         } catch (error) {
             console.error(`Erreur ${action} rendez-vous:`, error);
             Swal.fire('Erreur', `Impossible de changer le statut`, 'error');
+        }
+    };
+
+    const handleDeleteRendezVous = async (id) => {
+        try {
+            const result = await Swal.fire({
+                title: 'Supprimer ce rendez-vous ?',
+                text: 'Cette action est irréversible et aucune notification ne sera envoyée.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonText: 'Annuler',
+                confirmButtonText: 'Supprimer'
+            });
+
+            if (result.isConfirmed) {
+                await api.delete(`/rendezvous/${id}`);
+                Swal.fire('Supprimé', 'Le rendez-vous a été supprimé.', 'success');
+                loadData();
+            }
+        } catch (error) {
+            console.error('Erreur suppression rendez-vous:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Impossible de supprimer ce rendez-vous';
+            Swal.fire('Erreur', errorMessage, 'error');
         }
     };
 
@@ -348,6 +372,15 @@ const Rendezvous = () => {
                                                                     title="Marquer comme terminé"
                                                                 >
                                                                     <i className="bx bx-check-double"></i>
+                                                                </button>
+                                                            )}
+                                                            {(rv.statut !== 'CONFIRME' && rv.statut !== 'TERMINE') && (
+                                                                <button
+                                                                    className="btn btn-sm btn-outline-danger"
+                                                                    onClick={() => handleDeleteRendezVous(rv.id)}
+                                                                    title="Supprimer"
+                                                                >
+                                                                    <i className="bx bx-trash"></i>
                                                                 </button>
                                                             )}
                                                         </div>
@@ -479,7 +512,16 @@ const Rendezvous = () => {
                                 </div>
                                 <div className="modal-footer">
                                     <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
-                                    <button type="submit" className="btn btn-primary" disabled={!selectedClient}>Enregistrer</button>
+                                    <button type="submit" className="btn btn-primary" disabled={!selectedClient || saving}>
+                                        {saving ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                Enregistrement...
+                                            </>
+                                        ) : (
+                                            'Enregistrer'
+                                        )}
+                                    </button>
                                 </div>
                             </form>
                         </div>

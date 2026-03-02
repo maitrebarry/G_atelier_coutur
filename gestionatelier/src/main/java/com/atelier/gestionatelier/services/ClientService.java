@@ -361,6 +361,28 @@ public class ClientService {
             System.out.println("Photo existante conservée: " + dto.getExisting_photo());
         }
 
+        MultipartFile habitPhoto = dto.getHabitPhoto();
+        if (habitPhoto != null && !habitPhoto.isEmpty()) {
+            try {
+                if (mesure.getHabitPhotoPath() != null) {
+                    fileStorageService.deleteFile(mesure.getHabitPhotoPath(), "habit_photo");
+                    System.out.println("🗑️ Ancienne photo habit supprimée: " + mesure.getHabitPhotoPath());
+                }
+                String habitFileName = fileStorageService.storeFile(habitPhoto, "habit_photo");
+                mesure.setHabitPhotoPath(habitFileName);
+                System.out.println("✅ Nouvelle photo habit sauvegardée: " + habitFileName);
+            } catch (Exception e) {
+                System.err.println("❌ Erreur upload photo habit: " + e.getMessage());
+                throw new RuntimeException("Erreur lors de l'upload de la photo de l'habit: " + e.getMessage());
+            }
+        } else if (dto.getExisting_habit_photo() != null && !dto.getExisting_habit_photo().isBlank()) {
+            mesure.setHabitPhotoPath(dto.getExisting_habit_photo());
+            System.out.println("Photo habit existante conservée: " + dto.getExisting_habit_photo());
+        } else {
+            mesure.setHabitPhotoPath(null);
+            System.out.println("Aucune photo habit définie");
+        }
+
 
         // 7. Mise à jour des mesures selon le type
         if ("robe".equalsIgnoreCase(type)) {

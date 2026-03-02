@@ -10,6 +10,7 @@ public class FileStorageProperties {
     private String dir = "./uploads/";
     private String userPhotoDir = "./uploads/user_photo/";
     private String modelPhotoDir = "./uploads/model_photo/";
+    private String habitPhotoDir = "./uploads/habit_photo/";
 
     // Getters et Setters
     public String getDir() {
@@ -21,6 +22,7 @@ public class FileStorageProperties {
         // Met à jour automatiquement les sous-dossiers
         this.userPhotoDir = dir + "user_photo/";
         this.modelPhotoDir = dir + "model_photo/";
+        this.habitPhotoDir = dir + "habit_photo/";
     }
 
     public String getUserPhotoDir() {
@@ -37,5 +39,13 @@ public class FileStorageProperties {
 
     public void setModelPhotoDir(String modelPhotoDir) {
         this.modelPhotoDir = modelPhotoDir;
+    }
+
+    public String getHabitPhotoDir() {
+        return habitPhotoDir;
+    }
+
+    public void setHabitPhotoDir(String habitPhotoDir) {
+        this.habitPhotoDir = habitPhotoDir;
     }
 }

@@ -56,6 +56,7 @@ public class SecurityConfig {
                         .requestMatchers("/model_photo/**").permitAll()
                         .requestMatchers("/modeles/videos/**").permitAll()
                         .requestMatchers("/user_photo/**").permitAll()
+                        .requestMatchers("/habit_photo/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
 
                         // ✅ AJOUT : Autoriser l'accès aux ressources statiques

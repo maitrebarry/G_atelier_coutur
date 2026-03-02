@@ -170,9 +170,10 @@ const Paiements = () => {
         win.document.write('<html><head><title>Reçu de Paiement</title>');
         win.document.write(`
             <style>
-                @page { size: A5; margin: 0; }
-                body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 20px; margin: 0; font-size: 12px; color: #333; }
-                .receipt-container { border: 1px solid #ddd; padding: 20px; border-radius: 8px; max-width: 100%; margin: 0 auto; }
+                /* thermal ticket style */
+                @page { size: 80mm auto; margin: 0; }
+                body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 5px; margin: 0; font-size: 11px; color: #333; }
+                .receipt-container { border: none; padding: 0; width: 80mm; margin: 0 auto; }
                 .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
                 .header h2 { margin: 0; color: #2c3e50; font-size: 18px; text-transform: uppercase; }
                 .header p { margin: 2px 0; color: #7f8c8d; font-size: 10px; }

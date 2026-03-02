@@ -186,6 +186,19 @@ public class RendezVousService {
         return toRendezVousDTO(updatedRendezVous);
     }
 
+    @Transactional
+    public void supprimerRendezVous(UUID id) {
+        RendezVous rendezVous = rendezVousRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Rendez-vous non trouvé"));
+
+        String statut = rendezVous.getStatut();
+        if ("CONFIRME".equalsIgnoreCase(statut) || "TERMINE".equalsIgnoreCase(statut)) {
+            throw new IllegalStateException("Impossible de supprimer un rendez-vous déjà confirmé ou terminé");
+        }
+
+        rendezVousRepository.delete(rendezVous);
+    }
+
     public RendezVousDTO getRendezVousById(UUID id) {
         RendezVous rendezVous = rendezVousRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Rendez-vous non trouvé"));

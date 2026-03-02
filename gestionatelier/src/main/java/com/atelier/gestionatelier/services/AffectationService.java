@@ -22,7 +22,6 @@ public class AffectationService {
     private final ClientRepository clientRepository;
     private final MesureRepository mesureRepository;
     private final AtelierRepository atelierRepository;
-    private final EmailService emailService;
     // === CRÉATION D'AFFECTATION ===
     @Transactional
     public List<AffectationDTO> creerAffectation(AffectationRequestDTO requestDTO, UUID atelierId, UUID createurId) {
@@ -163,54 +162,7 @@ public class AffectationService {
         Affectation savedAffectation = affectationRepository.save(affectation);
         log.info("✅ Statut mis à jour: {} -> {}", ancienStatut, newStatut);
 
-        // ✅ ENVOYER L'EMAIL APRÈS LA SAUVEGARDE (pas dans le switch)
-        if (newStatut == Affectation.StatutAffectation.VALIDE) {
-            envoyerEmailValidationClient(affectation);
-        }
-
         return convertToDTO(savedAffectation);
-    }
-
-    // ✅ MÉTHODE POUR ENVOYER L'EMAIL DE VALIDATION
-    private void envoyerEmailValidationClient(Affectation affectation) {
-        try {
-            Client client = affectation.getClient();
-            Mesure mesure = affectation.getMesure();
-
-            // Vérifier que le client a un email
-            if (client.getEmail() == null || client.getEmail().trim().isEmpty()) {
-                log.warn("⚠️ Client {} n'a pas d'email, envoi impossible", client.getPrenom() + " " + client.getNom());
-                return; // ⚠️ CORRECTION : return ici pour sortir de la méthode
-            }
-
-            String sujet = "🎉 Votre vêtement est prêt !";
-            String message = String.format(
-                    "Bonjour %s,\n\nVotre %s est prêt et vous attend à l'atelier.\n\nVous pouvez venir le récupérer aux heures d'ouverture.\n\nCordialement,\nVotre atelier de couture",
-                    client.getPrenom(),
-                    mesure.getTypeVetement().toLowerCase()
-            );
-
-            // Envoyer l'email
-            emailService.envoyerEmail(client.getEmail(), sujet, message);
-
-            log.info("✅ Email de validation envoyé à: {}", client.getEmail());
-
-        } catch (Exception e) {
-            log.error("❌ Erreur lors de l'envoi de l'email de validation: {}", e.getMessage());
-            // Ne pas propager l'exception pour ne pas bloquer la validation
-        }
-    }
-    // ✅ GÉNÉRER LE MESSAGE EMAIL COURT ET SIMPLE
-    private String genererMessageEmail(Client client, Utilisateur tailleur, Mesure mesure) {
-        return String.format(
-                "Bonjour %s,\n\n" +
-                        "Votre %s est prêt et vous attend à l'atelier.\n\n" +
-                        "Vous pouvez venir le récupérer aux heures d'ouverture.\n\n" +
-                        "Cordialement,\n" +
-                        "Votre atelier de couture",
-                client.getPrenom(),
-                mesure.getTypeVetement().toLowerCase()
-        );
     }
     // === VÉRIFICATION DES PERMISSIONS ===
     private boolean peutChangerStatut(String role, Affectation.StatutAffectation ancienStatut,

@@ -10,8 +10,12 @@ const Clients = () => {
   const [editFormData, setEditFormData] = useState({});
   const [saving, setSaving] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [habitPhotoPreview, setHabitPhotoPreview] = useState(null);
+  const [habitPhotoFile, setHabitPhotoFile] = useState(null);
+  const [habitPhotoCleared, setHabitPhotoCleared] = useState(false);
   
   const fileInputRef = useRef(null);
+  const habitFileInputRef = useRef(null);
   const currentUser = getUserData();
   const isTailleur = currentUser?.role === 'TAILLEUR';
   const selectedClientMeasure = selectedClient?.mesures?.[0];
@@ -116,11 +120,22 @@ const Clients = () => {
         photoUrl = `http://localhost:8081/model_photo/${cleanPath}`;
       }
       setPhotoPreview(photoUrl);
+      setHabitPhotoFile(null);
+      setHabitPhotoCleared(false);
+      setHabitPhotoPreview(getHabitPhotoUrl(mesure));
 
     } catch (err) {
       console.error(err);
       Swal.fire('Erreur', 'Impossible de charger les données pour modification', 'error');
     }
+  };
+
+  const closeEditModal = () => {
+    setEditingClient(null);
+    setPhotoPreview(null);
+    setHabitPhotoPreview(null);
+    setHabitPhotoFile(null);
+    setHabitPhotoCleared(false);
   };
 
   const handleInputChange = (e) => {
@@ -141,6 +156,20 @@ const Clients = () => {
       reader.onload = (e) => setPhotoPreview(e.target.result);
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleHabitPhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      Swal.fire('Erreur', 'La taille maximale est de 5MB', 'error');
+      return;
+    }
+    setHabitPhotoCleared(false);
+    setHabitPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setHabitPhotoPreview(ev.target.result);
+    reader.readAsDataURL(file);
   };
 
   const handleSaveEdit = async () => {
@@ -164,6 +193,13 @@ const Clients = () => {
       } else if (editingClient.mesures?.[0]?.photoPath) {
          const cleanPath = editingClient.mesures[0].photoPath.replace(/^\/+/, "").replace("model_photo/", "");
          formData.append('existing_photo', cleanPath);
+      }
+
+      if (habitPhotoFile instanceof File) {
+        formData.append('habitPhoto', habitPhotoFile);
+      } else if (!habitPhotoCleared && editingClient.mesures?.[0]?.habitPhotoPath) {
+        const cleanHabitPath = editingClient.mesures[0].habitPhotoPath.replace(/^\/+/, "").replace("habit_photo/", "");
+        formData.append('existing_habit_photo', cleanHabitPath);
       }
 
       // Append type specific fields
@@ -193,7 +229,7 @@ const Clients = () => {
       });
 
       Swal.fire('Succès', 'Client modifié avec succès', 'success');
-      setEditingClient(null);
+      closeEditModal();
       fetchClients();
 
     } catch (err) {
@@ -228,7 +264,7 @@ const Clients = () => {
             <div className="ps-3">
               <nav aria-label="breadcrumb">
                 <ol className="breadcrumb mb-0 p-0">
-                  <li className="breadcrumb-item"><a href="#"><i className="bx bx-home-alt"></i></a></li>
+                  <li className="breadcrumb-item"><a href="/"><i className="bx bx-home-alt"></i></a></li>
                   <li className="breadcrumb-item active" aria-current="page">Liste des clients</li>
                 </ol>
               </nav>
@@ -308,7 +344,7 @@ const Clients = () => {
                 <div className="flex-shrink-0 p-3" style={{ maxWidth: '45%' }}>
                   <img 
                     src={getClientPhotoUrl(selectedClientMeasure)} 
-                    alt="Photo Client" 
+                    alt="Client" 
                     className="img-fluid rounded" 
                     style={{ width: '100%', height: 'auto' }}
                   />
@@ -426,7 +462,7 @@ const Clients = () => {
                   <div className="modal-content">
                       <div className="modal-header bg-primary text-white">
                           <h5 className="modal-title">Modification du Client</h5>
-                          <button type="button" className="btn-close btn-close-white" onClick={() => setEditingClient(null)}></button>
+                          <button type="button" className="btn-close btn-close-white" onClick={closeEditModal}></button>
                       </div>
                       <div className="modal-body">
                           <div className="row">
@@ -447,6 +483,34 @@ const Clients = () => {
                                           <input className="form-check-input" type="radio" name="sexe" value="Homme" checked={editFormData.sexe === 'Homme'} onChange={handleInputChange} />
                                           <label className="form-check-label">Homme</label>
                                       </div>
+                                  </div>
+
+                                  <div className="mt-4 text-start w-100">
+                                    <h6 className="fw-bold">Photo de l'habit à coudre</h6>
+                                    <div className="border rounded p-2 text-center bg-light">
+                                      {habitPhotoPreview ? (
+                                        <img src={habitPhotoPreview} alt="Habit" className="img-fluid rounded" style={{ maxHeight: '220px', objectFit: 'cover' }} />
+                                      ) : (
+                                        <div className="text-muted small">Aucune photo enregistrée</div>
+                                      )}
+                                    </div>
+                                    <div className="d-flex gap-2 mt-2">
+                                      <button type="button" className="btn btn-sm btn-outline-primary flex-grow-1" onClick={() => habitFileInputRef.current?.click()}>
+                                        {habitPhotoPreview ? 'Modifier la photo' : 'Ajouter une photo'}
+                                      </button>
+                                        {habitPhotoPreview && (
+                                          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => { setHabitPhotoPreview(null); setHabitPhotoFile(null); setHabitPhotoCleared(true); }}>
+                                          Effacer
+                                        </button>
+                                      )}
+                                    </div>
+                                    <input
+                                      type="file"
+                                      ref={habitFileInputRef}
+                                      onChange={handleHabitPhotoChange}
+                                      accept="image/*"
+                                      style={{ display: 'none' }}
+                                    />
                                   </div>
                               </div>
 

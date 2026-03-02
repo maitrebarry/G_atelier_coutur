@@ -326,6 +326,7 @@ public class ClientDTO implements Serializable {
 
 
     private String existing_photo;  
+    private String existing_habit_photo;
 
     // Getter et Setter pour existing_photo
     public String getExisting_photo() {
@@ -334,6 +335,14 @@ public class ClientDTO implements Serializable {
 
     public void setExisting_photo(String existing_photo) {
         this.existing_photo = existing_photo;
+    }
+
+    public String getExisting_habit_photo() {
+        return existing_habit_photo;
+    }
+
+    public void setExisting_habit_photo(String existing_habit_photo) {
+        this.existing_habit_photo = existing_habit_photo;
     }
 
     // NOUVEAU : Prix du modèle

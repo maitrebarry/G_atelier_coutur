@@ -27,6 +27,10 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/modeles/videos/**")
                 .addResourceLocations("file:" + fileStorageProperties.getDir() + "model_video/");
 
+        // Handler pour les photos d'habit envoyées par les clients
+        registry.addResourceHandler("/habit_photo/**")
+            .addResourceLocations("file:" + fileStorageProperties.getHabitPhotoDir());
+
         // Handler pour les uploads génériques (ex: preuves d'abonnement)
         registry.addResourceHandler("/uploads/**")
             .addResourceLocations("file:" + fileStorageProperties.getDir());

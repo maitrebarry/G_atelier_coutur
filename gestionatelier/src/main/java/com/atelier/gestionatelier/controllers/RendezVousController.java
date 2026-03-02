@@ -80,4 +80,10 @@ public class RendezVousController {
         RendezVousDTO rendezVous = rendezVousService.terminerRendezVous(id);
         return ResponseEntity.ok(rendezVous);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> supprimerRendezVous(@PathVariable UUID id) {
+        rendezVousService.supprimerRendezVous(id);
+        return ResponseEntity.noContent().build();
+    }
 }

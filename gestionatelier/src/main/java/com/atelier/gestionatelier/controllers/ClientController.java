@@ -273,7 +273,9 @@ public class ClientController {
             System.out.println("Femme_type: " + clientDTO.getFemme_type());
             System.out.println("Femme_type_edit: " + clientDTO.getFemme_type_edit());
             System.out.println("Existing_photo: " + clientDTO.getExisting_photo());
+            System.out.println("Existing_habit_photo: " + clientDTO.getExisting_habit_photo());
             System.out.println("Photo: " + (clientDTO.getPhoto() != null ? clientDTO.getPhoto().getOriginalFilename() : "null"));
+            System.out.println("Habit photo: " + (clientDTO.getHabitPhoto() != null ? clientDTO.getHabitPhoto().getOriginalFilename() : "null"));
 
             // Validation des données
             String erreur = validerClientDTO(clientDTO);
@@ -444,8 +446,9 @@ public class ClientController {
         if (dto.getContact() == null || !dto.getContact().matches("\\d{8}"))
             return "Le contact doit contenir exactement 8 chiffres";
 
-        // Validation habit photo obligatoire
-        if (dto.getHabitPhoto() == null || dto.getHabitPhoto().isEmpty())
+        boolean hasHabitPhotoUpload = dto.getHabitPhoto() != null && !dto.getHabitPhoto().isEmpty();
+        boolean hasExistingHabitPhoto = dto.getExisting_habit_photo() != null && !dto.getExisting_habit_photo().isBlank();
+        if (!hasHabitPhotoUpload && !hasExistingHabitPhoto)
             return "La photo de l'habit est obligatoire";
 
         // Validation mesures numériques facultatives

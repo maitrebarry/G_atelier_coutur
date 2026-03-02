@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api, { getUserData } from '../api/api';
 import Swal from 'sweetalert2';
 
+const getDefaultRdvDate = () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.toISOString().split('T')[0];
+};
+
 const Affectations = () => {
-  const [loading, setLoading] = useState(true);
   const [tailleurs, setTailleurs] = useState([]);
   const [clients, setClients] = useState([]);
   const [affectations, setAffectations] = useState([]);
@@ -18,6 +23,15 @@ const Affectations = () => {
     tailleurId: '',
     dateEcheance: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   });
+  const [showRendezvousModal, setShowRendezvousModal] = useState(false);
+  const [rdvTarget, setRdvTarget] = useState(null);
+  const [rdvSaving, setRdvSaving] = useState(false);
+  const [rdvForm, setRdvForm] = useState({
+    date: getDefaultRdvDate(),
+    heure: '10:00',
+    motif: 'Livraison',
+    notes: ''
+  });
 
   const userData = getUserData();
   const userRole = userData?.role;
@@ -27,14 +41,25 @@ const Affectations = () => {
   const canCreate = ['PROPRIETAIRE', 'SECRETAIRE'].includes(userRole);
   const canCancel = ['PROPRIETAIRE', 'SECRETAIRE', 'SUPERADMIN'].includes(userRole);
 
-  useEffect(() => {
-    if (atelierId) {
-      loadData();
+  const loadAffectations = useCallback(async () => {
+    try {
+      let url = `/affectations?atelierId=${atelierId}`;
+      if (filters.statut) url += `&statut=${filters.statut}`;
+      if (filters.tailleurId) url += `&tailleurId=${filters.tailleurId}`;
+      const res = await api.get(url, {
+        headers: {
+            'X-User-Id': userId,
+            'X-User-Role': userRole
+        }
+      });
+      setAffectations(res.data.data || []);
+    } catch (error) {
+      console.error('Error loading affectations:', error);
     }
-  }, [atelierId]);
+  }, [atelierId, filters.statut, filters.tailleurId, userId, userRole]);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = useCallback(async () => {
+    if (!atelierId) return;
     try {
       // Load tailleurs and clients only if can create
       if (canCreate) {
@@ -50,28 +75,12 @@ const Affectations = () => {
     } catch (error) {
       console.error('Error loading data:', error);
       Swal.fire('Erreur', 'Impossible de charger les données', 'error');
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [atelierId, canCreate, loadAffectations]);
 
-  const loadAffectations = async () => {
-    try {
-      let url = `/affectations?atelierId=${atelierId}`;
-      if (filters.statut) url += `&statut=${filters.statut}`;
-      if (filters.tailleurId) url += `&tailleurId=${filters.tailleurId}`;
-      
-      const res = await api.get(url, {
-        headers: {
-            'X-User-Id': userId,
-            'X-User-Role': userRole
-        }
-      });
-      setAffectations(res.data.data || []);
-    } catch (error) {
-      console.error('Error loading affectations:', error);
-    }
-  };
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Filter clients for selection
   const getFilteredClients = () => {
@@ -150,7 +159,78 @@ const Affectations = () => {
     }
   };
 
-  const handleStatusChange = async (affectationId, newStatut) => {
+  const openRendezvousModal = (affectation) => {
+    setRdvTarget({
+      clientId: affectation.client.id,
+      clientNom: `${affectation.client.prenom} ${affectation.client.nom}`,
+      clientContact: affectation.client.contact || '',
+      mesureType: affectation.mesure?.typeVetement || ''
+    });
+    setRdvForm({
+      date: getDefaultRdvDate(),
+      heure: '10:00',
+      motif: 'Livraison',
+      notes: affectation.mesure?.typeVetement
+        ? `Retrait ${affectation.mesure.typeVetement}`
+        : ''
+    });
+    setShowRendezvousModal(true);
+  };
+
+  const closeRendezvousModal = () => {
+    setShowRendezvousModal(false);
+    setRdvTarget(null);
+    setRdvForm({
+      date: getDefaultRdvDate(),
+      heure: '10:00',
+      motif: 'Livraison',
+      notes: ''
+    });
+  };
+
+  const handleRdvInputChange = (e) => {
+    const { name, value } = e.target;
+    setRdvForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateRendezvous = async (e) => {
+    e.preventDefault();
+    if (!rdvTarget || rdvSaving) {
+      return;
+    }
+
+    try {
+      setRdvSaving(true);
+      const dateRDV = `${rdvForm.date}T${rdvForm.heure}`;
+      let typeRendezVous = rdvForm.motif.toUpperCase();
+      if (typeRendezVous === 'ESSAYAGE') typeRendezVous = 'RETOUCHE';
+      if (typeRendezVous === 'PRISE DE MESURES') typeRendezVous = 'MESURE';
+
+      const payload = {
+        clientId: rdvTarget.clientId,
+        atelierId,
+        dateRDV,
+        typeRendezVous,
+        notes: rdvForm.notes
+      };
+
+      await api.post('/rendezvous', payload);
+      await loadAffectations();
+      closeRendezvousModal();
+      Swal.fire('Succès', 'Rendez-vous créé et email envoyé au client.', 'success')
+        .then(() => {
+          window.location.href = '/rendezvous';
+        });
+    } catch (error) {
+      console.error('Erreur création rendez-vous depuis affectation:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Impossible de créer le rendez-vous';
+      Swal.fire('Erreur', errorMessage, 'error');
+    } finally {
+      setRdvSaving(false);
+    }
+  };
+
+  const handleStatusChange = async (affectation, newStatut) => {
     const result = await Swal.fire({
       title: 'Changer le statut ?',
       text: `Passer à "${newStatut}" ?`,
@@ -162,14 +242,17 @@ const Affectations = () => {
 
     if (result.isConfirmed) {
       try {
-        await api.patch(`/affectations/${affectationId}/statut`, { statut: newStatut }, {
+        await api.patch(`/affectations/${affectation.id}/statut`, { statut: newStatut }, {
             headers: {
                 'X-User-Id': userId,
                 'X-User-Role': userRole
             }
         });
         Swal.fire('Succès', 'Statut mis à jour', 'success');
-        loadAffectations();
+        await loadAffectations();
+        if (newStatut === 'VALIDE') {
+          openRendezvousModal(affectation);
+        }
       } catch (error) {
         console.error('Error updating status:', error);
         Swal.fire('Erreur', 'Impossible de mettre à jour le statut', 'error');
@@ -407,13 +490,13 @@ const Affectations = () => {
                                 <div className="col-md-2 text-end">
                                     {/* Actions based on role and status */}
                                     {userRole === 'TAILLEUR' && aff.statut === 'EN_ATTENTE' && (
-                                        <button className="btn btn-sm btn-success w-100 mb-1" onClick={() => handleStatusChange(aff.id, 'EN_COURS')}>Démarrer</button>
+                                      <button className="btn btn-sm btn-success w-100 mb-1" onClick={() => handleStatusChange(aff, 'EN_COURS')}>Démarrer</button>
                                     )}
                                     {userRole === 'TAILLEUR' && aff.statut === 'EN_COURS' && (
-                                        <button className="btn btn-sm btn-primary w-100 mb-1" onClick={() => handleStatusChange(aff.id, 'TERMINE')}>Terminer</button>
+                                      <button className="btn btn-sm btn-primary w-100 mb-1" onClick={() => handleStatusChange(aff, 'TERMINE')}>Terminer</button>
                                     )}
                                     {canCreate && aff.statut === 'TERMINE' && (
-                                        <button className="btn btn-sm btn-success w-100 mb-1" onClick={() => handleStatusChange(aff.id, 'VALIDE')}>Valider</button>
+                                      <button className="btn btn-sm btn-success w-100 mb-1" onClick={() => handleStatusChange(aff, 'VALIDE')}>Valider</button>
                                     )}
                                     {canCancel && aff.statut !== 'VALIDE' && aff.statut !== 'ANNULE' && (
                                         <button className="btn btn-sm btn-outline-danger w-100" onClick={() => handleCancel(aff.id)}>Annuler</button>
@@ -426,6 +509,61 @@ const Affectations = () => {
             )}
         </div>
       </div>
+
+        {showRendezvousModal && rdvTarget && (
+          <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <div className="modal-dialog">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Planifier le retrait du client</h5>
+                  <button type="button" className="btn-close" onClick={closeRendezvousModal}></button>
+                </div>
+                <form onSubmit={handleCreateRendezvous}>
+                  <div className="modal-body">
+                    <p className="mb-3">
+                      <strong>Client :</strong> {rdvTarget.clientNom}
+                      {rdvTarget.clientContact && <><br /><span className="text-muted">{rdvTarget.clientContact}</span></>}
+                    </p>
+                    <div className="mb-3">
+                      <label className="form-label">Date</label>
+                      <input type="date" className="form-control" name="date" value={rdvForm.date} onChange={handleRdvInputChange} required />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Heure</label>
+                      <input type="time" className="form-control" name="heure" value={rdvForm.heure} onChange={handleRdvInputChange} required />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Motif</label>
+                      <select className="form-select" name="motif" value={rdvForm.motif} onChange={handleRdvInputChange}>
+                        <option value="Livraison">Livraison</option>
+                        <option value="Essayage">Essayage</option>
+                        <option value="Prise de mesures">Prise de mesures</option>
+                        <option value="Autre">Autre</option>
+                      </select>
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Notes</label>
+                      <textarea className="form-control" rows="3" name="notes" value={rdvForm.notes} onChange={handleRdvInputChange} placeholder="Informations supplémentaires"></textarea>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={closeRendezvousModal}>Fermer</button>
+                    <button type="submit" className="btn btn-primary" disabled={rdvSaving}>
+                      {rdvSaving ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                          Enregistrement...
+                        </>
+                      ) : (
+                        'Créer le rendez-vous'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
     </>
   );
 };
