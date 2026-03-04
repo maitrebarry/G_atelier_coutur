@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../api/backend';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ClientListScreen({ navigation }) {
   const [clients, setClients] = useState([]);
@@ -31,6 +32,20 @@ export default function ClientListScreen({ navigation }) {
   const [photoFile, setPhotoFile] = useState(null);
   const [habitPhotoFile, setHabitPhotoFile] = useState(null);
   const [habitPhotoCleared, setHabitPhotoCleared] = useState(false);
+  const [userData, setUserData] = useState(null);
+
+  const role = (userData?.role || '').toUpperCase();
+  const userPermissions = Array.isArray(userData?.permissions)
+    ? userData.permissions.map((p) => (typeof p === 'string' ? p : p?.code)).filter(Boolean)
+    : [];
+  const hasPermission = (permissionCode) => {
+    if (!permissionCode) return true;
+    if (['SUPERADMIN', 'PROPRIETAIRE'].includes(role)) return true;
+    return userPermissions.includes(permissionCode);
+  };
+  const canViewClients = hasPermission('CLIENT_VOIR');
+  const canEditClients = role !== 'TAILLEUR' && (hasPermission('CLIENT_MODIFIER') || hasPermission('CLIENT_CREER') || hasPermission('CLIENT_VOIR'));
+  const canDeleteClients = role !== 'TAILLEUR' && hasPermission('CLIENT_SUPPRIMER');
 
   const apiBase = useMemo(() => (api?.defaults?.baseURL || '').replace(/\/?api\/?$/i, ''), []);
 
@@ -51,6 +66,12 @@ export default function ClientListScreen({ navigation }) {
   const buildHabitPhotoUrl = (mesure) => buildPhotoUrl(mesure?.habitPhotoPath, 'habit_photo');
 
   const fetchClients = async ({ silent = false } = {}) => {
+    if (userData && !canViewClients) {
+      setClients([]);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     try {
       if (!silent) setLoading(true);
       const res = await api.get('/clients');
@@ -64,8 +85,19 @@ export default function ClientListScreen({ navigation }) {
   };
 
   useEffect(() => {
-    fetchClients();
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem('userData');
+        setUserData(raw ? JSON.parse(raw) : null);
+      } catch (e) {
+        setUserData(null);
+      }
+    })();
   }, []);
+
+  useEffect(() => {
+    fetchClients();
+  }, [userData]);
 
   const openClientDetails = async (id) => {
     try {
@@ -161,7 +193,7 @@ export default function ClientListScreen({ navigation }) {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.Images,
       allowsEditing: true,
       quality: 0.85,
     });
@@ -283,17 +315,26 @@ export default function ClientListScreen({ navigation }) {
       </View>
 
       <View style={styles.topRow}>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => navigation.navigate('MesureAdd')}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Text style={styles.addBtnText}>+ Ajouter un client</Text>
-        </TouchableOpacity>
+        {canEditClients ? (
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => navigation.navigate('MesureAdd')}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.addBtnText}>+ Ajouter un client</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
-      {loading ? <ActivityIndicator style={{ marginBottom: 10 }} /> : null}
+      {!canViewClients ? (
+        <View style={styles.noPermissionBox}>
+          <Text style={styles.noPermissionText}>Vous n'avez pas la permission de voir les clients.</Text>
+        </View>
+      ) : null}
 
+      {loading && canViewClients ? <ActivityIndicator style={{ marginBottom: 10 }} /> : null}
+
+      {canViewClients ? (
       <FlatList
         data={clients}
         keyExtractor={(c) => String(c.id)}
@@ -306,12 +347,16 @@ export default function ClientListScreen({ navigation }) {
               <TouchableOpacity style={[styles.actionBtn, styles.infoBtn]} onPress={() => openClientDetails(item.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Text style={styles.actionBtnText}>👁 Détail</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, styles.warnBtn]} onPress={() => openEditClient(item.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Text style={styles.actionBtnText}>✏️ Modifier</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={() => handleDeleteClient(item.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Text style={styles.actionBtnText}>🗑 Supprimer</Text>
-              </TouchableOpacity>
+              {canEditClients ? (
+                <TouchableOpacity style={[styles.actionBtn, styles.warnBtn]} onPress={() => openEditClient(item.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={styles.actionBtnText}>✏️ Modifier</Text>
+                </TouchableOpacity>
+              ) : null}
+              {canDeleteClients ? (
+                <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={() => handleDeleteClient(item.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={styles.actionBtnText}>🗑 Supprimer</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           </View>
         )}
@@ -327,6 +372,7 @@ export default function ClientListScreen({ navigation }) {
         ListEmptyComponent={<Text>Aucun client</Text>}
         contentContainerStyle={{ paddingBottom: 16 }}
       />
+      ) : null}
 
       <Modal visible={!!selectedClient} transparent animationType="slide" onRequestClose={() => setSelectedClient(null)}>
         <View style={styles.modalBackdrop}>
@@ -397,7 +443,7 @@ export default function ClientListScreen({ navigation }) {
         </View>
       </Modal>
 
-      <Modal visible={!!editingClient} transparent animationType="slide" onRequestClose={() => { setEditingClient(null); setEditFormData(null); }}>
+      <Modal visible={!!editingClient && canEditClients} transparent animationType="slide" onRequestClose={() => { setEditingClient(null); setEditFormData(null); }}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
@@ -609,4 +655,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveBtnText: { color: '#fff', fontWeight: '700' },
+  noPermissionBox: {
+    padding: 14,
+    borderRadius: 8,
+    backgroundColor: '#fff3cd',
+    borderWidth: 1,
+    borderColor: '#ffe69c',
+    marginBottom: 12,
+  },
+  noPermissionText: { color: '#7a5d00', fontWeight: '600' },
 });

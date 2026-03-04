@@ -532,7 +532,8 @@ public class ClientService {
             dto.setNom(client.getNom());
             dto.setPrenom(client.getPrenom());
             dto.setContact(client.getContact());
-            dto.setAdresse(client.getAdresse()); // ✅ Email pour notifications
+            dto.setAdresse(client.getAdresse());
+            dto.setEmail(client.getEmail()); // ✅ Email pour notifications
             dto.setPhoto(client.getPhoto());
             dto.setDateCreation(client.getDateCreation());
 

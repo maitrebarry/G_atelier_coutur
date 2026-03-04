@@ -13,6 +13,13 @@ import RendezvousCreateScreen from './src/screens/RendezvousCreateScreen';
 import MesureAddScreen from './src/screens/MesureAddScreen';
 import PaiementsScreen from './src/screens/PaiementsScreen';
 import PaiementCreateScreen from './src/screens/PaiementCreateScreen';
+import AlbumsScreen from './src/screens/AlbumsScreen';
+import AffectationScreen from './src/screens/AffectationScreen';
+import AtelierScreen from './src/screens/AtelierScreen';
+import UtilisateursScreen from './src/screens/UtilisateursScreen';
+import AssignerPermissionScreen from './src/screens/AssignerPermissionScreen';
+import ListePermissionScreen from './src/screens/ListePermissionScreen';
+import DocumentationScreen from './src/screens/DocumentationScreen';
 
 LogBox.ignoreAllLogs(true);
 
@@ -37,12 +44,19 @@ export default function App() {
           component={RendezvousCreateScreen}
         />
         <Stack.Screen name="MesureAdd" component={MesureAddScreen} />
+        <Stack.Screen name="Albums" component={AlbumsScreen} />
+        <Stack.Screen name="Affectation" component={AffectationScreen} />
+        <Stack.Screen name="Atelier" component={AtelierScreen} />
+        <Stack.Screen name="Utilisateurs" component={UtilisateursScreen} />
+        <Stack.Screen name="AssignerPermission" component={AssignerPermissionScreen} />
+        <Stack.Screen name="ListePermission" component={ListePermissionScreen} />
         <Stack.Screen name="Paiements" component={PaiementsScreen} />
         <Stack.Screen
           name="PaiementCreate"
           component={PaiementCreateScreen}
           options={{ title: 'Enregistrer Paiement' }}
         />
+        <Stack.Screen name="Documentation" component={DocumentationScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

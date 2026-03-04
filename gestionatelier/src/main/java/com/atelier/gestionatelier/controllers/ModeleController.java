@@ -1,5 +1,6 @@
 package com.atelier.gestionatelier.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.atelier.gestionatelier.dto.CreateModeleDTO;
 import com.atelier.gestionatelier.dto.ModeleDTO;
 import com.atelier.gestionatelier.dto.ModeleListDTO;
@@ -29,16 +30,19 @@ public class ModeleController {
 
     private final ModeleService modeleService;
     private final FileStorageService fileStorageService;
+    private final ObjectMapper objectMapper;
 
     // ==================== ENDPOINTS PRINCIPAUX ====================
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ModeleDTO> creerModele(
-            @RequestPart("modele") @Valid CreateModeleDTO createModeleDTO,
+            @RequestPart(value = "modele", required = false) String modelePayload,
             @RequestPart(value = "photo", required = false) MultipartFile photoFile,
             @RequestPart(value = "video", required = false) MultipartFile videoFile,
+            @RequestParam Map<String, String> fields,
             Authentication authentication) {
         try {
+            CreateModeleDTO createModeleDTO = parseCreateModeleDTO(modelePayload, fields);
             String email = authentication.getName();
             ModeleDTO modele = modeleService.creerModeleWithPermissions(createModeleDTO, photoFile, videoFile, email);
             return ResponseEntity.ok(modele);
@@ -80,11 +84,13 @@ public class ModeleController {
     public ResponseEntity<ModeleDTO> updateModele(
             @PathVariable UUID id,
             @PathVariable UUID atelierId,
-            @RequestPart("modele") @Valid UpdateModeleDTO updateModeleDTO,
+            @RequestPart(value = "modele", required = false) String modelePayload,
             @RequestPart(value = "photo", required = false) MultipartFile photoFile,
             @RequestPart(value = "video", required = false) MultipartFile videoFile,
+            @RequestParam Map<String, String> fields,
             Authentication authentication) {
         try {
+            UpdateModeleDTO updateModeleDTO = parseUpdateModeleDTO(modelePayload, fields);
             String email = authentication.getName();
             ModeleDTO modele = modeleService.updateModeleWithPermissions(id, atelierId, updateModeleDTO, photoFile, videoFile, email);
             return ResponseEntity.ok(modele);
@@ -306,5 +312,63 @@ public class ModeleController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    private CreateModeleDTO parseCreateModeleDTO(String modelePayload, Map<String, String> fields) {
+        try {
+            if (modelePayload != null && !modelePayload.isBlank()) {
+                return objectMapper.readValue(modelePayload, CreateModeleDTO.class);
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Payload modèle invalide");
+        }
+
+        CreateModeleDTO dto = new CreateModeleDTO();
+        dto.setNom(fields.get("nom"));
+        dto.setDescription(fields.get("description"));
+        dto.setPrix(parseDouble(fields.get("prix")));
+        dto.setPhotoPath(fields.get("photoPath"));
+        dto.setVideoPath(fields.get("videoPath"));
+
+        String categorie = fields.get("categorie");
+        if (categorie != null && !categorie.isBlank()) {
+            dto.setCategorie(Modele.CategorieModele.valueOf(categorie.toUpperCase()));
+        }
+
+        String atelierId = fields.get("atelierId");
+        if (atelierId != null && !atelierId.isBlank()) {
+            dto.setAtelierId(UUID.fromString(atelierId));
+        }
+
+        return dto;
+    }
+
+    private UpdateModeleDTO parseUpdateModeleDTO(String modelePayload, Map<String, String> fields) {
+        try {
+            if (modelePayload != null && !modelePayload.isBlank()) {
+                return objectMapper.readValue(modelePayload, UpdateModeleDTO.class);
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Payload modèle invalide");
+        }
+
+        UpdateModeleDTO dto = new UpdateModeleDTO();
+        if (fields.containsKey("nom")) dto.setNom(fields.get("nom"));
+        if (fields.containsKey("description")) dto.setDescription(fields.get("description"));
+        if (fields.containsKey("prix")) dto.setPrix(parseDouble(fields.get("prix")));
+        if (fields.containsKey("photoPath")) dto.setPhotoPath(fields.get("photoPath"));
+        if (fields.containsKey("videoPath")) dto.setVideoPath(fields.get("videoPath"));
+
+        String categorie = fields.get("categorie");
+        if (categorie != null && !categorie.isBlank()) {
+            dto.setCategorie(Modele.CategorieModele.valueOf(categorie.toUpperCase()));
+        }
+
+        return dto;
+    }
+
+    private Double parseDouble(String value) {
+        if (value == null || value.isBlank()) return null;
+        return Double.parseDouble(value);
     }
 }

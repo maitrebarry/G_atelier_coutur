@@ -52,6 +52,13 @@ const Sidebar = ({ onToggleSidebar }) => {
       roles: ['SUPERADMIN', 'PROPRIETAIRE', 'SECRETAIRE']
     },
     {
+      id: 'documentation',
+      title: 'Documentation',
+      icon: 'bx bx-book',
+      href: '/documentation',
+      alwaysVisible: true
+    },
+    {
       id: 'parametres',
       title: 'Paramètres',
       icon: 'bx bx-cog',
