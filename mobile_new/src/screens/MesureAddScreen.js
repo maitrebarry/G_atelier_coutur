@@ -43,6 +43,11 @@ export default function MesureAddScreen({ navigation }) {
     fetchModels();
   }, []);
 
+  const getImageMediaTypeOption = () => {
+    const imageType = ImagePicker?.MediaType?.images || ImagePicker?.MediaType?.Images || 'images';
+    return [imageType];
+  };
+
   const buildServerFileUrl = (filePath) => {
     if (!filePath) return null;
     if (String(filePath).startsWith('http')) return filePath;
@@ -86,59 +91,69 @@ export default function MesureAddScreen({ navigation }) {
   };
 
   const pickImage = async (target = 'client') => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Permission refusée', 'Autorisez l’accès à la galerie pour sélectionner une photo.');
-      return;
-    }
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Permission refusée', 'Autorisez l’accès à la galerie pour sélectionner une photo.');
+        return;
+      }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
-      allowsEditing: true,
-      quality: 0.85,
-    });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: getImageMediaTypeOption(),
+        allowsEditing: true,
+        quality: 0.85,
+      });
 
-    if (result.canceled) return;
-    const asset = result.assets?.[0];
-    const file = toUploadFile(asset, target === 'client' ? 'client-photo' : 'habit-photo');
-    if (!file) return;
+      if (result.canceled) return;
+      const asset = result.assets?.[0];
+      const file = toUploadFile(asset, target === 'client' ? 'client-photo' : 'habit-photo');
+      if (!file) return;
 
-    if (target === 'client') {
-      setClientPhotoFile(file);
-      setClientPhotoPreview(asset.uri);
-      setSelectedModel(null);
-      setFormData((prev) => ({ ...prev, selectedModelId: '', modeleNom: '' }));
-    } else {
-      setHabitPhotoFile(file);
-      setHabitPhotoPreview(asset.uri);
+      if (target === 'client') {
+        setClientPhotoFile(file);
+        setClientPhotoPreview(asset.uri);
+        setSelectedModel(null);
+        setFormData((prev) => ({ ...prev, selectedModelId: '', modeleNom: '' }));
+      } else {
+        setHabitPhotoFile(file);
+        setHabitPhotoPreview(asset.uri);
+      }
+    } catch (error) {
+      console.log('Erreur ouverture galerie:', error?.message || error);
+      Alert.alert('Erreur', 'Impossible d’ouvrir la galerie sur cet appareil.');
     }
   };
 
   const takePhoto = async (target = 'client') => {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Permission refusée', 'Autorisez l’accès à la caméra pour prendre une photo.');
-      return;
-    }
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Permission refusée', 'Autorisez l’accès à la caméra pour prendre une photo.');
+        return;
+      }
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      quality: 0.85,
-    });
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 0.85,
+      });
 
-    if (result.canceled) return;
-    const asset = result.assets?.[0];
-    const file = toUploadFile(asset, target === 'client' ? 'client-photo' : 'habit-photo');
-    if (!file) return;
+      if (result.canceled) return;
+      const asset = result.assets?.[0];
+      const file = toUploadFile(asset, target === 'client' ? 'client-photo' : 'habit-photo');
+      if (!file) return;
 
-    if (target === 'client') {
-      setClientPhotoFile(file);
-      setClientPhotoPreview(asset.uri);
-      setSelectedModel(null);
-      setFormData((prev) => ({ ...prev, selectedModelId: '', modeleNom: '' }));
-    } else {
-      setHabitPhotoFile(file);
-      setHabitPhotoPreview(asset.uri);
+      if (target === 'client') {
+        setClientPhotoFile(file);
+        setClientPhotoPreview(asset.uri);
+        setSelectedModel(null);
+        setFormData((prev) => ({ ...prev, selectedModelId: '', modeleNom: '' }));
+      } else {
+        setHabitPhotoFile(file);
+        setHabitPhotoPreview(asset.uri);
+      }
+    } catch (error) {
+      console.log('Erreur ouverture caméra:', error?.message || error);
+      Alert.alert('Erreur', 'Impossible d’ouvrir la caméra sur cet appareil.');
     }
   };
 

@@ -232,6 +232,29 @@
     width: 100%;
     box-sizing: border-box;
 }
+
+.selected-model-preview {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.selected-model-preview img {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+#habitPhotoPreview {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+}
         </style>
         <!--wrapper-->
         <div class="wrapper">
@@ -480,6 +503,16 @@
                                                         <!-- ✅ CORRECTION : Champs cachés avec les BONS noms -->
                                                         <input type="hidden" name="selectedModelId" id="selectedModelId" value="">
                                                         <input type="hidden" name="modeleNom" id="modeleNom" value="">
+
+                                                        <div id="selectedModelPreview" class="selected-model-preview mt-2 d-none">
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <img id="selectedModelThumb" src="" alt="Modèle sélectionné">
+                                                                <div>
+                                                                    <small class="text-muted d-block">Modèle sélectionné</small>
+                                                                    <strong id="selectedModelName" class="small"></strong>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="mt-3">
@@ -549,7 +582,10 @@
                                                     <div class="invalid-feedback">Veuillez ajouter une photo de l'habit.</div>
                                                     <!-- aperçu de la photo -->
                                                     <div id="habitPhotoPreviewContainer" class="mt-2" style="display:none; text-align:center;">
-                                                        <img id="habitPhotoPreview" src="" alt="Prévisualisation" class="img-fluid" style="max-height:150px;" />
+                                                        <img id="habitPhotoPreview" src="" alt="Prévisualisation" class="img-fluid" />
+                                                        <button type="button" class="btn btn-sm btn-outline-danger mt-2 d-none" id="removeHabitPhotoBtn">
+                                                            Retirer la photo
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>

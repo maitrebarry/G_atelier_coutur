@@ -8,6 +8,7 @@ class ModelManager {
     this.models = [];
     this.selectedModel = null;
     this.currentCategory = 'all';
+    this.currentGenderFilter = 'all';
     this.atelierId = null;
     this.initialized = false;
     this.baseUrl = window.API_BASE_URL || 'http://localhost:8081';
@@ -237,9 +238,13 @@ class ModelManager {
       return;
     }
 
-    const filteredModels = this.currentCategory === 'all'
+    const categoryFilteredModels = this.currentCategory === 'all'
       ? this.models
       : this.models.filter(model => model.categorie === this.currentCategory);
+
+    const filteredModels = this.currentGenderFilter === 'all'
+      ? categoryFilteredModels
+      : categoryFilteredModels.filter(model => this.modelMatchesGender(model, this.currentGenderFilter));
 
     if (filteredModels.length === 0) {
       grid.innerHTML = `
@@ -259,9 +264,40 @@ class ModelManager {
     });
   }
 
+  modelMatchesGender(model, gender) {
+    const normalizedGender = (gender || '').toString().trim().toLowerCase();
+    const modelGender = (
+      model?.sexe ||
+      model?.gender ||
+      model?.genre ||
+      model?.typeGenre ||
+      model?.targetGender ||
+      ''
+    ).toString().trim().toLowerCase();
+
+    if (!modelGender) {
+      return true;
+    }
+
+    if (normalizedGender === 'femme') {
+      return ['femme', 'f', 'female', 'woman', 'women'].includes(modelGender);
+    }
+
+    if (normalizedGender === 'homme') {
+      return ['homme', 'h', 'male', 'man', 'men'].includes(modelGender);
+    }
+
+    return true;
+  }
+
+  setGenderFilter(gender) {
+    this.currentGenderFilter = gender || 'all';
+    this.renderModels();
+  }
+
   createModelCard(model) {
     const card = document.createElement('div');
-    card.className = `col-md-3 col-sm-6 mb-3 model-card ${this.selectedModel?.id === model.id ? 'selected' : ''}`;
+    card.className = `model-card ${this.selectedModel?.id === model.id ? 'selected' : ''}`;
 
     const imageUrl = this.getImageUrl(model.photoPath);
 
@@ -340,6 +376,7 @@ class ModelManager {
     document.getElementById('selectedModelId').value = this.selectedModel.id;
     document.getElementById('modeleNom').value = this.selectedModel.nom;
     document.getElementById('photoInput').value = '';
+    this.updateSelectedModelPreview();
 
     this.updateModelSelection();
 
@@ -349,6 +386,28 @@ class ModelManager {
 
     console.log('✅ Modèle sélectionné:', this.selectedModel.nom);
     this.showSuccess(`Modèle "${this.selectedModel.nom}" sélectionné`);
+  }
+
+  updateSelectedModelPreview() {
+    const preview = document.getElementById('selectedModelPreview');
+    const thumb = document.getElementById('selectedModelThumb');
+    const name = document.getElementById('selectedModelName');
+
+    if (!preview || !thumb || !name) return;
+
+    if (!this.selectedModel) {
+      preview.classList.add('d-none');
+      thumb.src = '';
+      name.textContent = '';
+      return;
+    }
+
+    thumb.src = this.getImageUrl(this.selectedModel.photoPath);
+    thumb.onerror = () => {
+      thumb.src = 'assets/images/default-model.png';
+    };
+    name.textContent = this.selectedModel.nom || 'Modèle sélectionné';
+    preview.classList.remove('d-none');
   }
 
   updateModelSelection() {
@@ -392,6 +451,7 @@ class ModelManager {
         document.getElementById('selectedModelId').value = '';
         document.getElementById('modeleNom').value = '';
         this.updateModelSelection();
+        this.updateSelectedModelPreview();
 
         const sexe = document.getElementById('sexe')?.value;
         const avatar = document.getElementById('avatar');
@@ -453,6 +513,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   try {
     modelManager = new ModelManager();
     await modelManager.init();
+    window.modelManager = modelManager;
     console.log('✅ Application initialisée avec succès');
   } catch (error) {
     console.error('❌ Erreur initialisation:', error);
@@ -476,6 +537,10 @@ document.addEventListener("DOMContentLoaded", async function () {
   const optionCards = document.querySelectorAll(".option-card");
   const genderRadios = document.querySelectorAll('input[name="genderPreview"]');
   const defaultImage = avatar.src;
+  const habitPhotoInput = document.getElementById("habitPhotoInput");
+  const habitPhotoPreviewContainer = document.getElementById("habitPhotoPreviewContainer");
+  const habitPhotoPreview = document.getElementById("habitPhotoPreview");
+  const removeHabitPhotoBtn = document.getElementById("removeHabitPhotoBtn");
 
   // Éléments du modal de prix
   const priceModal = new bootstrap.Modal(document.getElementById('priceModal'));
@@ -535,8 +600,63 @@ document.addEventListener("DOMContentLoaded", async function () {
       } else {
         avatar.src = "assets/images/model3.jpg";
       }
+
+      if (modelManager && typeof modelManager.setGenderFilter === 'function') {
+        modelManager.setGenderFilter(radio.value);
+      }
     });
   });
+
+  if (sexe && modelManager && typeof modelManager.setGenderFilter === 'function') {
+    sexe.addEventListener('change', () => {
+      if (sexe.value) {
+        modelManager.setGenderFilter(sexe.value);
+      }
+    });
+  }
+
+  const selectedPreviewGender = document.querySelector('input[name="genderPreview"]:checked')?.value;
+  if (selectedPreviewGender && modelManager && typeof modelManager.setGenderFilter === 'function') {
+    modelManager.setGenderFilter(selectedPreviewGender);
+  }
+
+  // Galerie photo habit: preview + suppression
+  function resetHabitPreview() {
+    if (habitPhotoPreview) habitPhotoPreview.src = '';
+    if (habitPhotoPreviewContainer) habitPhotoPreviewContainer.style.display = 'none';
+    if (removeHabitPhotoBtn) removeHabitPhotoBtn.classList.add('d-none');
+  }
+
+  if (habitPhotoInput) {
+    habitPhotoInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) {
+        resetHabitPreview();
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (habitPhotoPreview) {
+          habitPhotoPreview.src = event.target.result;
+        }
+        if (habitPhotoPreviewContainer) {
+          habitPhotoPreviewContainer.style.display = 'block';
+        }
+        if (removeHabitPhotoBtn) {
+          removeHabitPhotoBtn.classList.remove('d-none');
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  if (removeHabitPhotoBtn && habitPhotoInput) {
+    removeHabitPhotoBtn.addEventListener('click', () => {
+      habitPhotoInput.value = '';
+      resetHabitPreview();
+    });
+  }
 
   // Validation du formulaire
   function validateForm() {
@@ -570,6 +690,10 @@ document.addEventListener("DOMContentLoaded", async function () {
       if (!typeSelected) {
         errors.push("Veuillez sélectionner un type de vêtement (Robe ou Jupe).");
       }
+    }
+
+    if (!habitPhotoInput || !habitPhotoInput.files || habitPhotoInput.files.length === 0) {
+      errors.push("Veuillez ajouter la photo de l'habit à coudre.");
     }
 
     return errors;
@@ -679,6 +803,18 @@ document.addEventListener("DOMContentLoaded", async function () {
       formData.append("photo", photoInput.files[0]);
     }
 
+    // Ajouter la photo de l'habit (obligatoire)
+    if (habitPhotoInput?.files?.length > 0) {
+      formData.append("habitPhoto", habitPhotoInput.files[0]);
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Photo habit obligatoire",
+        text: "Veuillez ajouter la photo de l'habit à coudre.",
+      });
+      return;
+    }
+
     // Log des données envoyées
     console.log("📤 Données envoyées:");
     for (let [key, value] of formData.entries()) {
@@ -751,6 +887,12 @@ document.addEventListener("DOMContentLoaded", async function () {
           mesuresHomme.style.display = "none";
           optionCards.forEach((c) => c.classList.remove("selected"));
           document.getElementById('previewFemale').checked = true;
+          resetHabitPreview();
+          if (modelManager && typeof modelManager.updateSelectedModelPreview === 'function') {
+            modelManager.selectedModel = null;
+            modelManager.updateSelectedModelPreview();
+            modelManager.updateModelSelection();
+          }
 
           // Rechargement de la liste des clients si disponible
           if (typeof window.fetchClients === 'function') {

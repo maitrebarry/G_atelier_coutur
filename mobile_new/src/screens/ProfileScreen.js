@@ -17,6 +17,11 @@ export default function ProfileScreen({ navigation }) {
 
   const apiBase = useMemo(() => (api?.defaults?.baseURL || '').replace(/\/?api\/?$/i, ''), []);
 
+  const getImageMediaTypeOption = () => {
+    const imageType = ImagePicker?.MediaType?.images || ImagePicker?.MediaType?.Images || 'images';
+    return [imageType];
+  };
+
   const buildPhotoUrl = (photoPath) => {
     if (!photoPath) return null;
     if (String(photoPath).startsWith('http')) return photoPath;
@@ -46,7 +51,7 @@ export default function ProfileScreen({ navigation }) {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) return Alert.alert('Permission refusée');
-      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaType.Images, quality: 0.7 });
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: getImageMediaTypeOption(), quality: 0.7 });
       if (result.canceled) return;
 
       const uri = result.assets ? result.assets[0].uri : result.uri;
