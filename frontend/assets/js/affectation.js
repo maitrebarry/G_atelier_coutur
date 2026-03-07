@@ -3,6 +3,7 @@ let selectedClients = new Map();
 let currentAtelierId = null;
 let currentUserRole = null;
 let currentUserId = null;
+let overdueOnlyMode = false;
 
 const apiAffectations = "http://localhost:8081/api/affectations";
 
@@ -52,6 +53,7 @@ function initAffectation() {
     // Initialiser les composants
     initializeComponents();
     setupEventListeners();
+    applyUrlFilters();
 
     // Charger les données
     if (canCreateAffectation()) {
@@ -60,6 +62,30 @@ function initAffectation() {
     }
     
     loadAffectations();
+}
+
+function applyUrlFilters() {
+    const params = new URLSearchParams(window.location.search);
+    const raw = (params.get('retard') || params.get('overdue') || '').toLowerCase();
+    overdueOnlyMode = raw === '1' || raw === 'true' || raw === 'yes';
+
+    if (!overdueOnlyMode) return;
+
+    const filterStatut = document.getElementById('filterStatutAffectation');
+    if (filterStatut) {
+        filterStatut.value = 'EN_COURS';
+    }
+}
+
+function isAffectationOverdue(affectation) {
+    if (!affectation?.dateEcheance) return false;
+    if (['ANNULE', 'TERMINE', 'VALIDE'].includes(affectation.statut)) return false;
+
+    const deadline = new Date(affectation.dateEcheance);
+    if (Number.isNaN(deadline.getTime())) return false;
+
+    deadline.setHours(23, 59, 59, 999);
+    return deadline.getTime() < Date.now();
 }
 
 
@@ -219,6 +245,7 @@ async function loadAffectations() {
         const filterTailleur = document.getElementById('filterTailleurAffectation')?.value;
         
         if (filterStatut) url += `&statut=${filterStatut}`;
+        if (!filterStatut && overdueOnlyMode) url += `&statut=EN_COURS`;
         if (filterTailleur) url += `&tailleurId=${filterTailleur}`;
 
         const response = await fetch(url, {
@@ -234,7 +261,9 @@ async function loadAffectations() {
         if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
 
         const data = await response.json();
-        displayAffectations(data.data || []);
+        const affectations = Array.isArray(data.data) ? data.data : [];
+        const filtered = overdueOnlyMode ? affectations.filter(isAffectationOverdue) : affectations;
+        displayAffectations(filtered);
     } catch (error) {
         console.error("Erreur chargement affectations:", error);
         showError("Erreur lors du chargement des affectations");
@@ -797,6 +826,7 @@ function resetForm() {
 function resetFilters() {
     document.getElementById('filterStatutAffectation').value = '';
     document.getElementById('filterTailleurAffectation').value = '';
+    overdueOnlyMode = false;
     loadAffectations();
 }
 

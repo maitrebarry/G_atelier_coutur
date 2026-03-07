@@ -21,6 +21,9 @@ const Home = () => {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
   const role = (JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData') || '{}')?.role || '').toUpperCase();
+  const openOverdueAffectations = () => {
+    navigate('/affectations?retard=1');
+  };
 
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [atelierSubscriptions, setAtelierSubscriptions] = useState([]);
@@ -699,7 +702,18 @@ const Home = () => {
                 data.tachesUrgentes.map((tache, index) => (
                   <div key={index} className={`alert alert-${getTachePriorityColor(tache.priorite)} mb-2`}>
                     <div className="d-flex justify-content-between align-items-center">
-                      <span>{tache.description || 'Tâche urgente'}</span>
+                        <div className="d-flex align-items-center gap-2">
+                          <span>{tache.description || 'Tâche urgente'}</span>
+                          {/retard/i.test(String(tache.description || '')) && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={openOverdueAffectations}
+                            >
+                              Voir
+                            </button>
+                          )}
+                        </div>
                       <small className="text-muted">{tache.type || 'URGENT'}</small>
                     </div>
                   </div>

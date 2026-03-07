@@ -1325,10 +1325,19 @@ function displayTachesUrgentes(taches) {
     
     let html = '';
     taches.forEach(tache => {
+        const description = String(tache.description || 'Tâche urgente');
+        const isRetardTask = /retard/i.test(description);
         html += `
             <div class="alert alert-${getTachePriorityColor(tache.priorite)} mb-2">
                 <div class="d-flex justify-content-between align-items-center">
-                    <span>${tache.description || 'Tâche urgente'}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span>${description}</span>
+                        ${isRetardTask ? `
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="openOverdueAffectations()">
+                                Voir
+                            </button>
+                        ` : ''}
+                    </div>
                     <small class="text-muted">${tache.type || 'URGENT'}</small>
                 </div>
             </div>
@@ -1336,6 +1345,10 @@ function displayTachesUrgentes(taches) {
     });
     
     container.innerHTML = html || '<p class="text-muted">Aucune tâche urgente</p>';
+}
+
+function openOverdueAffectations() {
+    window.location.href = 'affectation.html?retard=1';
 }
 
 function displayAffectationsEnCours(affectations) {

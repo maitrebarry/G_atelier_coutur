@@ -34,7 +34,7 @@ const tomorrow = () => {
   return d.toISOString().slice(0, 10);
 };
 
-export default function AffectationScreen({ navigation }) {
+export default function AffectationScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -59,6 +59,7 @@ export default function AffectationScreen({ navigation }) {
   const [showRdvModal, setShowRdvModal] = useState(false);
   const [rdvTarget, setRdvTarget] = useState(null);
   const [rdvSaving, setRdvSaving] = useState(false);
+  const [overdueOnly, setOverdueOnly] = useState(false);
   const [rdvForm, setRdvForm] = useState({
     date: tomorrow(),
     heure: '10:00',
@@ -80,6 +81,24 @@ export default function AffectationScreen({ navigation }) {
   const canView = hasPermission('AFFECTATION_VOIR');
   const canCreate = (['PROPRIETAIRE', 'SECRETAIRE'].includes(role) || hasPermission('AFFECTATION_CREER')) && hasPermission('AFFECTATION_VOIR');
   const canCancel = ['PROPRIETAIRE', 'SECRETAIRE', 'SUPERADMIN'].includes(role) || hasPermission('AFFECTATION_SUPPRIMER');
+
+  const getAffectationDueDate = useCallback((aff) => (
+    aff?.dateEcheance || aff?.date_echeance || aff?.dateLimite || aff?.date_limite || null
+  ), []);
+
+  const isAffectationOverdue = useCallback((aff) => {
+    const dueDate = getAffectationDueDate(aff);
+    if (!dueDate) return false;
+
+    const statut = String(aff?.statut || '').toUpperCase();
+    if (['ANNULE', 'TERMINE', 'VALIDE'].includes(statut)) return false;
+
+    const deadline = new Date(dueDate);
+    if (Number.isNaN(deadline.getTime())) return false;
+
+    deadline.setHours(23, 59, 59, 999);
+    return deadline.getTime() < Date.now();
+  }, [getAffectationDueDate]);
 
   const headers = useMemo(
     () => ({
@@ -140,6 +159,14 @@ export default function AffectationScreen({ navigation }) {
   useEffect(() => {
     loadContext();
   }, [loadContext]);
+
+  useEffect(() => {
+    const incomingOverdue = route?.params?.overdueOnly === true;
+    setOverdueOnly(incomingOverdue);
+    if (incomingOverdue) {
+      setStatusFilter('');
+    }
+  }, [route?.params?.overdueOnly]);
 
   useEffect(() => {
     loadFormData();
@@ -320,6 +347,10 @@ export default function AffectationScreen({ navigation }) {
     Promise.all([loadFormData(), loadAffectations({ silent: true })]).finally(() => setRefreshing(false));
   };
 
+  const displayedAffectations = useMemo(() => {
+    return overdueOnly ? affectations.filter(isAffectationOverdue) : affectations;
+  }, [overdueOnly, affectations, isAffectationOverdue]);
+
   const renderAffectation = ({ item }) => (
     <View style={styles.affCard}>
       {(() => {
@@ -388,7 +419,7 @@ export default function AffectationScreen({ navigation }) {
         </View>
       ) : (
         <FlatList
-          data={affectations}
+          data={displayedAffectations}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderAffectation}
           contentContainerStyle={{ padding: 12, paddingBottom: 80 }}
@@ -465,10 +496,33 @@ export default function AffectationScreen({ navigation }) {
 
               <View style={styles.formBox}>
                 <Text style={styles.sectionTitle}>Liste des affectations</Text>
+                {overdueOnly ? (
+                  <View style={styles.overdueBanner}>
+                    <Text style={styles.overdueBannerText}>Affichage: commandes en retard uniquement</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setOverdueOnly(false);
+                        navigation.setParams?.({ overdueOnly: false });
+                      }}
+                    >
+                      <Text style={styles.overdueBannerAction}>Enlever</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
                 <Text style={styles.label}>Statut</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                   {STATUTS.map((s) => (
-                    <TouchableOpacity key={`st-${s || 'all'}`} style={[styles.chip, statusFilter === s && styles.chipActive]} onPress={() => setStatusFilter(s)}>
+                    <TouchableOpacity
+                      key={`st-${s || 'all'}`}
+                      style={[styles.chip, statusFilter === s && styles.chipActive]}
+                      onPress={() => {
+                        if (overdueOnly) {
+                          setOverdueOnly(false);
+                          navigation.setParams?.({ overdueOnly: false });
+                        }
+                        setStatusFilter(s);
+                      }}
+                    >
                       <Text style={[styles.chipText, statusFilter === s && styles.chipTextActive]}>{s || 'Tous'}</Text>
                     </TouchableOpacity>
                   ))}
@@ -658,6 +712,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   refreshBtnText: { color: '#44567d', fontWeight: '800' },
+
+  overdueBanner: {
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#fecdd3',
+    backgroundColor: '#fff1f2',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  overdueBannerText: { color: '#9f1239', fontWeight: '700', flex: 1, marginRight: 10 },
+  overdueBannerAction: { color: '#be123c', fontWeight: '900' },
 
   affCard: {
     backgroundColor: '#fff',

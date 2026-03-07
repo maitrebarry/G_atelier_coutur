@@ -149,6 +149,78 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  const formatRecentDate = (value) => {
+    if (!value) return '';
+    try {
+      const d = new Date(value);
+      if (!Number.isNaN(d.getTime())) {
+        return d.toLocaleString('fr-FR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          day: '2-digit',
+          month: '2-digit',
+        });
+      }
+      return String(value);
+    } catch {
+      return String(value);
+    }
+  };
+
+  const movementIcon = (type) => {
+    const t = String(type || '').toUpperCase();
+    if (t.includes('RENDEZ') || t.includes('RDV')) return '📅';
+    if (t.includes('PAIEMENT')) return '💳';
+    if (t.includes('CLIENT')) return '👥';
+    if (t.includes('AFFECT')) return '📌';
+    if (t.includes('ABONN')) return '📦';
+    return '🕘';
+  };
+  
+  const openOverdueAffectations = () => {
+    if (!canViewAffectations) {
+      Alert.alert('Information', "Vous n'avez pas la permission de voir les affectations.");
+      return;
+    }
+    navigation.navigate('Affectation', { overdueOnly: true });
+  };
+
+  const recentActivity = (() => {
+    const direct =
+      dashboardData?.activitesRecentes ||
+      dashboardData?.activiteRecente ||
+      dashboardData?.recentActivity ||
+      dashboardData?.mouvementsRecents ||
+      dashboardData?.recentActivities ||
+      [];
+
+    if (Array.isArray(direct) && direct.length > 0) return direct.slice(0, 5);
+
+    // Fallback: compose from known dashboard blocks when backend does not expose a unified recent feed
+    const out = [];
+    if (Array.isArray(dashboardData?.rendezVousAujourdhuiList)) {
+      dashboardData.rendezVousAujourdhuiList.slice(0, 2).forEach((x) => {
+        out.push({
+          type: 'RENDEZ_VOUS',
+          title: x?.clientNom || 'Rendez-vous',
+          subtitle: x?.type || x?.statut || 'Planifié',
+          date: x?.date || x?.createdAt,
+        });
+      });
+    }
+    if (Array.isArray(dashboardData?.clientsRecents)) {
+      dashboardData.clientsRecents.slice(0, 2).forEach((x) => {
+        out.push({
+          type: 'CLIENT',
+          title: x?.nomComplet || 'Nouveau client',
+          subtitle: x?.contact || 'Client',
+          date: x?.createdAt || x?.dateCreation,
+        });
+      });
+    }
+    return out.slice(0, 5);
+  })();
+
   const dashboardCards =
     role === 'TAILLEUR'
       ? [
@@ -285,16 +357,14 @@ export default function HomeScreen({ navigation }) {
     ]);
   };
 
-  // simplified card component used elsewhere
-  const MenuCard = ({ title, value, color = '#0d6efd', icon, onPress }) => (
+  const QuickActionButton = ({ title, icon, onPress, color = '#0d6efd' }) => (
     <TouchableOpacity
-      style={[styles.menuCard, { backgroundColor: color || '#fff' }]}
       onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
+      activeOpacity={0.85}
+      style={[styles.quickActionButton, { backgroundColor: color }]}
     >
-      {icon && <Text style={styles.cardIcon}>{icon}</Text>}
-      <Text style={[styles.cardTitle, { color: color ? '#fff' : '#333' }]}>{title}</Text>
-      <Text style={[styles.cardValue, { color: color ? '#fff' : '#333' }]}>{value}</Text>
+      <Text style={styles.quickActionIcon}>{icon}</Text>
+      <Text style={styles.quickActionLabel}>{title}</Text>
     </TouchableOpacity>
   );
 
@@ -420,6 +490,38 @@ export default function HomeScreen({ navigation }) {
                 ))
               ) : (
                 <Text style={styles.emptyText}>Aucun client récent</Text>
+              )}
+            </View>
+          </View>
+        </>
+      );
+    }
+    if (role === 'PROPRIETAIRE') {
+      return (
+        <>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Tâches urgentes</Text>
+            <View style={styles.panelCard}>
+              {dashboardData?.tachesUrgentes?.length > 0 ? (
+                dashboardData.tachesUrgentes.map((tache, index) => {
+                  const description = String(tache?.description || 'Tâche urgente');
+                  const isRetardTask = /retard/i.test(description);
+                  return (
+                    <View key={`urgent-${index}`} style={styles.panelRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.panelMain}>{description}</Text>
+                        <Text style={styles.panelSub}>{tache?.type || 'URGENT'}</Text>
+                      </View>
+                      {isRetardTask ? (
+                        <TouchableOpacity style={styles.urgentBtn} onPress={openOverdueAffectations}>
+                          <Text style={styles.urgentBtnText}>Voir</Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                  );
+                })
+              ) : (
+                <Text style={styles.emptyText}>Aucune tâche urgente</Text>
               )}
             </View>
           </View>
@@ -742,17 +844,45 @@ export default function HomeScreen({ navigation }) {
 
         {roleDetailSections()}
 
-        {/* Actions rapides (1 bouton) */}
+        {/* Actions rapides */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Actions rapides</Text>
-          <View style={styles.row}>
+          <View style={styles.quickActionsGrid}>
             {canCreateClient ? (
-              <MenuCard title="Nouveau client" value="" color="#0d6efd" icon="🧵" onPress={() => navigation.navigate('MesureAdd')} />
+              <QuickActionButton title="Nouveau client" icon="🧵" color="#0ea5e9" onPress={() => navigation.navigate('MesureAdd')} />
             ) : null}
             {canViewRendezVous ? (
-              <MenuCard title="Rendez-vous" value="" color="#0d6efd" icon="📅" onPress={() => navigation.navigate('Rendezvous')} />
+              <QuickActionButton title="Rendez-vous" icon="📅" color="#0d6efd" onPress={() => navigation.navigate('Rendezvous')} />
             ) : null}
           </View>
+        </View>
+
+        {/* Activité récente */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Activité récente</Text>
+          {recentActivity.length === 0 ? (
+            <Text style={styles.emptyText}>Aucune activité récente</Text>
+          ) : (
+            recentActivity.map((item, index) => {
+              const title = item?.title || item?.libelle || item?.type || 'Activité';
+              const subtitle = item?.subtitle || item?.description || item?.statut || '';
+              const amount = item?.montant || item?.amount || null;
+              const d = item?.date || item?.createdAt || item?.dateCreation;
+              return (
+                <View key={`recent-${index}`} style={styles.recentCard}>
+                  <View style={styles.recentIconWrap}>
+                    <Text style={styles.recentIcon}>{movementIcon(item?.type)}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.panelMain}>{title}</Text>
+                    <Text style={styles.panelSub}>{formatRecentDate(d)}</Text>
+                    {subtitle ? <Text style={styles.panelSub}>{subtitle}</Text> : null}
+                  </View>
+                  {amount ? <Text style={styles.recentAmount}>{formatCurrency(amount)}</Text> : null}
+                </View>
+              );
+            })
+          )}
         </View>
 
       </ScrollView>
@@ -848,6 +978,45 @@ const styles = StyleSheet.create({
   section: { marginBottom: 24 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#222', marginBottom: 12 },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  quickActionButton: {
+    width: '48%',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionIcon: { color: '#fff', fontSize: 18, marginRight: 8 },
+  quickActionLabel: { color: '#fff', fontWeight: '700', textAlign: 'center' },
+  recentCard: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#edf1f6',
+  },
+  recentIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    backgroundColor: '#f3f6fb',
+  },
+  recentIcon: { fontSize: 20 },
+  recentAmount: { fontWeight: '800', color: '#1f2937', marginLeft: 8 },
   panelCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -930,10 +1099,8 @@ const styles = StyleSheet.create({
   modalCancelText: { color: '#6c757d', fontWeight: '700' },
   modalSave: { backgroundColor: '#0d6efd', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
   modalSaveText: { color: '#fff', fontWeight: '800' },
-  menuCard: { flex: 1, marginHorizontal: 4, borderRadius: 16, padding: 16, alignItems: 'center', elevation: 2 },
-  cardIcon: { fontSize: 32, marginBottom: 8 },
-  cardTitle: { fontSize: 14, fontWeight: 'bold', marginBottom: 2 },
-  cardValue: { fontSize: 16, fontWeight: 'bold' },
+  urgentBtn: { backgroundColor: '#fff1f2', borderWidth: 1, borderColor: '#fecdd3', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  urgentBtnText: { color: '#be123c', fontWeight: '800', fontSize: 12 },
   bottomBar: {
     flexDirection: 'row',
     backgroundColor: '#fff',

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import api, { getUserData } from '../api/api';
 import Swal from 'sweetalert2';
 
@@ -9,9 +10,12 @@ const getDefaultRdvDate = () => {
 };
 
 const Affectations = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [tailleurs, setTailleurs] = useState([]);
   const [clients, setClients] = useState([]);
   const [affectations, setAffectations] = useState([]);
+  const [overdueOnly, setOverdueOnly] = useState(false);
   const [selectedClients, setSelectedClients] = useState(new Map());
   const [filters, setFilters] = useState({
     searchClient: '',
@@ -41,6 +45,39 @@ const Affectations = () => {
   const canCreate = ['PROPRIETAIRE', 'SECRETAIRE'].includes(userRole);
   const canCancel = ['PROPRIETAIRE', 'SECRETAIRE', 'SUPERADMIN'].includes(userRole);
 
+  const getAffectationDueDate = (affectation) => (
+    affectation?.dateEcheance ||
+    affectation?.date_echeance ||
+    affectation?.dateLimite ||
+    affectation?.date_limite ||
+    null
+  );
+
+  const isAffectationOverdue = (affectation) => {
+    const dueDate = getAffectationDueDate(affectation);
+    if (!dueDate) return false;
+
+    if (['ANNULE', 'TERMINE', 'VALIDE'].includes(String(affectation.statut || '').toUpperCase())) return false;
+
+    const deadline = new Date(dueDate);
+    if (Number.isNaN(deadline.getTime())) return false;
+
+    deadline.setHours(23, 59, 59, 999);
+    return deadline.getTime() < Date.now();
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const raw = (params.get('retard') || params.get('overdue') || '').toLowerCase();
+    const shouldOverdue = raw === '1' || raw === 'true' || raw === 'yes';
+
+    setOverdueOnly(shouldOverdue);
+    if (shouldOverdue) {
+      // Important: leave `statut` empty here, otherwise overdue EN_ATTENTE entries are hidden.
+      setFilters((prev) => ({ ...prev, statut: '' }));
+    }
+  }, [location.search]);
+
   const loadAffectations = useCallback(async () => {
     try {
       let url = `/affectations?atelierId=${atelierId}`;
@@ -52,11 +89,12 @@ const Affectations = () => {
             'X-User-Role': userRole
         }
       });
-      setAffectations(res.data.data || []);
+      const rows = Array.isArray(res.data.data) ? res.data.data : [];
+      setAffectations(overdueOnly ? rows.filter(isAffectationOverdue) : rows);
     } catch (error) {
       console.error('Error loading affectations:', error);
     }
-  }, [atelierId, filters.statut, filters.tailleurId, userId, userRole]);
+  }, [atelierId, filters.statut, filters.tailleurId, userId, userRole, overdueOnly]);
 
   const loadData = useCallback(async () => {
     if (!atelierId) return;
@@ -446,6 +484,9 @@ const Affectations = () => {
                         className="form-select"
                         value={filters.statut}
                         onChange={(e) => {
+                      if (overdueOnly) {
+                        setOverdueOnly(false);
+                      }
                             setFilters({...filters, statut: e.target.value});
                             // Trigger reload via effect or manual call? 
                             // Better to use effect on filters change or manual button
@@ -462,10 +503,26 @@ const Affectations = () => {
                     <button className="btn btn-outline-secondary" onClick={loadAffectations}>
                         <i className="bx bx-refresh me-1"></i>Actualiser
                     </button>
+                    {overdueOnly && (
+                      <button
+                        className="btn btn-outline-danger ms-2"
+                        onClick={() => {
+                          setOverdueOnly(false);
+                          navigate('/affectations');
+                        }}
+                      >
+                        Enlever filtre retard
+                      </button>
+                    )}
                 </div>
             </div>
         </div>
         <div className="card-body">
+            {overdueOnly && (
+              <div className="alert alert-danger py-2">
+                Affichage des commandes en retard uniquement.
+              </div>
+            )}
             {affectations.length === 0 ? (
                 <div className="text-center py-5 text-muted">Aucune affectation trouvée</div>
             ) : (
