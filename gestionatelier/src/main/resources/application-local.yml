@@ -1,10 +1,34 @@
+# spring:
+#   config:
+#     activate:
+#       on-profile: local
+
+#   datasource:
+#     # local developer database (Postgres recommended)
+#     url: jdbc:postgresql://localhost:5432/atelier_couture_local
+#     username: atelier_local
+#     password: localpass
+#     driver-class-name: org.postgresql.Driver
+
+#   jpa:
+#     hibernate:
+#       ddl-auto: update
+#     show-sql: true
+
+# # frontend urls used for local OAuth flows
+# app:
+#   frontend:
+#     base-url: http://localhost:3000
+#   subscription:
+#     enforcement-enabled: true
+#   reset-db: false
+
 spring:
   config:
     activate:
       on-profile: local
 
   datasource:
-    # local developer database (Postgres recommended)
     url: jdbc:postgresql://localhost:5432/atelier_couture_local
     username: atelier_local
     password: localpass
@@ -15,7 +39,10 @@ spring:
       ddl-auto: update
     show-sql: true
 
-# frontend urls used for local OAuth flows
+  mail:
+    username: barrymoustapha908@gmail.com
+    password: qsttcalpogxqvhzw
+
 app:
   frontend:
     base-url: http://localhost:3000
