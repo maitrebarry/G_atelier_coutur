@@ -29,7 +29,7 @@ function fetchUserData() {
   }
 
   $.ajax({
-    url: "http://localhost:8081/api/auth/me",
+    url: Common.buildApiUrl('auth/me'),
     type: "GET",
     headers: {
       Authorization: "Bearer " + token,
@@ -87,7 +87,7 @@ function logout() {
   const token = getToken();
   if (token) {
     $.ajax({
-      url: "http://localhost:8081/api/auth/logout",
+      url: Common.buildApiUrl('auth/logout'),
       type: "POST",
       headers: {
         Authorization: "Bearer " + token,

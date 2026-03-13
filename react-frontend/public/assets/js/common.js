@@ -3,15 +3,56 @@
 // CONFIGURATION GLOBALE
 // ==================================================
 if (typeof window.APP_CONFIG === 'undefined') {
-    window.APP_CONFIG = {
-        API_BASE_URL: "http://localhost:8081",
-        ROLES: {
-            SUPERADMIN: 'SUPERADMIN',
-            PROPRIETAIRE: 'PROPRIETAIRE',
-            SECRETAIRE: 'SECRETAIRE',
-            TAILLEUR: 'TAILLEUR'
-        }
-    };
+    window.APP_CONFIG = {};
+}
+
+function stripTrailingSlash(value) {
+    return value ? value.replace(/\/+$/, '') : value;
+}
+
+function getDefaultOrigin() {
+    if (window.location.hostname === 'localhost') {
+        return 'http://localhost:8081';
+    }
+    return window.location.origin || '';
+}
+
+const DEFAULT_ORIGIN = getDefaultOrigin();
+const DEFAULT_API_BASE = stripTrailingSlash(window.APP_CONFIG.API_BASE_URL) ||
+    (DEFAULT_ORIGIN ? stripTrailingSlash(DEFAULT_ORIGIN) + '/api' : 'http://localhost:8081/api');
+const DEFAULT_MEDIA_BASE = stripTrailingSlash(window.APP_CONFIG.MEDIA_BASE_URL) ||
+    stripTrailingSlash(DEFAULT_ORIGIN) || 'http://localhost:8081';
+
+window.APP_CONFIG.API_BASE_URL = stripTrailingSlash(DEFAULT_API_BASE);
+window.APP_CONFIG.MEDIA_BASE_URL = stripTrailingSlash(DEFAULT_MEDIA_BASE);
+window.APP_CONFIG.ROLES = window.APP_CONFIG.ROLES || {
+    SUPERADMIN: 'SUPERADMIN',
+    PROPRIETAIRE: 'PROPRIETAIRE',
+    SECRETAIRE: 'SECRETAIRE',
+    TAILLEUR: 'TAILLEUR'
+};
+
+function getApiBaseUrl() {
+    return window.APP_CONFIG.API_BASE_URL;
+}
+
+function getMediaBaseUrl() {
+    return window.APP_CONFIG.MEDIA_BASE_URL;
+}
+
+function buildApiUrl(path) {
+    if (!path) return getApiBaseUrl();
+    const clean = String(path).replace(/^\/+/, '');
+    return `${getApiBaseUrl()}/${clean}`;
+}
+
+function buildMediaUrl(path) {
+    if (!path) return getMediaBaseUrl();
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+        return path;
+    }
+    const clean = String(path).replace(/^\/+/, '');
+    return `${getMediaBaseUrl()}/${clean}`;
 }
 
 // ==================================================
@@ -222,8 +263,7 @@ async function apiCall(endpoint, options = {}) {
             cleanEndpoint = cleanEndpoint.substring(1);
         }
         
-        const baseUrl = window.APP_CONFIG.API_BASE_URL;
-        const url = `${baseUrl}/${cleanEndpoint}`;
+        const url = buildApiUrl(cleanEndpoint);
         
         console.log('🌐 Appel API:', url, 'Token présent:', !!token);
         
@@ -359,5 +399,9 @@ window.Common = {
     showLoading,
     hideLoading,
     apiCall,
-    refreshPermissions  // <-- AJOUTÉ
+    refreshPermissions,
+    getApiBaseUrl,
+    getMediaBaseUrl,
+    buildApiUrl,
+    buildMediaUrl
 };

@@ -3,7 +3,7 @@
 let modelesData = [];
 let currentAtelierId = null;
 let currentEditingModeleId = null;
-const API_BASE_URL = 'http://localhost:8081/api';
+const API_BASE_URL = Common.getApiBaseUrl();
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
@@ -78,6 +78,17 @@ function setupEventListeners() {
             filterModelesByCategory(e.target.value);
         });
     }
+}
+
+function getModelePhotoUrl(photoPath) {
+    if (!photoPath) {
+        return 'images/default_model.png';
+    }
+    if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+        return photoPath;
+    }
+    const cleanPath = photoPath.replace(/^\/+/, '').replace('model_photo/', '');
+    return Common.buildMediaUrl(`model_photo/${cleanPath}`);
 }
 
 // === GESTION UPLOAD PHOTOS AVEC ZONE RECTANGULAIRE ===
@@ -244,13 +255,8 @@ function displayModeles(modeles) {
 }
 
 function createModeleCard(modele) {
-    // ✅ UTILISER LE BON ENDPOINT : /model_photo/
-    let photoUrl = 'images/default_model.png';
-    
-    if (modele.photoPath) {
-        // Utiliser l'endpoint qui fonctionne déjà pour les clients
-        photoUrl = `http://localhost:8081/model_photo/${modele.photoPath}`;
-    }
+    // ✅ Utilise le helper pour construire l'URL photo
+    const photoUrl = getModelePhotoUrl(modele.photoPath);
     
     const prixFormatted = new Intl.NumberFormat('fr-FR').format(modele.prix);
     const categorieDisplay = getCategorieDisplayName(modele.categorie);
@@ -325,7 +331,7 @@ function showEditerModeleModal(modeleId) {
     const uploadPlaceholder = document.getElementById('modeleUploadPlaceholder');
 
     if (modele.photoPath) {
-        const photoUrl = `http://localhost:8081/model_photo/${modele.photoPath}`;
+        const photoUrl = getModelePhotoUrl(modele.photoPath);
         if (previewImage) previewImage.src = photoUrl;
         if (preview) preview.style.display = 'block';
         if (uploadPlaceholder) uploadPlaceholder.style.display = 'none';

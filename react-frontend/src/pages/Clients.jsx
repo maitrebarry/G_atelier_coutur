@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api, { getUserData } from '../api/api';
+import { buildMediaUrl } from '../config/api';
 import Swal from 'sweetalert2';
 
 const Clients = () => {
@@ -23,8 +24,8 @@ const Clients = () => {
   const getClientPhotoUrl = (mesure) => {
     if (!mesure) return '/assets/images/default_femme.png';
     if (mesure.photoPath) {
-      const cleanPath = mesure.photoPath.replace(/^\/+/, "").replace("model_photo/", "");
-      return `http://localhost:8081/model_photo/${cleanPath}`;
+      const cleanPath = mesure.photoPath.replace(/^\/+/, '').replace('model_photo/', '');
+      return buildMediaUrl(`model_photo/${cleanPath}`);
     }
     return mesure.sexe === 'Homme' ? '/assets/images/default_homme.png' : '/assets/images/default_femme.png';
   };
@@ -33,8 +34,8 @@ const Clients = () => {
   const getHabitPhotoUrl = (mesure) => {
     if (!mesure || !mesure.habitPhotoPath) return null;
     if (mesure.habitPhotoPath.startsWith('http')) return mesure.habitPhotoPath;
-    const cleanPath = mesure.habitPhotoPath.replace(/^\/+/, "").replace("habit_photo/", "");
-    return `http://localhost:8081/habit_photo/${cleanPath}`;
+    const cleanPath = mesure.habitPhotoPath.replace(/^\/+/, '').replace('habit_photo/', '');
+    return buildMediaUrl(`habit_photo/${cleanPath}`);
   };
 
   useEffect(() => {
@@ -116,8 +117,8 @@ const Clients = () => {
       // Handle photo preview
       let photoUrl = initialData.sexe === 'Homme' ? '/assets/images/model3.jpg' : '/assets/images/model4.jpg';
       if (mesure.photoPath) {
-        const cleanPath = mesure.photoPath.replace(/^\/+/, "").replace("model_photo/", "");
-        photoUrl = `http://localhost:8081/model_photo/${cleanPath}`;
+        const cleanPath = mesure.photoPath.replace(/^\/+/, '').replace('model_photo/', '');
+        photoUrl = buildMediaUrl(`model_photo/${cleanPath}`);
       }
       setPhotoPreview(photoUrl);
       setHabitPhotoFile(null);

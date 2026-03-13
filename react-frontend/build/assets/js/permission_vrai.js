@@ -14,7 +14,7 @@ if (typeof Swal === 'undefined') {
     console.log('✅ SweetAlert2 chargé avec succès');
 }
 
-const API_BASE_URL = "http://localhost:8081";
+const API_BASE_URL = Common.getMediaBaseUrl();
 
 // Fonction pour récupérer le token
 function getToken() {

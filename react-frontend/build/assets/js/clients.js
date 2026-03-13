@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("Données utilisateur:", userData);
 
       // ✅ CORRECTION : Utiliser l'endpoint unique du backend
-      const url = `http://localhost:8081/api/clients`;
+      const url = Common.buildApiUrl('clients');
 
       console.log("API utilisée :", url);
 
@@ -238,7 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
-      const response = await fetch(`http://localhost:8081/api/clients/${clientId}`, {
+      const response = await fetch(Common.buildApiUrl(`clients/${clientId}`), {
         method: 'DELETE',
         headers: {
           'Accept': 'application/json',
@@ -285,7 +285,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const token = getToken();
 
       const response = await fetch(
-        `http://localhost:8081/api/clients/${clientId}`,
+        Common.buildApiUrl(`clients/${clientId}`),
         {
           headers: {
             Accept: "application/json",
@@ -314,7 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
           let cleanPath = mesure.photoPath
             .replace(/^\/+/, "")
             .replace("model_photo/", "");
-          photoPath = `http://localhost:8081/model_photo/${cleanPath}`;
+          photoPath = Common.buildMediaUrl(`model_photo/${cleanPath}`);
         }
       }
       photoClient.src = photoPath;

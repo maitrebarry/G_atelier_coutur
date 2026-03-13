@@ -3,10 +3,10 @@
 // 		const apiUtilisateurs = `${API_BASE_URL}/api/utilisateurs`;
 	// 🔧 CONFIGURATION GLOBALE (déclarée une seule fois)
 	if (typeof window.API_BASE_URL === 'undefined') {
-		window.API_BASE_URL = "http://localhost:8081";
+		window.API_BASE_URL = Common.getMediaBaseUrl();
 	}
 	if (typeof window.apiUtilisateurs === 'undefined') {
-		window.apiUtilisateurs = `${API_BASE_URL}/api/utilisateurs`;
+		window.apiUtilisateurs = Common.buildApiUrl('utilisateurs');
 	}
 
 		// Fonction pour vérifier si l'utilisateur a une permission spécifique

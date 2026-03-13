@@ -188,7 +188,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const token =localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
 
-    const response = await fetch("http://localhost:8081/api/clients/ajouter", {
+    const response = await fetch(Common.buildApiUrl('clients/ajouter'), {
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${token}`,

@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     try {
-      const response = await fetch("http://localhost:8081/api/ateliers", {
+      const response = await fetch(Common.buildApiUrl('ateliers'), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

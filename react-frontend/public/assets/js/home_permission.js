@@ -37,7 +37,7 @@
             return getDefaultPermissionsByRole(userData.role || 'VISITEUR');
         }
 
-        const response = await fetch(`${window.APP_CONFIG?.API_BASE_URL || 'http://localhost:8081'}/api/admin/utilisateurs/${userData.userId}/permissions`, {
+        const response = await fetch(Common.buildApiUrl(`admin/utilisateurs/${userData.userId}/permissions`), {
             headers: {
                 'Authorization': `Bearer ${token}`
             }

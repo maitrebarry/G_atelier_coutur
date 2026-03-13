@@ -29,15 +29,19 @@ spring:
       on-profile: local
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/atelier_couture_local
-    username: atelier_local
-    password: localpass
+    # local database values that were previously working in application.properties
+    url: jdbc:postgresql://127.0.0.1:5432/atelier_couture
+    username: atelier_user
+    password: atelier_pass
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
   mail:
     username: barrymoustapha908@gmail.com

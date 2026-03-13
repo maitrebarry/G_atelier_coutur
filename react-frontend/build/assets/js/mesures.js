@@ -1,7 +1,12 @@
 
 
 // mesures.js - Code complet et corrigé
-window.API_BASE_URL = 'http://localhost:8081';
+const MEDIA_BASE_URL = (window.Common && typeof window.Common.getMediaBaseUrl === 'function')
+  ? window.Common.getMediaBaseUrl()
+  : (window.APP_CONFIG && window.APP_CONFIG.MEDIA_BASE_URL)
+    || (window.location.hostname === 'localhost' ? 'http://localhost:8081' : window.location.origin);
+
+window.API_BASE_URL = MEDIA_BASE_URL;
 
 class ModelManager {
   constructor() {
@@ -10,7 +15,7 @@ class ModelManager {
     this.currentCategory = 'all';
     this.atelierId = null;
     this.initialized = false;
-    this.baseUrl = window.API_BASE_URL || 'http://localhost:8081';
+    this.baseUrl = MEDIA_BASE_URL;
   }
 
   async init() {
@@ -751,7 +756,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enregistrement...';
 
     // Envoi des données
-    fetch("http://localhost:8081/api/clients/ajouter", {
+    fetch(Common.buildApiUrl('clients/ajouter'), {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${token}`,

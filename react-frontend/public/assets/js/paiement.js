@@ -3,7 +3,7 @@ let currentAtelierId = null;
 let currentUserRole = null;
 let currentUserId = null;
 
-const apiPaiements = "http://localhost:8081/api/paiements";
+const apiPaiements = Common.buildApiUrl('paiements');
 
 // ✅ UTILISER LES FONCTIONS COMMUNES
 function getToken() {

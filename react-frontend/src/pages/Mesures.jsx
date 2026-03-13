@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
 import api, { getUserData } from '../api/api';
+import { buildMediaUrl } from '../config/api';
 
 const CAMERA_CONSTRAINTS = {
   video: {
@@ -15,7 +16,7 @@ const buildHabitPhotoUrl = (photoPath) => {
   if (!photoPath) return null;
   if (photoPath.startsWith('http')) return photoPath;
   const cleanPath = photoPath.replace(/^\/+/, '').replace('habit_photo/', '');
-  return `http://localhost:8081/habit_photo/${cleanPath}`;
+  return buildMediaUrl(`habit_photo/${cleanPath}`);
 };
 
 const createInitialFormData = () => ({
@@ -333,13 +334,15 @@ const Mesures = () => {
   const getImageUrl = (photoPath) => {
     if (!photoPath) return 'assets/images/default-model.png';
     if (photoPath.startsWith('http')) return photoPath;
-    return `http://localhost:8081/model_photo/${photoPath}`;
+    const clean = photoPath.replace(/^\/+/, '').replace('model_photo/', '');
+    return buildMediaUrl(`model_photo/${clean}`);
   };
 
   const getVideoUrl = (videoPath) => {
     if (!videoPath) return null;
     if (videoPath.startsWith('http')) return videoPath;
-    return `http://localhost:8081/modeles/videos/${videoPath}`;
+    const clean = videoPath.replace(/^\/+/, '').replace('modeles/videos/', '');
+    return buildMediaUrl(`modeles/videos/${clean}`);
   };
 
   const fetchModels = async () => {

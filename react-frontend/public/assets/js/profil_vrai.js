@@ -2,12 +2,12 @@
 // Configuration
 // const API_BASE_URL = 'http://localhost:8081';
 // const apiUtilisateurs = `${API_BASE_URL}/api/utilisateurs`;
-	if (typeof window.API_BASE_URL === 'undefined') {
-		window.API_BASE_URL = "http://localhost:8081";
-	}
-	if (typeof window.apiUtilisateurs === 'undefined') {
-		window.apiUtilisateurs = `${API_BASE_URL}/api/utilisateurs`;
-	}
+    if (typeof window.API_BASE_URL === 'undefined') {
+        window.API_BASE_URL = Common.getMediaBaseUrl();
+    }
+    if (typeof window.apiUtilisateurs === 'undefined') {
+        window.apiUtilisateurs = Common.buildApiUrl('utilisateurs');
+    }
 
 // Fonction globale pour ouvrir la modal de profil
 function openProfileModal() {

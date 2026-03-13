@@ -1,5 +1,5 @@
 // Configuration
-const API_BASE_URL = "http://localhost:8081";
+const API_BASE_URL = Common.getMediaBaseUrl();
 let allPermissions = [];
 let currentPage = 1;
 const itemsPerPage = 10;

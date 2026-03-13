@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const response = await fetch(
-        `http://localhost:8081/api/clients/${clientId}`,
+        Common.buildApiUrl(`clients/${clientId}`),
         {
           headers: {
             "Accept": "application/json",
@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
           .replace(/^\/+/, "")
           .replace("model_photo/", "");
 
-        photoUrl = `http://localhost:8081/model_photo/${cleanPath}`;
+        photoUrl = Common.buildMediaUrl(`model_photo/${cleanPath}`);
 
         // Stocker le chemin original pour la soumission
         if (existingPhotoInput) {
@@ -358,7 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
       saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enregistrement...';
 
       const response = await fetch(
-        `http://localhost:8081/api/clients/${currentClientId}`,
+        Common.buildApiUrl(`clients/${currentClientId}`),
         {
           method: "PUT",
           headers: {

@@ -1,4 +1,6 @@
 // delete_client.js
+const Swal = window.Swal;
+const Common = window.Common || {};
 document.addEventListener("DOMContentLoaded", function () {
   // Initialisation des listeners de suppression
   initDeleteButtons();
@@ -37,7 +39,20 @@ function confirmAndDelete(clientId) {
   });
 }
 function deleteClient(clientId) {
-  fetch(`http://localhost:8081/api/clients/${clientId}`, {
+  const token = (window.Common && typeof window.Common.getToken === 'function')
+    ? window.Common.getToken()
+    : null;
+
+  if (!token) {
+    Swal.fire({
+      icon: "error",
+      title: "Session expirée",
+      text: "Veuillez vous reconnecter pour supprimer un client."
+    }).then(() => window.location.href = "index.html");
+    return;
+  }
+
+  fetch(Common.buildApiUrl(`clients/${clientId}`), {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",

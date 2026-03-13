@@ -1040,8 +1040,8 @@
 //   }
 // });
 
-const apiAteliers = "http://localhost:8081/api/ateliers";
-const apiUtilisateurs = "http://localhost:8081/api/utilisateurs";
+const apiAteliers = Common.buildApiUrl('ateliers');
+const apiUtilisateurs = Common.buildApiUrl('utilisateurs');
 
 // ⚠️ SUPPRIMEZ ces fonctions - Utilisez Common à la place
 // function getToken() {
@@ -1189,10 +1189,10 @@ async function loadAteliers() {
       throw new Error("Token non disponible. Veuillez vous reconnecter.");
     }
 
-    let apiUrl = "http://localhost:8081/api/ateliers";
+    let apiUrl = Common.buildApiUrl('ateliers');
     
     if (currentUserRole === "PROPRIETAIRE" && currentUserAtelierId) {
-      apiUrl = `http://localhost:8081/api/ateliers/${currentUserAtelierId}`;
+      apiUrl = Common.buildApiUrl(`ateliers/${currentUserAtelierId}`);
     }
 
     const response = await fetch(apiUrl, {
@@ -1548,11 +1548,11 @@ async function loadAteliersForSelect(selectId = "inputAtelier", selectedAtelierI
     
     if (!token) return;
 
-    let apiUrl = "http://localhost:8081/api/ateliers";
+    let apiUrl = Common.buildApiUrl('ateliers');
     
     // Si c'est un propriétaire, charger seulement son atelier
     if (currentUser.role === "PROPRIETAIRE" && currentUser.atelierId) {
-      apiUrl = `http://localhost:8081/api/ateliers/${currentUser.atelierId}`;
+      apiUrl = Common.buildApiUrl(`ateliers/${currentUser.atelierId}`);
     }
 
     const response = await fetch(apiUrl, {

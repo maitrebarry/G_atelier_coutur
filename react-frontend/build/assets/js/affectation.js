@@ -4,7 +4,7 @@ let currentAtelierId = null;
 let currentUserRole = null;
 let currentUserId = null;
 
-const apiAffectations = "http://localhost:8081/api/affectations";
+const apiAffectations = Common.buildApiUrl('affectations');
 
 // ✅ UTILISER LES FONCTIONS COMMUNES
 function getToken() {
@@ -315,7 +315,7 @@ function renderClientsList(clients = []) {
         const isSelected = selectedClients.has(client.id);
         
         const clientPhotoUrl = client.photo 
-            ? `http://localhost:8081${client.photo}` 
+            ? Common.buildMediaUrl(client.photo)
             : null;
 
         return `

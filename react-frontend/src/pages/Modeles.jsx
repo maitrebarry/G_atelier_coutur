@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api, { getUserData } from '../api/api';
 import Swal from 'sweetalert2';
+import { buildMediaUrl } from '../config/api';
 
 const Modeles = () => {
     const [modeles, setModeles] = useState([]);
@@ -26,6 +27,20 @@ const Modeles = () => {
     const fileInputRef = useRef(null);
     const videoInputRef = useRef(null);
     const uploadRectangleRef = useRef(null);
+
+    const toModelPhotoUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        const clean = path.replace(/^\/+/, '').replace('model_photo/', '');
+        return buildMediaUrl(`model_photo/${clean}`);
+    };
+
+    const toModelVideoUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        const clean = path.replace(/^\/+/, '').replace('modeles/videos/', '');
+        return buildMediaUrl(`modeles/videos/${clean}`);
+    };
 
     const loadModeles = useCallback(async (atelierId) => {
         try {
@@ -238,10 +253,10 @@ const Modeles = () => {
                 videoURL: isVideoURL ? modele.videoPath : ''
             });
             if (modele.photoPath) {
-                setPhotoPreview(isPhotoURL ? modele.photoPath : `http://localhost:8081/model_photo/${modele.photoPath}`);
+                setPhotoPreview(isPhotoURL ? modele.photoPath : toModelPhotoUrl(modele.photoPath));
             }
             if (modele.videoPath) {
-                setVideoPreview(isVideoURL ? modele.videoPath : `http://localhost:8081/modeles/videos/${modele.videoPath}`);
+                setVideoPreview(isVideoURL ? modele.videoPath : toModelVideoUrl(modele.videoPath));
             }
         } else {
             resetForm();
@@ -476,33 +491,19 @@ const Modeles = () => {
                                     <div className="modele-photo-container">
                                         {modele.videoPath ? (
                                             <video
-                                                src={
-                                                    modele.videoPath.startsWith('http://') || modele.videoPath.startsWith('https://')
-                                                        ? modele.videoPath
-                                                        : `http://localhost:8081/modeles/videos/${modele.videoPath}`
-                                                }
+                                                src={toModelVideoUrl(modele.videoPath)}
                                                 className="modele-photo"
                                                 controls
                                                 onError={(e) => {
                                                     // fallback to image if video fails
                                                     e.target.outerHTML = `<img src='${
-                                                        modele.photoPath
-                                                            ? (modele.photoPath.startsWith('http://') || modele.photoPath.startsWith('https://')
-                                                                ? modele.photoPath
-                                                                : `http://localhost:8081/model_photo/${modele.photoPath}`)
-                                                            : '/images/default_model.png'
+                                                        toModelPhotoUrl(modele.photoPath) || '/images/default_model.png'
                                                     }' class='modele-photo' />`;
                                                 }}
                                             />
                                         ) : (
                                             <img
-                                                src={
-                                                    modele.photoPath
-                                                        ? (modele.photoPath.startsWith('http://') || modele.photoPath.startsWith('https://')
-                                                            ? modele.photoPath
-                                                            : `http://localhost:8081/model_photo/${modele.photoPath}`)
-                                                        : '/images/default_model.png'
-                                                }
+                                                src={toModelPhotoUrl(modele.photoPath) || '/images/default_model.png'}
                                                 className="modele-photo"
                                                 alt={modele.nom || 'Modèle'}
                                                 onError={(e) => {

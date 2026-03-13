@@ -2,7 +2,7 @@
 
 let selectedClient = null;
 let currentAtelierId = null;
-const API_BASE_URL = 'http://localhost:8081/api';
+const API_BASE_URL = Common.getApiBaseUrl();
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
@@ -224,7 +224,7 @@ function createClientCard(client) {
     
     // ✅ Photo du client si disponible
     const clientPhotoUrl = client.photo 
-        ? `http://localhost:8081${client.photo}` 
+        ? Common.buildMediaUrl(client.photo)
         : null;
 
     cardDiv.innerHTML = `
@@ -356,7 +356,7 @@ function displayMesures(mesures) {
         let cleanPath = derniereMesure.photoPath
             .replace(/^\/+/, "")
             .replace("model_photo/", "");
-        photoPath = `http://localhost:8081/model_photo/${cleanPath}`;
+        photoPath = Common.buildMediaUrl(`model_photo/${cleanPath}`);
     }
 
     const mesuresHTML = `
@@ -450,7 +450,7 @@ function displayModeles(mesures) {
         let photoPath = modele.sexe === 'HOMME' ? 'default_homme.png' : 'default_femme.png';
         if (modele.photoPath) {
             let cleanPath = modele.photoPath.replace(/^\/+/, "").replace("model_photo/", "");
-            photoPath = `http://localhost:8081/model_photo/${cleanPath}`;
+            photoPath = Common.buildMediaUrl(`model_photo/${cleanPath}`);
         }
         
         const sexeDisplay = modele.sexe === 'HOMME' ? 'Homme' : 

@@ -83,7 +83,7 @@ server:
 
 app:
   frontend:
-    base-url: ${APP_FRONTEND_BASE_URL:https://gateliercoutur.onrender.com}
+    base-url: ${APP_FRONTEND_BASE_URL:https://g-atelier-coutur.onrender.com}
 
 management:
   endpoints:

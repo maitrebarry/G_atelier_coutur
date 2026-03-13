@@ -10,6 +10,11 @@ const normalizeApiUrl = (value) => {
   return out;
 };
 
+const normalizeOrigin = (value) => {
+  if (!value) return null;
+  return String(value).trim().replace(/\/$/, '');
+};
+
 const webHost =
   typeof window !== 'undefined' ? stripPort(window.location?.hostname) : null;
 const devHost = webHost || 'localhost';
@@ -31,7 +36,27 @@ const rawBaseUrl =
 
 export const API_BASE_URL = normalizeApiUrl(rawBaseUrl);
 
+const fallbackOrigin = normalizeOrigin(
+  API_BASE_URL ? API_BASE_URL.replace(/\/api$/i, '') : null
+);
+
+export const API_ORIGIN =
+  normalizeOrigin(process.env.REACT_APP_API_ORIGIN) ||
+  fallbackOrigin ||
+  normalizeOrigin(`http://${devHost}:${apiPort}`);
+
+export const MEDIA_BASE_URL =
+  normalizeOrigin(process.env.REACT_APP_MEDIA_BASE_URL) || API_ORIGIN;
+
+export const buildMediaUrl = (path) => {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  const clean = String(path).replace(/^\/+/, '');
+  return `${MEDIA_BASE_URL}/${clean}`;
+};
+
 console.log('web env: APP_ENV=', APP_ENV);
 console.log('web env: API_BASE_URL=', API_BASE_URL);
+console.log('web env: MEDIA_BASE_URL=', MEDIA_BASE_URL);
 
 export default API_BASE_URL;
