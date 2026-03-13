@@ -12,7 +12,9 @@ const MEDIA_BASE_URL = (window.Common && typeof window.Common.getMediaBaseUrl ==
 const API_BASE_URL = (window.Common && typeof window.Common.getApiBaseUrl === 'function')
   ? window.Common.getApiBaseUrl()
   : (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL)
-    || (window.location.hostname === 'localhost' ? 'http://localhost:8081/api' : `${window.location.origin}/api`);
+    || (window.location.hostname === 'localhost' 
+        ? 'http://localhost:8081/api' 
+        : 'https://g-atelier-backend.onrender.com/api'); // URL du backend en production
 
 window.API_BASE_URL = MEDIA_BASE_URL;
 

@@ -37,7 +37,8 @@ function getDefaultOrigin() {
     if (window.location.hostname === 'localhost') {
         return 'http://localhost:8081';
     }
-    return window.location.origin || '';
+    // En production, utiliser l'URL du backend
+    return 'https://g-atelier-backend.onrender.com';
 }
 
 const DEFAULT_ORIGIN = getDefaultOrigin();

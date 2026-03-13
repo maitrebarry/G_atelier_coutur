@@ -24,7 +24,7 @@ function buildApiUrl(path) {
     }
     const base = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL)
         ? String(window.APP_CONFIG.API_BASE_URL).replace(/\/+$/, '')
-        : (window.location.hostname === 'localhost' ? 'http://localhost:8081/api' : `${window.location.origin}/api`);
+        : (window.location.hostname === 'localhost' ? 'http://localhost:8081/api' : 'https://g-atelier-backend.onrender.com/api'); // URL du backend en production
     const clean = String(path || '').replace(/^\/+/, '');
     return `${base}/${clean}`;
 }
