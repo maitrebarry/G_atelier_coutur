@@ -1,4 +1,5 @@
 // sidebar.js - Version corrigée avec gestion du timing des permissions
+/* global Common */
 class SidebarManager {
     constructor() {
         this.menuItems = [

@@ -1,5 +1,7 @@
 // // dashboard.js - Version complète corrigée
 
+/* global Common */
+
 // const API_BASE_URL = 'http://localhost:8081/api';
 
 // // Variables globales

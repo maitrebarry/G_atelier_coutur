@@ -1,4 +1,6 @@
 
+/* global Common, bootstrap */
+
 // Fonction globale pour ouvrir la modal de profil
 function openProfileModal() {
     try {
@@ -14,6 +16,28 @@ function openProfileModal() {
         console.error('Erreur lors de l\'ouverture du profil:', error);
         Common.showErrorMessage('Erreur lors de l\'ouverture du profil');
     }
+}
+
+function buildApiUrl(path) {
+    if (typeof Common !== 'undefined' && typeof Common.buildApiUrl === 'function') {
+        return Common.buildApiUrl(path);
+    }
+    const base = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL)
+        ? String(window.APP_CONFIG.API_BASE_URL).replace(/\/+$/, '')
+        : (window.location.hostname === 'localhost' ? 'http://localhost:8081/api' : `${window.location.origin}/api`);
+    const clean = String(path || '').replace(/^\/+/, '');
+    return `${base}/${clean}`;
+}
+
+function buildMediaUrl(path) {
+    if (typeof Common !== 'undefined' && typeof Common.buildMediaUrl === 'function') {
+        return Common.buildMediaUrl(path);
+    }
+    const base = (window.APP_CONFIG && window.APP_CONFIG.MEDIA_BASE_URL)
+        ? String(window.APP_CONFIG.MEDIA_BASE_URL).replace(/\/+$/, '')
+        : (window.location.hostname === 'localhost' ? 'http://localhost:8081' : window.location.origin);
+    const clean = String(path || '').replace(/^\/+/, '');
+    return `${base}/${clean}`;
 }
 
 // Initialisation
@@ -135,7 +159,7 @@ async function saveUserPhoto() {
     formData.append('photo', photoUpload.files[0]);
 
     try {
-        const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/utilisateurs/${userData.userId}/photo`, {
+        const response = await fetch(buildApiUrl(`utilisateurs/${userData.userId}/photo`), {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -168,9 +192,11 @@ async function saveUserPhoto() {
 }
 
 async function removeUserPhoto() {
+    /* eslint-disable no-restricted-globals */
     if (!confirm('Êtes-vous sûr de vouloir supprimer votre photo de profil ?')) {
         return;
     }
+    /* eslint-enable no-restricted-globals */
 
     const token = Common.getToken();
     const userData = Common.getUserData();
@@ -181,7 +207,7 @@ async function removeUserPhoto() {
     }
 
     try {
-        const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/utilisateurs/${userData.userId}/photo`, {
+        const response = await fetch(buildApiUrl(`utilisateurs/${userData.userId}/photo`), {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -241,7 +267,7 @@ async function handlePasswordChange(e) {
     }
 
     try {
-        const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/utilisateurs/${userData.userId}/password`, {
+        const response = await fetch(buildApiUrl(`utilisateurs/${userData.userId}/password`), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -285,7 +311,7 @@ async function loadUserProfile() {
     }
 
     try {
-        const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/utilisateurs/${userData.userId}/profile`, {
+        const response = await fetch(buildApiUrl(`utilisateurs/${userData.userId}/profile`), {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -306,21 +332,19 @@ async function loadUserProfile() {
 }
 
 function updateProfileDisplay(profileData) {
-    console.log('🎨 Mise à jour profil:', profileData);
-    
     const profileAvatar = document.getElementById('profileAvatar');
     if (profileAvatar) {
         let errorCount = 0;
         
         if (profileData.photoPath) {
             const timestamp = new Date().getTime();
-            const photoUrl = `${window.APP_CONFIG.API_BASE_URL}/user_photo/${profileData.photoPath}?t=${timestamp}`;
+            const photoUrl = `${buildMediaUrl(`user_photo/${profileData.photoPath}`)}?t=${timestamp}`;
             console.log('🖼️ Chargement photo profil:', photoUrl);
             
             profileAvatar.src = photoUrl;
         } else {
             console.log('🖼️ Photo par défaut pour profil');
-            profileAvatar.src = `${window.APP_CONFIG.API_BASE_URL}/assets/images/default-user.jpg`;
+            profileAvatar.src = buildMediaUrl('assets/images/default-user.jpg');
         }
         
         profileAvatar.onerror = function() {
@@ -343,8 +367,6 @@ function updateProfileDisplay(profileData) {
 }
 
 function updateHeaderDisplay(profileData) {
-    console.log('🎨 Mise à jour header avec:', profileData);
-    
     const headerUserImg = document.getElementById('headerUserImg');
     const userName = document.getElementById('user-name');
     const userRole = document.getElementById('user-role');
@@ -354,14 +376,14 @@ function updateHeaderDisplay(profileData) {
         
         if (profileData.photoPath) {
             const timestamp = new Date().getTime();
-            const photoUrl = `${window.APP_CONFIG.API_BASE_URL}/user_photo/${profileData.photoPath}?t=${timestamp}`;
+            const photoUrl = `${buildMediaUrl(`user_photo/${profileData.photoPath}`)}?t=${timestamp}`;
             console.log('🖼️ Chargement photo header:', photoUrl);
             
             headerUserImg.src = photoUrl;
             headerUserImg.style.display = 'block';
         } else {
             console.log('🖼️ Photo par défaut pour header');
-            headerUserImg.src = `${window.APP_CONFIG.API_BASE_URL}/assets/images/default-user.jpg`;
+            headerUserImg.src = buildMediaUrl('assets/images/default-user.jpg');
             headerUserImg.style.display = 'block';
         }
         
@@ -400,7 +422,6 @@ function loadUserProfileInHeader() {
     console.log('🔄 Chargement du profil dans le header...');
     
     const userData = Common.getUserData();
-    console.log('📋 Données utilisateur:', userData);
     
     if (!userData || !userData.userId) {
         console.warn('⚠️ Données utilisateur non disponibles, nouvel essai dans 1s');
@@ -424,7 +445,7 @@ async function loadUserProfileForHeader() {
 
     try {
         console.log('📡 Chargement du profil depuis l\'API...');
-        const response = await fetch(`${window.APP_CONFIG.API_BASE_URL}/api/utilisateurs/${userData.userId}/profile`, {
+        const response = await fetch(buildApiUrl(`utilisateurs/${userData.userId}/profile`), {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -432,7 +453,6 @@ async function loadUserProfileForHeader() {
 
         if (response.ok) {
             const profileData = await response.json();
-            console.log('✅ Profil chargé depuis API:', profileData);
             updateHeaderDisplay(profileData);
             updateLocalUserData(profileData);
         } else {

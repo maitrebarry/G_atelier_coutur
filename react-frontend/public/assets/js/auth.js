@@ -1,4 +1,5 @@
 // auth.js - SPÉCIFIQUE à l'authentification
+/* global Common */
 
 // Fonctions SPÉCIFIQUES à l'authentification
 function isTokenExpired(token) {
@@ -22,13 +23,12 @@ function fetchUserData() {
     }
 
     $.ajax({
-        url: `${window.APP_CONFIG.API_BASE_URL}/api/auth/me`,
+        url: buildApiUrl('auth/me'),
         type: "GET",
         headers: {
             Authorization: "Bearer " + token,
         },
         success: function (userData) {
-            console.log("Données utilisateur reçues:", userData);
             updateUserUI(userData);
         },
         error: function (xhr) {
@@ -40,6 +40,19 @@ function fetchUserData() {
             }
         },
     });
+}
+
+function buildApiUrl(path) {
+    if (typeof Common !== 'undefined' && typeof Common.buildApiUrl === 'function') {
+        return Common.buildApiUrl(path);
+    }
+
+    const base = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL)
+        ? String(window.APP_CONFIG.API_BASE_URL).replace(/\/+$/, '')
+        : (window.location.hostname === 'localhost' ? 'http://localhost:8081/api' : `${window.location.origin}/api`);
+
+    const clean = String(path || '').replace(/^\/+/, '');
+    return `${base}/${clean}`;
 }
 
 // Fonctions de fallback
@@ -56,8 +69,6 @@ function logoutFallback() {
 }
 
 function updateUserUI(userData) {
-    console.log("Mise à jour de l'UI avec:", userData);
-    
     $("#user-name").text(userData.prenom + " " + userData.nom);
     $("#user-role").text(userData.role);
     

@@ -2,9 +2,32 @@
 // ==================================================
 // CONFIGURATION GLOBALE
 // ==================================================
+/* global Common, Swal, sidebarManager */
 if (typeof window.APP_CONFIG === 'undefined') {
     window.APP_CONFIG = {};
 }
+
+// ==================================================
+// EXPOSITION GLOBALE
+// ==================================================
+window.Common = {
+    getToken,
+    getUserData,
+    logout,
+    showSuccessMessage,
+    showErrorMessage,
+    showInfoMessage,
+    hasPermission,
+    isAuthenticated,
+    showLoading,
+    hideLoading,
+    apiCall,
+    refreshPermissions,
+    getApiBaseUrl,
+    getMediaBaseUrl,
+    buildApiUrl,
+    buildMediaUrl
+};
 
 function stripTrailingSlash(value) {
     return value ? value.replace(/\/+$/, '') : value;
@@ -141,8 +164,6 @@ function hasPermission(permissionCode) {
     const userData = getUserData();
     const userRole = userData.role;
 
-    console.log('🔐 Vérification permission:', permissionCode, 'User:', userData);
-
     // SUPERADMIN a toutes les permissions
     if (userRole === 'SUPERADMIN') {
         console.log('✅ SUPERADMIN - accès accordé');
@@ -152,7 +173,6 @@ function hasPermission(permissionCode) {
     // Vérifier les permissions individuelles (tableau de strings)
     if (userData.permissions && Array.isArray(userData.permissions)) {
         const hasPerm = userData.permissions.includes(permissionCode);
-        console.log('📋 Permission trouvée:', hasPerm, 'Permissions disponibles:', userData.permissions);
         return hasPerm;
     }
 
@@ -182,8 +202,6 @@ async function refreshPermissions() {
         // Sauvegarder
         const storage = localStorage.getItem("authToken") ? localStorage : sessionStorage;
         storage.setItem("userData", JSON.stringify(currentUserData));
-        
-        console.log('✅ Permissions mises à jour:', currentUserData.permissions);
         
         // Déclencher l'événement
         window.dispatchEvent(new CustomEvent('permissionsUpdated', { 
@@ -343,8 +361,6 @@ async function loadUserPermissions() {
         const userInfo = await apiCall('/api/auth/me');
         
         if (userInfo.permissions && userInfo.permissions.length > 0) {
-            console.log('✅ Permissions chargées:', userInfo.permissions);
-            
             // Mettre à jour le localStorage
             const currentUserData = getUserData();
             currentUserData.permissions = userInfo.permissions;

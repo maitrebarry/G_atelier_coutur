@@ -1,5 +1,5 @@
+/* global $, PerfectScrollbar */
 $(function () {
-  ("use strict");
   // Force light sidebar/theme by default: remove dark/semi-dark classes
   // This ensures the sidebar appears light on all pages unless the user
   // explicitly switches themes using the theme switcher.
@@ -67,7 +67,7 @@ $(function () {
       var i = window.location,
         o = $(".metismenu li a")
           .filter(function () {
-            return this.href == i;
+            return this.href === i;
           })
           .addClass("")
           .parent()

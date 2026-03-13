@@ -1,4 +1,6 @@
 // delete_client.js
+const Swal = window.Swal;
+const Common = window.Common || {};
 document.addEventListener("DOMContentLoaded", function () {
   // Initialisation des listeners de suppression
   initDeleteButtons();

@@ -1,10 +1,18 @@
 
 
+/* global Common */
+
+
 // mesures.js - Code complet et corrigé
 const MEDIA_BASE_URL = (window.Common && typeof window.Common.getMediaBaseUrl === 'function')
   ? window.Common.getMediaBaseUrl()
   : (window.APP_CONFIG && window.APP_CONFIG.MEDIA_BASE_URL)
     || (window.location.hostname === 'localhost' ? 'http://localhost:8081' : window.location.origin);
+
+const API_BASE_URL = (window.Common && typeof window.Common.getApiBaseUrl === 'function')
+  ? window.Common.getApiBaseUrl()
+  : (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL)
+    || (window.location.hostname === 'localhost' ? 'http://localhost:8081/api' : `${window.location.origin}/api`);
 
 window.API_BASE_URL = MEDIA_BASE_URL;
 
@@ -16,6 +24,7 @@ class ModelManager {
     this.atelierId = null;
     this.initialized = false;
     this.baseUrl = MEDIA_BASE_URL;
+    this.apiBaseUrl = API_BASE_URL;
   }
 
   async init() {
@@ -24,7 +33,6 @@ class ModelManager {
     try {
       // Attendre les données utilisateur avec timeout
       const userData = await this.waitForUserData(8000);
-      console.log('✅ Données utilisateur reçues:', userData);
 
       await this.loadAtelierId();
       console.log('✅ Atelier ID chargé:', this.atelierId);
@@ -190,7 +198,7 @@ class ModelManager {
 
       console.log('📡 Chargement modèles pour atelier:', this.atelierId);
 
-      const response = await fetch(`${this.baseUrl}/api/clients/modeles/atelier/${this.atelierId}`, {
+      const response = await fetch(`${this.apiBaseUrl}/clients/modeles/atelier/${this.atelierId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -733,12 +741,6 @@ document.addEventListener("DOMContentLoaded", async function () {
       formData.append("photo", photoInput.files[0]);
     }
 
-    // Log des données envoyées
-    console.log("📤 Données envoyées:");
-    for (let [key, value] of formData.entries()) {
-      console.log(`  ${key}: ${value}`);
-    }
-
     const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
     if (!token) {
       Swal.fire({
@@ -781,8 +783,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         return response.json();
       })
       .then((data) => {
-        console.log("✅ Succès - Données:", data);
-
         if (data.status === "success") {
           Swal.fire({
             icon: "success",

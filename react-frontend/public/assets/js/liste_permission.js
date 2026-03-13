@@ -1,4 +1,5 @@
 // Configuration
+/* global Common, Swal */
 const API_BASE_URL = Common.getMediaBaseUrl();
 let allPermissions = [];
 let currentPage = 1;

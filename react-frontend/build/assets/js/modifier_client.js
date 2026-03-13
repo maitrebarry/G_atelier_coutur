@@ -1,5 +1,7 @@
 
 
+/* global Common, bootstrap, Swal, fetchClients */
+
 document.addEventListener("DOMContentLoaded", () => {
   // Initialisation du modal
   const editModal = new bootstrap.Modal(document.getElementById("editModal"));
@@ -353,7 +355,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // ✅ CORRECTION : Ajouter un loader
       const saveBtn = document.getElementById("saveEditBtn");
-      const originalText = saveBtn.innerHTML;
       saveBtn.disabled = true;
       saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enregistrement...';
 
@@ -392,7 +393,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (typeof fetchClients === 'function') {
           fetchClients();
         } else {
+          /* eslint-disable no-restricted-globals */
           location.reload();
+          /* eslint-enable no-restricted-globals */
         }
       }, 1000);
       
@@ -548,6 +551,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Initialisation des écouteurs d'événements
+  // eslint-disable-next-line no-unused-vars
   function setupEditFormListeners() {
     // Gestion de la photo
     document.getElementById("avatarEdit").addEventListener("click", () => {

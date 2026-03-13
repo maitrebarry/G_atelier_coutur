@@ -1,5 +1,7 @@
 
 
+/* global Swal */
+
 document.addEventListener("DOMContentLoaded", function () {
   // Récupérer le token d'abord
   function getToken() {
