@@ -19,12 +19,26 @@ function openProfileModal() {
 }
 
 function buildApiUrl(path) {
-    if (typeof Common !== 'undefined' && typeof Common.buildApiUrl === 'function') {
-        return Common.buildApiUrl(path);
+    // Logique simplifiée et robuste pour éviter les dépendances
+    let base;
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        base = 'http://localhost:8081/api';
+    } else {
+        base = 'https://g-atelier-backend.onrender.com/api';
     }
-    const base = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL)
-        ? String(window.APP_CONFIG.API_BASE_URL).replace(/\/+$/, '')
-        : (window.location.hostname === 'localhost' ? 'http://localhost:8081/api' : 'https://g-atelier-backend.onrender.com/api'); // URL du backend en production
+
+    // Utiliser Common si disponible et configuré correctement
+    if (typeof Common !== 'undefined' && typeof Common.getApiBaseUrl === 'function') {
+        const commonBase = Common.getApiBaseUrl();
+        if (commonBase && commonBase.includes('localhost')) {
+            base = commonBase;
+        } else if (commonBase && !commonBase.includes('render.com') && window.location.hostname !== 'localhost') {
+            // Ne pas utiliser Common si c'est une URL incorrecte
+        } else if (commonBase && commonBase.includes('render.com')) {
+            base = commonBase;
+        }
+    }
+
     const clean = String(path || '').replace(/^\/+/, '');
     return `${base}/${clean}`;
 }
@@ -383,7 +397,11 @@ function updateHeaderDisplay(profileData) {
             headerUserImg.style.display = 'block';
         } else {
             console.log('🖼️ Photo par défaut pour header');
-            headerUserImg.src = buildMediaUrl('assets/images/default-user.jpg');
+            // Utiliser une URL locale pour l'image par défaut
+            const defaultImageUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? '/assets/images/default-user.jpg'
+                : 'https://g-atelier-backend.onrender.com/assets/images/default-user.jpg';
+            headerUserImg.src = defaultImageUrl;
             headerUserImg.style.display = 'block';
         }
         
@@ -392,7 +410,11 @@ function updateHeaderDisplay(profileData) {
             console.error(`❌ Erreur chargement photo header (tentative ${errorCount})`);
             
             if (errorCount <= 2) {
-                this.src = '/assets/images/default-user.jpg';
+                // Essayer l'URL alternative
+                const fallbackUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    ? 'http://localhost:8081/assets/images/default-user.jpg'
+                    : '/assets/images/default-user.jpg';
+                this.src = fallbackUrl;
             } else {
                 console.error('🚨 Arrêt des tentatives, utilisation fallback SVG');
                 this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIyMCIgZmlsbD0iI0YzRjRGNiIvPjxjaXJjbGUgY3g9IjIwIiBjeT0iMTYiIHI9IjgiIGZpbGw9IiNEOEQ4RDgiLz48cmVjdCB4PSIxMiIgeT0iMjQiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxMiIgcng9IjIiIGZpbGw9IiNEOEQ4RDgiLz48L3N2Zz4=';

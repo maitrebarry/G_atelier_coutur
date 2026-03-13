@@ -42,10 +42,14 @@ function getDefaultOrigin() {
 }
 
 const DEFAULT_ORIGIN = getDefaultOrigin();
-const DEFAULT_API_BASE = stripTrailingSlash(window.APP_CONFIG.API_BASE_URL) ||
-    (DEFAULT_ORIGIN ? stripTrailingSlash(DEFAULT_ORIGIN) + '/api' : 'http://localhost:8081/api');
-const DEFAULT_MEDIA_BASE = stripTrailingSlash(window.APP_CONFIG.MEDIA_BASE_URL) ||
-    stripTrailingSlash(DEFAULT_ORIGIN) || 'http://localhost:8081';
+const DEFAULT_API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:8081/api'
+    : (stripTrailingSlash(window.APP_CONFIG.API_BASE_URL) ||
+       (DEFAULT_ORIGIN ? stripTrailingSlash(DEFAULT_ORIGIN) + '/api' : 'https://g-atelier-backend.onrender.com/api'));
+const DEFAULT_MEDIA_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:8081'
+    : (stripTrailingSlash(window.APP_CONFIG.MEDIA_BASE_URL) ||
+       stripTrailingSlash(DEFAULT_ORIGIN) || 'https://g-atelier-backend.onrender.com');
 
 window.APP_CONFIG.API_BASE_URL = stripTrailingSlash(DEFAULT_API_BASE);
 window.APP_CONFIG.MEDIA_BASE_URL = stripTrailingSlash(DEFAULT_MEDIA_BASE);
