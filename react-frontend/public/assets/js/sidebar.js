@@ -11,13 +11,6 @@ class SidebarManager {
                 alwaysVisible: true
             },
             {
-                id: 'mesures',
-                title: 'Mesures clients',
-                icon: 'bx bx-ruler',
-                href: 'mesures.html',
-                permission: 'CLIENT_VOIR'
-            },
-            {
                 id: 'clients',
                 title: 'Liste des clients',
                 icon: 'bx bx-user',
