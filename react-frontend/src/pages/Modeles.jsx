@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import api, { getUserData } from '../api/api';
 import Swal from 'sweetalert2';
 import { buildMediaUrl } from '../config/api';
@@ -419,7 +420,7 @@ const Modeles = () => {
                 <div className="ps-3">
                     <nav aria-label="breadcrumb">
                         <ol className="breadcrumb mb-0 p-0">
-                            <li className="breadcrumb-item"><a href="/home">Accueil</a></li>
+                            <li className="breadcrumb-item"><Link to="/home">Accueil</Link></li>
                             <li className="breadcrumb-item active" aria-current="page">Modèles</li>
                         </ol>
                     </nav>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import api, { getUserData } from '../api/api';
 import Swal from 'sweetalert2';
 import { Modal } from 'bootstrap';
@@ -344,7 +345,7 @@ const Signup = ({ embedded = false }) => {
           <div className="ps-3">
             <nav aria-label="breadcrumb">
               <ol className="breadcrumb mb-0 p-0">
-                <li className="breadcrumb-item"><a href="/"><i className="bx bx-home-alt" /></a></li>
+                <li className="breadcrumb-item"><Link to="/"><i className="bx bx-home-alt" /></Link></li>
                 <li className="breadcrumb-item active" aria-current="page">Gestion des utilisateurs</li>
               </ol>
             </nav>

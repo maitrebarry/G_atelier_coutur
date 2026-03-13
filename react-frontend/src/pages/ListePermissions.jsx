@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api, { getUserData } from '../api/api';
 import Swal from 'sweetalert2';
 
@@ -133,7 +134,7 @@ const ListePermissions = ({ embedded = false }) => {
           <div className="ps-3">
             <nav aria-label="breadcrumb">
               <ol className="breadcrumb mb-0 p-0">
-                <li className="breadcrumb-item"><a href="/home"><i className="bx bx-home-alt"></i></a></li>
+                <li className="breadcrumb-item"><Link to="/home"><i className="bx bx-home-alt"></i></Link></li>
                 <li className="breadcrumb-item active" aria-current="page">Liste des Permissions</li>
               </ol>
             </nav>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import api, { getUserData } from '../api/api';
 import Swal from 'sweetalert2';
 
@@ -353,7 +353,7 @@ const Affectations = () => {
         <div className="ps-3">
           <nav aria-label="breadcrumb">
             <ol className="breadcrumb mb-0 p-0">
-              <li className="breadcrumb-item"><a href="/home"><i className="bx bx-home-alt"></i></a></li>
+              <li className="breadcrumb-item"><Link to="/home"><i className="bx bx-home-alt"></i></Link></li>
               <li className="breadcrumb-item active" aria-current="page">Gestion des affectations</li>
             </ol>
           </nav>

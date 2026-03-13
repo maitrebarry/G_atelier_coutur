@@ -155,7 +155,7 @@ const ParametresAteliers = () => {
                 <div className="ps-3">
                     <nav aria-label="breadcrumb">
                         <ol className="breadcrumb mb-0 p-0">
-                            <li className="breadcrumb-item"><a href="/"><i className="bx bx-home-alt"></i></a></li>
+                            <li className="breadcrumb-item"><Link to="/"><i className="bx bx-home-alt"></i></Link></li>
                             <li className="breadcrumb-item active" aria-current="page">Gestion des Ateliers</li>
                         </ol>
                     </nav>

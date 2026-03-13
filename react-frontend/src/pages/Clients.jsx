@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import api, { getUserData } from '../api/api';
 import { buildMediaUrl } from '../config/api';
 import Swal from 'sweetalert2';
@@ -265,13 +266,13 @@ const Clients = () => {
             <div className="ps-3">
               <nav aria-label="breadcrumb">
                 <ol className="breadcrumb mb-0 p-0">
-                  <li className="breadcrumb-item"><a href="/"><i className="bx bx-home-alt"></i></a></li>
+                  <li className="breadcrumb-item"><Link to="/"><i className="bx bx-home-alt"></i></Link></li>
                   <li className="breadcrumb-item active" aria-current="page">Liste des clients</li>
                 </ol>
               </nav>
             </div>
             <div className="ms-auto">
-              <a href="/mesures" className="btn btn-primary">Ajouter un client</a>
+              <Link to="/mesures" className="btn btn-primary">Ajouter un client</Link>
             </div>
           </div>
         </div>
