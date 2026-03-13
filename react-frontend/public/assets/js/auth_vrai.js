@@ -3,6 +3,8 @@
 // GESTIONNAIRE D'AUTHENTIFICATION - VERSION CORRIGÉE
 // ==================================================
 
+/* global Common */
+
 /**
  * Vérifie si un token JWT est expiré
  */
@@ -28,25 +30,35 @@ function fetchUserData() {
     return;
   }
 
-  $.ajax({
-    url: Common.buildApiUrl('auth/me'),
-    type: "GET",
+  const url = (typeof Common !== 'undefined' && Common.buildApiUrl)
+    ? Common.buildApiUrl('auth/me')
+    : '/api/auth/me';
+
+  fetch(url, {
+    method: 'GET',
     headers: {
-      Authorization: "Bearer " + token,
-    },
-    success: function (userData) {
-      console.log("Données utilisateur reçues:", userData);
-      updateUserUI(userData);
-    },
-    error: function (xhr) {
-      console.error("Erreur détaillée fetching user data:", xhr);
-      if (xhr.status === 401) {
+      'Authorization': `Bearer ${token}`
+    }
+  })
+    .then(async (res) => {
+      if (res.status === 401) {
         logout();
-      } else {
-        console.error("Erreur lors du chargement des données utilisateur:", xhr.responseText);
+        return null;
       }
-    },
-  });
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Erreur fetchUserData: ${res.status} ${text}`);
+      }
+      return res.json();
+    })
+    .then((userData) => {
+      if (!userData) return;
+      console.log('Données utilisateur reçues:', userData);
+      updateUserUI(userData);
+    })
+    .catch((err) => {
+      console.error('Erreur lors du chargement des données utilisateur:', err);
+    });
 }
 
 /**
@@ -56,8 +68,10 @@ function updateUserUI(userData) {
   console.log("Mise à jour de l'UI avec:", userData);
   
   // CORRECTION : IDs avec traits d'union comme dans le HTML
-  $("#user-name").text(userData.prenom + " " + userData.nom);
-  $("#user-role").text(userData.role);
+  const userNameEl = document.getElementById('user-name');
+  const userRoleEl = document.getElementById('user-role');
+  if (userNameEl) userNameEl.textContent = `${userData.prenom || ''} ${userData.nom || ''}`.trim();
+  if (userRoleEl) userRoleEl.textContent = userData.role || '';
   
   console.log("Éléments mis à jour:");
   console.log("- Nom complet:", userData.prenom + " " + userData.nom);
@@ -71,13 +85,16 @@ function updateUserUI(userData) {
  */
 function toggleRoleBasedElements(role) {
   console.log("Rôle détecté pour éléments UI:", role);
-  if (role === "SUPERADMIN" || role === "PROPRIETAIRE") {
-    $(".admin-only").show();
-    $(".user-only").show();
-  } else {
-    $(".admin-only").hide();
-    $(".user-only").show();
-  }
+  const adminEls = document.querySelectorAll('.admin-only');
+  const userEls = document.querySelectorAll('.user-only');
+
+  const isAdmin = role === 'SUPERADMIN' || role === 'PROPRIETAIRE';
+  adminEls.forEach((el) => {
+    el.style.display = isAdmin ? '' : 'none';
+  });
+  userEls.forEach((el) => {
+    el.style.display = '';
+  });
 }
 
 /**
@@ -86,19 +103,20 @@ function toggleRoleBasedElements(role) {
 function logout() {
   const token = getToken();
   if (token) {
-    $.ajax({
-      url: Common.buildApiUrl('auth/logout'),
-      type: "POST",
+    const url = (typeof Common !== 'undefined' && Common.buildApiUrl)
+      ? Common.buildApiUrl('auth/logout')
+      : '/api/auth/logout';
+
+    fetch(url, {
+      method: 'POST',
       headers: {
-        Authorization: "Bearer " + token,
-      },
-      success: function () {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .catch(() => {})
+      .finally(() => {
         clearUserData();
-      },
-      error: function () {
-        clearUserData();
-      },
-    });
+      });
   } else {
     clearUserData();
   }
@@ -146,21 +164,8 @@ function isAuthenticated() {
  * Configure les intercepteurs AJAX pour ajouter le token
  */
 function setupAuthInterceptors() {
-  $.ajaxSetup({
-    beforeSend: function (xhr) {
-      const token = getToken();
-      if (token && !isTokenExpired(token)) {
-        xhr.setRequestHeader("Authorization", "Bearer " + token);
-      }
-    },
-  });
-
-  $(document).ajaxError(function (event, xhr) {
-    if (xhr.status === 401) {
-      console.log("Token expiré ou invalide, déconnexion...");
-      logout();
-    }
-  });
+  // Ancienne implémentation jQuery supprimée.
+  // Avec fetch(), chaque appel ajoute son header Authorization.
 }
 
 /**
@@ -239,4 +244,21 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log("Initialisation de la page de login");
     // Ici vous pouvez initialiser le formulaire de login
   }
+});
+
+// Exposition optionnelle pour réutilisation dans d'autres scripts/pages
+window.AuthVrai = Object.assign({}, window.AuthVrai, {
+  isTokenExpired,
+  fetchUserData,
+  updateUserUI,
+  toggleRoleBasedElements,
+  logout,
+  clearUserData,
+  getToken,
+  getUserData,
+  isAuthenticated,
+  setupAuthInterceptors,
+  initLogoutHandler,
+  isLoginPage,
+  handleAuthentication
 });
