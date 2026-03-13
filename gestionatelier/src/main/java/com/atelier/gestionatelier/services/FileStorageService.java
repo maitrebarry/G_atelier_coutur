@@ -14,9 +14,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 public class FileStorageService {
+
+    private static final Pattern SAFE_SUBDIRECTORY = Pattern.compile("[a-zA-Z0-9_-]+");
 
     private final FileStorageProperties fileStorageProperties;
 
@@ -40,13 +43,15 @@ public class FileStorageService {
         String fileName = UUID.randomUUID().toString() + fileExtension;
 
         // 3. Obtenir le chemin de destination
-        String uploadDir = getUploadDirectory(subDirectory);
-        Path targetLocation = Paths.get(uploadDir).resolve(fileName);
+        Path uploadDir = getUploadDirectoryPath(subDirectory);
+        Files.createDirectories(uploadDir);
 
-        // 4. Créer le dossier s'il n'existe pas
-        Files.createDirectories(targetLocation.getParent());
+        Path targetLocation = uploadDir.resolve(fileName).normalize();
+        if (!targetLocation.startsWith(uploadDir)) {
+            throw new IllegalArgumentException("Chemin de destination invalide");
+        }
 
-        // 5. Copier le fichier vers la destination
+        // 4. Copier le fichier vers la destination
         Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
         System.out.println("✅ Fichier sauvegardé: " + targetLocation.toString());
@@ -60,8 +65,12 @@ public class FileStorageService {
      */
     public Resource loadFile(String fileName, String subDirectory) throws FileNotFoundException {
         try {
-            String uploadDir = getUploadDirectory(subDirectory);
-            Path filePath = Paths.get(uploadDir).resolve(fileName).normalize();
+            Path uploadDir = getUploadDirectoryPath(subDirectory);
+            String cleaned = StringUtils.cleanPath(fileName);
+            Path filePath = uploadDir.resolve(cleaned).normalize();
+            if (!filePath.startsWith(uploadDir)) {
+                throw new FileNotFoundException("Chemin invalide: " + fileName);
+            }
             Resource resource = new UrlResource(filePath.toUri());
 
             if (resource.exists() && resource.isReadable()) {
@@ -79,8 +88,12 @@ public class FileStorageService {
      */
     public boolean deleteFile(String fileName, String subDirectory) {
         try {
-            String uploadDir = getUploadDirectory(subDirectory);
-            Path filePath = Paths.get(uploadDir).resolve(fileName).normalize();
+            Path uploadDir = getUploadDirectoryPath(subDirectory);
+            String cleaned = StringUtils.cleanPath(fileName);
+            Path filePath = uploadDir.resolve(cleaned).normalize();
+            if (!filePath.startsWith(uploadDir)) {
+                return false;
+            }
             return Files.deleteIfExists(filePath);
         } catch (IOException ex) {
             System.err.println("❌ Erreur suppression fichier: " + ex.getMessage());
@@ -114,15 +127,17 @@ public class FileStorageService {
 
     // ==================== MÉTHODES PRIVÉES ====================
 
-    private String getUploadDirectory(String subDirectory) {
-        String baseDir = fileStorageProperties.getDir();
-
-        // S'assurer que le chemin se termine par un séparateur
-        if (!baseDir.endsWith("/") && !baseDir.endsWith("\\")) {
-            baseDir += "/";
+    private Path getUploadDirectoryPath(String subDirectory) {
+        if (subDirectory == null || subDirectory.isBlank() || !SAFE_SUBDIRECTORY.matcher(subDirectory).matches()) {
+            throw new IllegalArgumentException("Sous-dossier invalide");
         }
 
-        return baseDir + subDirectory + "/";
+        Path base = Paths.get(fileStorageProperties.getDir()).toAbsolutePath().normalize();
+        Path dir = base.resolve(subDirectory).normalize();
+        if (!dir.startsWith(base)) {
+            throw new IllegalArgumentException("Sous-dossier invalide");
+        }
+        return dir;
     }
 
     private String getFileExtension(String fileName) {
