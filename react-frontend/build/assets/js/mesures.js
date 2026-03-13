@@ -16,7 +16,7 @@ const API_BASE_URL = (window.Common && typeof window.Common.getApiBaseUrl === 'f
         ? 'http://localhost:8081/api' 
         : 'https://g-atelier-backend.onrender.com/api'); // URL du backend en production
 
-window.API_BASE_URL = MEDIA_BASE_URL;
+window.API_BASE_URL = API_BASE_URL;
 
 class ModelManager {
   constructor() {

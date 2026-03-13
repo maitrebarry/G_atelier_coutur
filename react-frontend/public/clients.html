@@ -1,0 +1,907 @@
+<style>
+    #clientsTable th:last-child,
+    #clientsTable td:last-child {
+        width: 120px;
+        white-space: nowrap;
+    }
+    /* Style pour le champ prix */
+    #editPrix {
+        font-weight: 500;
+        font-size: 1.1rem;
+    }
+
+    #editPrix:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+
+    /* Style pour l'affichage du prix dans les détails */
+    .badge.bg-light.text-dark.fs-6 {
+        font-size: 1rem !important;
+        padding: 0.5rem 0.75rem;
+    }
+</style>
+
+<!doctype html>
+<html lang="en" class="semi-dark">
+
+<head>
+   <link rel="icon" href="assets/images/logo_ateliko.png" type="image/png" />
+
+   <head>
+	<!-- Required meta tags -->
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!--favicon-->
+	<link href="assets/css/logo_icon.css" rel="stylesheet" />
+	<!--plugins-->
+	<link href="assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
+	<link href="assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css" rel="stylesheet" />
+	<link href="assets/plugins/highcharts/css/highcharts.css" rel="stylesheet" />
+	<link href="assets/plugins/vectormap/jquery-jvectormap-2.0.2.css" rel="stylesheet" />
+	<link href="assets/plugins/metismenu/css/metisMenu.min.css" rel="stylesheet" />
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+	<!-- loader-->
+	<link href="assets/css/pace.min.css" rel="stylesheet" />
+	<script src="assets/js/pace.min.js"></script>
+	<!-- Bootstrap CSS -->
+	<link href="assets/css/bootstrap.min.css" rel="stylesheet">
+	<link href="assets/css/app.css" rel="stylesheet">
+	<link href="assets/css/icons.css" rel="stylesheet">
+	<!-- Theme Style CSS -->
+	<link rel="stylesheet" href="assets/css/dark-theme.css" />
+	<link rel="stylesheet" href="assets/css/semi-dark.css" />
+	<link rel="stylesheet" href="assets/css/header-colors.css" />
+   <title>ATELIKO</title>
+   <script src="partials/includes.js"></script>
+</head>
+
+<body>
+    <!--wrapper-->
+    <div class="wrapper">
+        <div id="sidebar-placeholder"></div>
+        <div id="header-placeholder"></div>
+        <!--start page wrapper -->
+        <div class="page-wrapper">
+            <div class="page-content">
+                <div class="page-header">
+                    <div class="container-fluid">
+                        <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+                            <div class="breadcrumb-title pe-3">Clients</div>
+                            <div class="ps-3">
+                                <nav aria-label="breadcrumb">
+                                    <ol class="breadcrumb mb-0 p-0">
+                                        <li class="breadcrumb-item"><a href="#"><i class="bx bx-home-alt"></i></a></li>
+                                        <li class="breadcrumb-item active" aria-current="page">Liste
+                                            des clients</li>
+                                    </ol>
+                                </nav>
+                            </div>
+                            <div class="ms-auto">
+                                <a href="mesures.html" class="btn btn-primary">Ajouter un
+                                    client</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="clientsTable" class="table table-striped table-bordered" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>Prénom</th>
+                                        <th>Nom</th>
+                                        <th>Contact</th>
+                                        <th>Adresse</th>
+                                        <th>Email</th>
+                                        <th>Sexe/Modèle</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                            <!-- Modal Détail -->
+                            <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel"
+                                aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content d-flex flex-row">
+
+                                        <!-- Partie photo (plus large) -->
+                                        <div class="flex-shrink-0 p-3" style="max-width: 45%;">
+                                            <img id="photoClient" src="default_femme.png" alt="Photo Client"
+                                                class="img-fluid rounded" style="width: 100%; height: auto;" />
+                                        </div>
+
+                                        <!-- Partie mesures -->
+                                        <div class="modal-body flex-grow-1 p-3" id="mesuresContainer"
+                                            style="overflow-y: auto; max-height: 500px;">
+                                            <!-- Contenu mesures sera injecté ici -->
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Modal de Modification -->
+                            <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel"
+                                aria-hidden="true">
+                                <div class="modal-dialog modal-xl">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-primary text-white">
+                                            <h5 class="modal-title  text-white" id="editModalLabel"
+                                                style="text-align: center;">Modification
+                                                du Client et ses
+                                                mesures</h5>
+                                            <button type="button" class="btn-close btn-close-white"
+                                                data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form id="measurementEditForm" method="POST" enctype="multipart/form-data">
+                                                <input type="hidden" id="editClientId" name="id">
+                                                <input type="hidden" id="existingPhoto" name="existing_photo">
+
+                                                <div class="row">
+                                                    <!-- Colonne photo -->
+                                                    <!-- <div class="col-md-4">
+                                                            <div class="d-flex flex-column align-items-center text-center">
+                                                                <div class="image-preview-container">
+                                                                    <label for="photoEditInput">
+                                                                        <img src="assets/images/model1.png" 
+                                                                            id="avatarEdit" 
+                                                                            class="img-fluid rounded rectangle-image" 
+                                                                            alt="Modèle par défaut" />
+                                                                        <div class="overlay-text">Cliquer pour modifier la photo</div>
+                                                                    </label>
+                                                                    <input type="file" id="photoEditInput" name="photo" accept="image/*" style="display: none" />
+                                                                </div>
+                                                                <div class="mt-3">
+                                                                    <div class="form-check form-check-inline">
+                                                                        <input class="form-check-input" type="radio" name="genderPreviewEdit" id="previewFemaleEdit" value="Femme" checked>
+                                                                        <label class="form-check-label" for="previewFemaleEdit">Femme</label>
+                                                                    </div>
+                                                                    <div class="form-check form-check-inline">
+                                                                        <input class="form-check-input" type="radio" name="genderPreviewEdit" id="previewMaleEdit" value="Homme">
+                                                                        <label class="form-check-label" for="previewMaleEdit">Homme</label>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div> -->
+
+                                                    <!-- Colonne photo -->
+                                                    <div class="col-md-4">
+                                                        <div class="d-flex flex-column align-items-center text-center">
+                                                            <div class="image-preview-container">
+                                                                <label for="photoEditInput">
+                                                                    <img src="assets/images/model1.png" id="avatarEdit"
+                                                                        class="img-fluid rounded rectangle-image"
+                                                                        alt="Photo du client" />
+                                                                    <div class="overlay-text">Cliquer
+                                                                        pour
+                                                                        modifier
+                                                                        la
+                                                                        photo</div>
+                                                                </label>
+                                                                <input type="file" id="photoEditInput" name="photo"
+                                                                    accept="image/*" style="display: none" />
+                                                                <!-- Champ caché pour la photo existante -->
+                                                                <input type="hidden" id="existingPhoto"
+                                                                    name="existingPhoto">
+                                                            </div>
+                                                            <div class="mt-3">
+                                                                <div class="form-check form-check-inline">
+                                                                    <input class="form-check-input" type="radio"
+                                                                        name="genderPreviewEdit" id="previewFemaleEdit"
+                                                                        value="Femme">
+                                                                    <label class="form-check-label"
+                                                                        for="previewFemaleEdit">Femme</label>
+                                                                </div>
+                                                                <div class="form-check form-check-inline">
+                                                                    <input class="form-check-input" type="radio"
+                                                                        name="genderPreviewEdit" id="previewMaleEdit"
+                                                                        value="Homme">
+                                                                    <label class="form-check-label"
+                                                                        for="previewMaleEdit">Homme</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <!-- Colonne formulaire -->
+                                                    <div class="col-md-8">
+                                                        <!-- Infos Générales -->
+                                                        <div class="form-section">
+                                                            <h5><i class="fas fa-user"></i>
+                                                                Informations
+                                                                Générales</h5>
+                                                            <div class="row">
+                                                                <div class="col-md-6 mb-3">
+                                                                    <label class="form-label">Nom
+                                                                        <span class="-star">*</span></label>
+                                                                    <input type="text" class="form-control -field"
+                                                                        name="nom" id="editNom" />
+                                                                    <div class="invalid-feedback">Veuillez
+                                                                        saisir
+                                                                        le
+                                                                        nom
+                                                                        du
+                                                                        client.</div>
+                                                                </div>
+                                                                <div class="col-md-6 mb-3">
+                                                                    <label class="form-label">Prénom
+                                                                        <span class="-star">*</span></label>
+                                                                    <input type="text" class="form-control -field"
+                                                                        name="prenom" id="editPrenom" />
+                                                                    <div class="invalid-feedback">Veuillez
+                                                                        saisir
+                                                                        le
+                                                                        prénom
+                                                                        du
+                                                                        client.</div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row">
+                                                                <div class="col-md-6 mb-3">
+                                                                    <label class="form-label">Contact
+                                                                        <span class="-star">*</span></label>
+                                                                    <input type="tel" class="form-control -field"
+                                                                        name="contact" id="editContact"
+                                                                        placeholder="Ex: 76XXXXXXX" />
+                                                                    <div class="invalid-feedback">Veuillez
+                                                                        saisir
+                                                                        un
+                                                                        numéro
+                                                                        de
+                                                                        contact
+                                                                        valide.</div>
+                                                                </div>
+                                                                <div class="col-md-6 mb-3">
+                                                                    <label class="form-label">Adresse</label>
+                                                                    <input type="text" class="form-control"
+                                                                        name="adresse" id="editAdresse" />
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row">
+                                                                 <div class="col-md-6 mb-3">
+                                                                    <label class="form-label">Email</label>
+                                                                    <input type="text" class="form-control"
+                                                                        name="email" id="editEmail" />
+                                                                </div>
+                                                                <div class="col-md-06 mb-3">
+                                                                    <label class="form-label">Sexe
+                                                                        <span class="-star">*</span></label>
+                                                                    <select class="form-select -field" name="sexe"
+                                                                        id="editSexe">
+                                                                        <option value>--
+                                                                            Sélectionner
+                                                                            --</option>
+                                                                        <option value="Femme">Femme</option>
+                                                                        <option value="Homme">Homme</option>
+                                                                    </select>
+                                                                    <div class="invalid-feedback">Veuillez
+                                                                        sélectionner
+                                                                        le
+                                                                        sexe
+                                                                        du
+                                                                        client.</div>
+                                                                </div>
+                                                            </div>
+
+                                                               <!-- NOUVEAU : Section Prix -->
+                                                            <div class="row">
+                                                                <div class="col-md-12 mb-3">
+                                                                    <label class="form-label">Prix du modèle (FCFA) <span class="-star">*</span></label>
+                                                                    <input type="number" class="form-control -field" 
+                                                                        name="prix" id="editPrix" 
+                                                                        placeholder="Entrez le prix en FCFA" 
+                                                                        min="0" step="100">
+                                                                    <div class="invalid-feedback">Veuillez saisir un prix valide.</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Options de vêtement pour femme -->
+                                                        <div class="form-section" id="femmeOptionsEdit"
+                                                            style="display:none;">
+                                                            <h5><i class="fas fa-tshirt"></i>
+                                                                Type de
+                                                                vêtement
+                                                                <span class="-star">*</span>
+                                                            </h5>
+                                                            <div class="row">
+                                                                <div class="col-md-6 mb-3">
+                                                                    <div class="option-card" data-option="robe">
+                                                                        <h6><i class="fas fa-vest"></i>
+                                                                            Option
+                                                                            Robe</h6>
+                                                                        <p class="small">Sélectionnez
+                                                                            cette
+                                                                            option
+                                                                            pour
+                                                                            les
+                                                                            mesures
+                                                                            de
+                                                                            robe</p>
+                                                                        <div class="form-check">
+                                                                            <input class="form-check-input" type="radio"
+                                                                                name="femme_type_edit"
+                                                                                id="femme_type_robe_edit" value="robe">
+                                                                            <label class="form-check-label"
+                                                                                for="femme_type_robe_edit">
+                                                                                Choisir
+                                                                                cette
+                                                                                option
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-6 mb-3">
+                                                                    <div class="option-card" data-option="jupe">
+                                                                        <h6><i class="fas fa-skating"></i>
+                                                                            Option
+                                                                            Jupe</h6>
+                                                                        <p class="small">Sélectionnez
+                                                                            cette
+                                                                            option
+                                                                            pour
+                                                                            les
+                                                                            mesures
+                                                                            de
+                                                                            jupe</p>
+                                                                        <div class="form-check">
+                                                                            <input class="form-check-input" type="radio"
+                                                                                name="femme_type_edit"
+                                                                                id="femme_type_jupe_edit" value="jupe">
+                                                                            <label class="form-check-label"
+                                                                                for="femme_type_jupe_edit">
+                                                                                Choisir
+                                                                                cette
+                                                                                option
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Mesures Femme - Option Robe -->
+                                                        <div class="form-section" id="mesuresRobeEdit"
+                                                            style="display:none;">
+                                                            <h5><i class="fas fa-ruler-combined"></i>
+                                                                Mesures
+                                                                pour
+                                                                Robe</h5>
+
+                                                            <div class="measurement-group">
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Épaule
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="robe_epaule" id="robe_epaule_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Manche
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="robe_manche" id="robe_manche_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Poitrine
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="robe_poitrine"
+                                                                            id="robe_poitrine_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Taille
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="robe_taille" id="robe_taille_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Longueur
+                                                                            de
+                                                                            robe
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="robe_longueur"
+                                                                            id="robe_longueur_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Fesse
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="robe_fesse" id="robe_fesse_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Tour
+                                                                            de
+                                                                            manche</label>
+                                                                        <input type="text" class="form-control"
+                                                                            name="robe_tour_manche"
+                                                                            id="robe_tour_manche_edit" />
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Longueur
+                                                                            de
+                                                                            poitrine</label>
+                                                                        <input type="text" class="form-control"
+                                                                            name="robe_longueur_poitrine"
+                                                                            id="robe_longueur_poitrine_edit" />
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Longueur
+                                                                            de
+                                                                            taille</label>
+                                                                        <input type="text" class="form-control"
+                                                                            name="robe_longueur_taille"
+                                                                            id="robe_longueur_taille_edit" />
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Longueur
+                                                                            de
+                                                                            fesse</label>
+                                                                        <input type="text" class="form-control"
+                                                                            name="robe_longueur_fesse"
+                                                                            id="robe_longueur_fesse_edit" />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Mesures Femme - Option Jupe -->
+                                                        <div class="form-section" id="mesuresJupeEdit"
+                                                            style="display:none;">
+                                                            <h5><i class="fas fa-ruler-combined"></i>
+                                                                Mesures
+                                                                pour
+                                                                Jupe</h5>
+
+                                                            <div class="measurement-group">
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Épaule
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="jupe_epaule" id="jupe_epaule_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Manche
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="jupe_manche" id="jupe_manche_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Poitrine
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="jupe_poitrine"
+                                                                            id="jupe_poitrine_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Taille
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="jupe_taille" id="jupe_taille_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Longueur
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="jupe_longueur"
+                                                                            id="jupe_longueur_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Longueur
+                                                                            de
+                                                                            jupe
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="jupe_longueur_jupe"
+                                                                            id="jupe_longueur_jupe_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Ceinture
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="jupe_ceinture"
+                                                                            id="jupe_ceinture_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Fesse
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="jupe_fesse" id="jupe_fesse_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Tour
+                                                                            de
+                                                                            manche</label>
+                                                                        <input type="text" class="form-control"
+                                                                            name="jupe_tour_manche"
+                                                                            id="jupe_tour_manche_edit" />
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Longueur
+                                                                            de
+                                                                            poitrine</label>
+                                                                        <input type="text" class="form-control"
+                                                                            name="jupe_longueur_poitrine"
+                                                                            id="jupe_longueur_poitrine_edit" />
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Longueur
+                                                                            de
+                                                                            taille</label>
+                                                                        <input type="text" class="form-control"
+                                                                            name="jupe_longueur_taille"
+                                                                            id="jupe_longueur_taille_edit" />
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Longueur
+                                                                            de
+                                                                            fesse</label>
+                                                                        <input type="text" class="form-control"
+                                                                            name="jupe_longueur_fesse"
+                                                                            id="jupe_longueur_fesse_edit" />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Mesures Homme -->
+                                                        <div class="form-section" id="mesuresHommeEdit"
+                                                            style="display:none;">
+                                                            <h5><i class="fas fa-ruler-combined"></i>
+                                                                Mesures
+                                                                pour
+                                                                Homme</h5>
+
+                                                            <div class="measurement-group">
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Épaule
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="homme_epaule"
+                                                                            id="homme_epaule_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Manche
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="homme_manche"
+                                                                            id="homme_manche_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Longueur
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="homme_longueur"
+                                                                            id="homme_longueur_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Longueur
+                                                                            pantalon
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="homme_longueur_pantalon"
+                                                                            id="homme_longueur_pantalon_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Ceinture
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="homme_ceinture"
+                                                                            id="homme_ceinture_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Cuisse
+                                                                            <span class="-star">*</span></label>
+                                                                        <input type="text" class="form-control -field"
+                                                                            name="homme_cuisse"
+                                                                            id="homme_cuisse_edit" />
+                                                                        <div class="invalid-feedback">Ce
+                                                                            champ
+                                                                            est
+                                                                            obligatoire.</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Poitrine</label>
+                                                                        <input type="text" class="form-control"
+                                                                            name="homme_poitrine"
+                                                                            id="homme_poitrine_edit" />
+                                                                    </div>
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Coude</label>
+                                                                        <input type="text" class="form-control"
+                                                                            name="homme_corps" id="homme_corps_edit" />
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row">
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <label class="form-label">Tour
+                                                                            de
+                                                                            manche</label>
+                                                                        <input type="text" class="form-control"
+                                                                            name="homme_tour_manche"
+                                                                            id="homme_tour_manche_edit" />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary"
+                                                data-bs-dismiss="modal">Annuler</button>
+                                            <button type="button" class="btn btn-primary"
+                                                id="saveEditBtn">Enregistrer</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--end page wrapper -->
+        <!--start overlay-->
+        <div class="overlay toggle-icon"></div>
+        <!--end overlay-->
+        <!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i
+                class='bx bxs-up-arrow-alt'></i></a>
+        <!--End Back To Top Button-->
+        <div id="footer-placeholder"></div>
+    </div>
+    <!--end wrapper-->
+    <!--start switcher-->
+    <div class="switcher-wrapper">
+        <div class="switcher-btn"> <i class='bx bx-cog bx-spin'></i>
+        </div>
+        <div class="switcher-body">
+            <div class="d-flex align-items-center">
+                <h5 class="mb-0 text-uppercase">Theme Customizer</h5>
+                <button type="button" class="btn-close ms-auto close-switcher" aria-label="Close"></button>
+            </div>
+            <hr />
+            <h6 class="mb-0">Theme Styles</h6>
+            <hr />
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="lightmode" checked>
+                    <label class="form-check-label" for="lightmode">Light</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="darkmode">
+                    <label class="form-check-label" for="darkmode">Dark</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="flexRadioDefault" id="semidark">
+                    <label class="form-check-label" for="semidark">Semi
+                        Dark</label>
+                </div>
+            </div>
+            <hr />
+            <div class="form-check">
+                <input class="form-check-input" type="radio" id="minimaltheme" name="flexRadioDefault">
+                <label class="form-check-label" for="minimaltheme">Minimal Theme</label>
+            </div>
+            <hr />
+            <h6 class="mb-0">Header Colors</h6>
+            <hr />
+            <div class="header-colors-indigators">
+                <div class="row row-cols-auto g-3">
+                    <div class="col">
+                        <div class="indigator headercolor1" id="headercolor1"></div>
+                    </div>
+                    <div class="col">
+                        <div class="indigator headercolor2" id="headercolor2"></div>
+                    </div>
+                    <div class="col">
+                        <div class="indigator headercolor3" id="headercolor3"></div>
+                    </div>
+                    <div class="col">
+                        <div class="indigator headercolor4" id="headercolor4"></div>
+                    </div>
+                    <div class="col">
+                        <div class="indigator headercolor5" id="headercolor5"></div>
+                    </div>
+                    <div class="col">
+                        <div class="indigator headercolor6" id="headercolor6"></div>
+                    </div>
+                    <div class="col">
+                        <div class="indigator headercolor7" id="headercolor7"></div>
+                    </div>
+                    <div class="col">
+                        <div class="indigator headercolor8" id="headercolor8"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--end switcher-->
+    <!-- Bootstrap JS -->
+    <!-- Bootstrap JS -->
+	<script src="assets/js/bootstrap.bundle.min.js"></script>
+	<!--plugins-->
+	<script src="assets/js/jquery.min.js"></script>
+	<script src="assets/plugins/simplebar/js/simplebar.min.js"></script>
+	<script src="assets/plugins/metismenu/js/metisMenu.min.js"></script>
+	<script src="assets/plugins/perfect-scrollbar/js/perfect-scrollbar.js"></script>
+	<script src="assets/plugins/vectormap/jquery-jvectormap-2.0.2.min.js"></script>
+	<script src="assets/plugins/vectormap/jquery-jvectormap-world-mill-en.js"></script>
+	<script src="assets/plugins/highcharts/js/highcharts.js"></script>
+	<script src="assets/plugins/highcharts/js/exporting.js"></script>
+	<script src="assets/plugins/highcharts/js/variable-pie.js"></script>
+	<script src="assets/plugins/highcharts/js/export-data.js"></script>
+	<script src="assets/plugins/highcharts/js/accessibility.js"></script>
+	<script src="assets/plugins/apexcharts-bundle/js/apexcharts.min.js"></script>
+	<script src="assets/js/index.js"></script>
+	<!--app JS-->
+	<script src="assets/js/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="assets/js/common.js"></script> 
+	<!-- Ensuite les autres -->
+	<script src="assets/js/auth.js"></script>
+    <script src="assets/js/sidebar.js"></script>
+	<script src="assets/js/profil.js"></script>
+	<script src="assets/js/home_permission.js"></script>
+    <script src="assets/js/notifications.js"></script>
+    <script src="assets/js/clients.js"></script>
+    <script src="assets/js/modifier_client.js"></script>
+    <script>
+		// ✅ CORRECTION : Vérifier que Common existe AVANT d'appeler checkPageAccess
+		document.addEventListener('DOMContentLoaded', function() {
+			// Attendre que Common soit chargé
+			const checkCommon = () => {
+				if (typeof Common !== 'undefined' && Common.checkPageAccess) {
+					Common.checkPageAccess();
+				} else {
+					setTimeout(checkCommon, 100);
+				}
+			};
+			checkCommon();
+		});
+	</script>
+	<script>
+		// Correction d'urgence - À mettre avant les autres scripts
+		document.addEventListener('DOMContentLoaded', function() {
+	// Empêcher les erreurs de graphiques
+	if (typeof ApexCharts !== 'undefined') {
+		const originalRender = ApexCharts.prototype.render;
+		ApexCharts.prototype.render = function() {
+			if (!this.el || !document.body.contains(this.el)) {
+				console.warn('ApexCharts: Élément non trouvé, rendu annulé');
+				return Promise.resolve();
+			}
+			return originalRender.call(this);
+		};
+	}
+
+	// Empêcher les erreurs Highcharts
+	if (typeof Highcharts !== 'undefined') {
+		const originalChart = Highcharts.chart;
+		Highcharts.chart = function(container, options) {
+			const element = typeof container === 'string' ? 
+				document.getElementById(container) : container;
+			if (!element) {
+				console.warn('Highcharts: Conteneur non trouvé:', container);
+				return null;
+			}
+			return originalChart.call(this, container, options);
+		};
+	}
+	});
+	</script>
+</body>
+
+</html>
+
+
+ 

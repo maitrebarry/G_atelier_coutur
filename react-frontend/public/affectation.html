@@ -1,0 +1,548 @@
+
+<!doctype html>
+<html lang="en" class="semi-dark">
+
+<head>
+	<!-- Required meta tags -->
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!--favicon-->
+	<link rel="icon" href="assets/images/logo_ateliko.png" type="image/png" />
+	<!--plugins-->
+	 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+	<link href="assets/plugins/simplebar/css/simplebar.css" rel="stylesheet" />
+	<link href="assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css" rel="stylesheet" />
+	<link href="assets/plugins/highcharts/css/highcharts.css" rel="stylesheet" />
+	<link href="assets/plugins/vectormap/jquery-jvectormap-2.0.2.css" rel="stylesheet" />
+	<link href="assets/plugins/metismenu/css/metisMenu.min.css" rel="stylesheet" />
+	<!-- lien pour icone -->
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+	<!-- loader-->
+	<link href="assets/css/pace.min.css" rel="stylesheet" />
+	<script src="assets/js/pace.min.js"></script>
+	<!-- Bootstrap CSS -->
+	<link href="assets/css/bootstrap.min.css" rel="stylesheet">
+	<link href="assets/css/app.css" rel="stylesheet">
+	<link href="assets/css/icons.css" rel="stylesheet">
+	<!-- Theme Style CSS -->
+	<link rel="stylesheet" href="assets/css/dark-theme.css" />
+	<link rel="stylesheet" href="assets/css/semi-dark.css" />
+	<link rel="stylesheet" href="assets/css/header-colors.css" />
+	<link href="assets/css/logo_icon.css" rel="stylesheet" />
+	<!-- <script src="assets/js/auth.js"></script> -->
+
+	<title>ATELIKO</title>
+</head>
+
+<body>
+	  <style>
+        .client-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .client-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .client-card.selected {
+            border: 2px solid #0d6efd;
+            background-color: #f8f9fa;
+        }
+        .progress {
+            background-color: #e9ecef;
+        }
+        .badge {
+            font-size: 0.75em;
+        }
+    </style>
+	<!--wrapper-->
+	<div class="wrapper">
+		<!--sidebar wrapper -->
+		<div class="sidebar-wrapper" data-simplebar="true">
+			 <div class="sidebar-header">
+				<div class="branding">
+					<img src="assets/images/logo_ateliko.png" class="logo-icon" alt="logo icon">
+					<h6 class="logo-text">ATELIKO</h6>
+				</div>
+				<div class="toggle-icon ms-auto">
+					<i class='bx bx-arrow-to-left'></i>
+				</div>
+			</div>
+			<!--navigation-->
+			<ul class="metismenu" id="menu">
+				
+			</ul>
+			<!--end navigation-->
+		</div>
+		<!--end sidebar wrapper -->
+		<!--start header -->
+		<header>
+			<div class="topbar d-flex align-items-center">
+				<nav class="navbar navbar-expand">
+					<div class="mobile-toggle-menu"><i class='bx bx-menu'></i>
+					</div>
+					<div class="top-menu ms-auto">
+						<ul class="navbar-nav align-items-center">
+							<li class="nav-item dropdown dropdown-large">
+								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
+									role="button" data-bs-toggle="dropdown" aria-expanded="false"> <span
+										class="alert-count">7</span>
+									<i class='bx bx-bell'></i>
+								</a>
+								<div class="dropdown-menu dropdown-menu-end">
+									<a href="javascript:;">
+										<div class="msg-header">
+											<p class="msg-header-title">Notifications</p>
+											<p class="msg-header-clear ms-auto">Marks all as read</p>
+										</div>
+									</a>
+									<div class="header-notifications-list">
+
+
+									</div>
+									<a href="javascript:;">
+										<div class="text-center msg-footer">View All Notifications</div>
+									</a>
+								</div>
+							</li>
+							<li class="nav-item dropdown dropdown-large">
+								<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#"
+									role="button" data-bs-toggle="dropdown" aria-expanded="false">
+								</a>
+								<div class="dropdown-menu dropdown-menu-end">
+									<a href="javascript:;">
+
+									</a>
+									<div class="header-message-list">
+									</div>
+
+								</div>
+							</li>
+						</ul>
+					</div>
+					<!-- Bouton / Menu utilisateur -->
+					<div class="user-box dropdown">
+						<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#"
+							role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							<!-- CHANGEMENT : src avec image par défaut -->
+							<img src="/assets/images/default-user.jpg" class="user-img" alt="user avatar" id="headerUserImg">
+							<div class="user-info ps-3">
+								<p class="user-name mb-0" id="user-name">Chargement...</p>
+								<p class="designattion mb-0" id="user-role">Connecté</p>
+							</div>
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end">
+							<li>
+								<a class="dropdown-item" href="javascript:;" onclick="openProfileModal()">
+									<i class="bx bx-user"></i><span>Mon Profil</span>
+								</a>
+							</li>
+							<li><div class="dropdown-divider mb-0"></div></li>
+							<li>
+								<a class="dropdown-item" href="#" id="logoutBtn">
+									<i class='bx bx-log-out-circle'></i><span>Déconnexion</span>
+								</a>
+							</li>
+						</ul>
+					</div>
+										
+				</nav>
+			</div>
+		</header>
+		<!-- ================= MODALE PROFIL UTILISATEUR ================= -->
+		<div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+			<div class="modal-header bg-primary text-white">
+				<h5 class="modal-title" id="profileModalLabel">
+				<i class="bx bx-user-circle me-2"></i>Mon Profil
+				</h5>
+				<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+			</div>
+
+			<div class="modal-body">
+				<div class="row">
+				<!-- ====== SECTION PHOTO ====== -->
+				<div class="col-md-4 text-center border-end">
+					<!-- CHANGEMENT : chemin corrigé -->
+					<img id="profileAvatar" src="/assets/images/default-user.jpg" alt="Photo de profil"
+						class="rounded-circle shadow mb-3" width="150" height="150" style="object-fit:cover;">
+					
+					<input type="file" id="photoUpload" accept="image/*" class="d-none">
+
+					<button class="btn btn-outline-primary btn-sm w-100 mb-2" id="changePhotoBtn">
+						<i class="bx bx-camera me-1"></i>Changer la photo
+					</button>
+
+					<button class="btn btn-outline-danger btn-sm w-100" id="removePhotoBtn">
+						<i class="bx bx-trash me-1"></i>Supprimer
+					</button>
+
+					<div id="photoPreviewContainer" class="mt-3" style="display:none;">
+						<img id="previewImage" src="" class="rounded shadow" width="100" height="100" style="object-fit:cover;">
+						<button class="btn btn-success btn-sm w-100 mt-2" id="savePhotoBtn">
+							<i class="bx bx-check me-1"></i>Enregistrer la photo
+						</button>
+					</div>
+				</div>
+
+				<!-- ====== SECTION MOT DE PASSE ====== -->
+				<div class="col-md-8">
+					<h6 class="mb-3"><i class="bx bx-lock me-2"></i>Changer le mot de passe</h6>
+					<form id="changePasswordForm">
+					<div class="row g-3">
+						<div class="col-12">
+						<label>Mot de passe actuel</label>
+						<input type="password" class="form-control" id="currentPassword" required>
+						</div>
+						<div class="col-12">
+						<label>Nouveau mot de passe</label>
+						<input type="password" class="form-control" id="newPassword" required>
+						</div>
+						<div class="col-12">
+						<label>Confirmer le mot de passe</label>
+						<input type="password" class="form-control" id="confirmPassword" required>
+						</div>
+					</div>
+					</form>
+				</div>
+				</div>
+			</div>
+
+			<div class="modal-footer">
+				<button class="btn btn-secondary" data-bs-dismiss="modal">
+				<i class="bx bx-x me-1"></i>Fermer
+				</button>
+				<button type="submit" form="changePasswordForm" class="btn btn-success">
+				<i class="bx bx-check-shield me-1"></i>Changer mot de passe
+				</button>
+			</div>
+			</div>
+		</div>
+		</div>
+		<!--end header -->
+		<!--start page wrapper -->
+		<div class="page-wrapper">
+			<div class="page-content">
+				    <div class="page-header">
+						<div class="container-fluid">
+							<div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+								<div class="breadcrumb-title pe-3">Affectations</div>
+								<div class="ps-3">
+									<nav aria-label="breadcrumb">
+										<ol class="breadcrumb mb-0 p-0">
+											<li class="breadcrumb-item"><a href="#"><i class="bx bx-home-alt"></i></a></li>
+											<li class="breadcrumb-item active" aria-current="page">Affecter des clients à un tailleur</li>
+										</ol>
+									</nav>
+								</div>
+								<div class="ms-auto">        
+								</div>
+							</div>
+						</div>
+					</div>
+				    <!-- Section Création d'Affectation (PROPRIETAIRE/SECRETAIRE seulement) -->
+				<div id="creationSection" style="display: none;">
+					<div class="card">
+						<div class="card-header bg-primary text-white">
+							<h5 class="card-title mb-0">
+								<i class="fas fa-plus-circle me-2"></i>Nouvelle Affectation
+							</h5>
+						</div>
+						<div class="card-body">
+							<form id="formAffectation">
+								<!-- Sélection du Tailleur -->
+								<div class="row mb-4">
+									<div class="col-md-6">
+										<label class="form-label fw-bold">Sélectionner un tailleur <span class="text-danger">*</span></label>
+										<select class="form-select" id="selectTailleur" required>
+											<option value="">Choisir un tailleur...</option>
+										</select>
+									</div>
+									<div class="col-md-6">
+										<label class="form-label fw-bold">Date d'échéance estimée</label>
+										<input type="date" class="form-control" id="dateEcheance">
+										<div class="form-text">Date à laquelle le tailleur doit terminer la couture</div>
+									</div>
+								</div>
+
+								<!-- Recherche et Filtres Clients -->
+								<div class="card bg-light mb-4">
+									<div class="card-body">
+										<div class="row g-3">
+											<div class="col-md-6">
+												<label class="form-label fw-bold">Rechercher un client</label>
+												<div class="input-group">
+													<input type="text" class="form-control" id="searchClient" 
+														placeholder="Nom, prénom ou téléphone...">
+													<button class="btn btn-outline-secondary" type="button" id="btnClearSearch">
+														<i class="fas fa-times"></i>
+													</button>
+												</div>
+											</div>
+											<div class="col-md-6">
+												<label class="form-label fw-bold">Filtrer par type de vêtement</label>
+												<select class="form-select" id="filterTypeVetement">
+													<option value="">Tous les types</option>
+													<option value="ROBE">Robes</option>
+													<option value="JUPE">Jupes</option>
+													<option value="HOMME">Vêtements homme</option>
+													<option value="ENFANT">Vêtements enfant</option>
+												</select>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<!-- Liste des Clients avec Mesures Validées NON affectées -->
+								<div class="mb-4">
+									<div class="d-flex justify-content-between align-items-center mb-3">
+										<label class="form-label fw-bold mb-0">Clients disponibles pour affectation</label>
+										<span class="badge bg-info" id="clientsCount">0 clients trouvés</span>
+									</div>
+									
+									<div class="form-text mb-3">
+										<i class="fas fa-info-circle text-primary me-1"></i>
+										Seuls les clients avec des mesures validées et NON affectées sont affichés
+									</div>
+									
+									<div id="clientsList" class="row">
+										<!-- Chargé dynamiquement par JS -->
+									</div>
+								</div>
+
+								<!-- Résumé de la sélection -->
+								<div class="card bg-light mb-4" id="selectionSummary" style="display: none;">
+									<div class="card-body">
+										<h6 class="card-title">
+											<i class="fas fa-clipboard-list me-2"></i>Résumé de l'affectation
+										</h6>
+										<div id="summaryContent">
+											<!-- Rempli dynamiquement par JS -->
+										</div>
+									</div>
+								</div>
+
+								<!-- Bouton de soumission -->
+								<div class="text-end">
+									<button type="submit" class="btn btn-primary px-4">
+										<i class="fas fa-user-check me-2"></i>Confirmer l'affectation
+									</button>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+
+				<!-- Section Suivi des Affectations (Tout le monde) -->
+				<div id="suiviSection" class="mt-4">
+					<div class="card">
+						<div class="card-header bg-success text-white">
+							<h5 class="card-title mb-0">
+								<i class="fas fa-tasks me-2"></i>Suivi des Affectations
+							</h5>
+						</div>
+						<div class="card-body">
+							<!-- Filtres pour les affectations -->
+							<div class="row mb-3">
+								<div class="col-md-4">
+									<label class="form-label">Filtrer par statut</label>
+									<select class="form-select" id="filterStatutAffectation">
+										<option value="">Tous les statuts</option>
+										<option value="EN_ATTENTE">En attente</option>
+										<option value="EN_COURS">En cours</option>
+										<option value="TERMINE">Terminé</option>
+										<option value="VALIDE">Validé</option>
+										<option value="ANNULE">Annulé</option>
+									</select>
+								</div>
+								<div class="col-md-4">
+									<label class="form-label">Filtrer par tailleur</label>
+									<select class="form-select" id="filterTailleurAffectation">
+										<option value="">Tous les tailleurs</option>
+										<!-- Chargé dynamiquement par JS -->
+									</select>
+								</div>
+								<div class="col-md-4 d-flex align-items-end">
+									<button class="btn btn-outline-secondary w-100" id="btnResetFiltersAffectation">
+										<i class="fas fa-redo me-1"></i>Réinitialiser
+									</button>
+								</div>
+							</div>
+							
+							<div id="affectationsList">
+								<!-- Chargé dynamiquement par JS -->
+							</div>
+						</div>
+					</div>
+				</div>
+    		</div>
+              
+		</div>
+		<!--end page wrapper -->
+		<!--start overlay-->
+		<div class="overlay toggle-icon"></div>
+		<!--end overlay-->
+		<!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i
+				class='bx bxs-up-arrow-alt'></i></a>
+		<!--End Back To Top Button-->
+		<footer class="page-footer">
+			<p class="mb-0">Copyright © 2021. All right reserved.</p>
+		</footer>
+	</div>
+	<!--end wrapper-->
+	<!--start switcher-->
+	<div class="switcher-wrapper">
+		<div class="switcher-btn"> <i class='bx bx-cog bx-spin'></i>
+		</div>
+		<div class="switcher-body">
+			<div class="d-flex align-items-center">
+				<h5 class="mb-0 text-uppercase">Theme Customizer</h5>
+				<button type="button" class="btn-close ms-auto close-switcher" aria-label="Close"></button>
+			</div>
+			<hr />
+			<h6 class="mb-0">Theme Styles</h6>
+			<hr />
+			<div class="d-flex align-items-center justify-content-between">
+				<div class="form-check">
+					<input class="form-check-input" type="radio" name="flexRadioDefault" id="lightmode" checked>
+					<label class="form-check-label" for="lightmode">Light</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="radio" name="flexRadioDefault" id="darkmode">
+					<label class="form-check-label" for="darkmode">Dark</label>
+				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="radio" name="flexRadioDefault" id="semidark">
+					<label class="form-check-label" for="semidark">Semi Dark</label>
+				</div>
+			</div>
+			<hr />
+			<div class="form-check">
+				<input class="form-check-input" type="radio" id="minimaltheme" name="flexRadioDefault">
+				<label class="form-check-label" for="minimaltheme">Minimal Theme</label>
+			</div>
+			<hr />
+			<h6 class="mb-0">Header Colors</h6>
+			<hr />
+			<div class="header-colors-indigators">
+				<div class="row row-cols-auto g-3">
+					<div class="col">
+						<div class="indigator headercolor1" id="headercolor1"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor2" id="headercolor2"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor3" id="headercolor3"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor4" id="headercolor4"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor5" id="headercolor5"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor6" id="headercolor6"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor7" id="headercolor7"></div>
+					</div>
+					<div class="col">
+						<div class="indigator headercolor8" id="headercolor8"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!--end switcher-->
+	<!-- Bootstrap JS -->
+	<script src="assets/js/bootstrap.bundle.min.js"></script>
+	<!--plugins-->
+	<script src="assets/js/jquery.min.js"></script>
+	<script src="assets/plugins/simplebar/js/simplebar.min.js"></script>
+	<script src="assets/plugins/metismenu/js/metisMenu.min.js"></script>
+	<script src="assets/plugins/perfect-scrollbar/js/perfect-scrollbar.js"></script>
+	<script src="assets/plugins/vectormap/jquery-jvectormap-2.0.2.min.js"></script>
+	<script src="assets/plugins/vectormap/jquery-jvectormap-world-mill-en.js"></script>
+	<script src="assets/plugins/highcharts/js/highcharts.js"></script>
+	<script src="assets/plugins/highcharts/js/exporting.js"></script>
+	<script src="assets/plugins/highcharts/js/variable-pie.js"></script>
+	<script src="assets/plugins/highcharts/js/export-data.js"></script>
+	<script src="assets/plugins/highcharts/js/accessibility.js"></script>
+	<script src="assets/plugins/apexcharts-bundle/js/apexcharts.min.js"></script>
+	<script src="assets/js/index.js"></script>
+	<!--app JS-->
+	<script src="assets/js/app.js"></script>
+	<script>
+		new PerfectScrollbar('.customers-list');
+		new PerfectScrollbar('.store-metrics');
+		new PerfectScrollbar('.product-list');
+	</script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			const sidebar = document.querySelector('.sidebar-wrapper');
+			if (sidebar) {
+				new PerfectScrollbar(sidebar);
+			} else {
+				console.warn("⚠️ Aucun élément .sidebar-wrapper trouvé pour PerfectScrollbar");
+			}
+		});
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<!-- TOUJOURS en premier -->
+	<script src="assets/js/common.js"></script> 
+	<!-- Ensuite les autres -->
+	<script src="assets/js/auth.js"></script> 
+	<script src="assets/js/sidebar.js"></script>
+	<script src="assets/js/profil.js"></script>
+	<script src="assets/js/home_permission.js"></script>
+	<script src="assets/js/notifications.js"></script>
+	<script src="assets/js/affectation.js"></script>
+	<script>
+		// ✅ CORRECTION : Vérifier que Common existe AVANT d'appeler checkPageAccess
+		document.addEventListener('DOMContentLoaded', function() {
+			// Attendre que Common soit chargé
+			const checkCommon = () => {
+				if (typeof Common !== 'undefined' && Common.checkPageAccess) {
+					Common.checkPageAccess();
+				} else {
+					setTimeout(checkCommon, 100);
+				}
+			};
+			checkCommon();
+		});
+	</script>
+	<script>
+		// Correction d'urgence - À mettre avant les autres scripts
+		document.addEventListener('DOMContentLoaded', function() {
+	// Empêcher les erreurs de graphiques
+	if (typeof ApexCharts !== 'undefined') {
+		const originalRender = ApexCharts.prototype.render;
+		ApexCharts.prototype.render = function() {
+			if (!this.el || !document.body.contains(this.el)) {
+				console.warn('ApexCharts: Élément non trouvé, rendu annulé');
+				return Promise.resolve();
+			}
+			return originalRender.call(this);
+		};
+	}
+
+	// Empêcher les erreurs Highcharts
+	if (typeof Highcharts !== 'undefined') {
+		const originalChart = Highcharts.chart;
+		Highcharts.chart = function(container, options) {
+			const element = typeof container === 'string' ? 
+				document.getElementById(container) : container;
+			if (!element) {
+				console.warn('Highcharts: Conteneur non trouvé:', container);
+				return null;
+			}
+			return originalChart.call(this, container, options);
+		};
+	}
+	});
+	</script>
+</body>
+</html>
