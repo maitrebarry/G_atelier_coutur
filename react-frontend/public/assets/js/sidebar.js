@@ -77,7 +77,16 @@ class SidebarManager {
         
         console.log('✅ Tout est prêt, rendu de la sidebar');
         this.injectLightCSS();
-        this.renderSidebar();
+        
+        // Attendre un peu plus pour les permissions, puis afficher
+        setTimeout(() => {
+            if (Common.getUserData().permissions && Common.getUserData().permissions.length > 0) {
+                this.renderSidebar();
+            } else {
+                this.renderSidebarWithDefaultPermissions();
+            }
+        }, 500);
+        
         this.setupEventListeners();
         
         setTimeout(() => this.highlightCurrentPage(), 100);
@@ -134,12 +143,12 @@ class SidebarManager {
             return true;
         }
         
-        // Sinon, attendre qu'elles soient chargées
+        // Sinon, attendre qu'elles soient chargées (timeout réduit)
         console.log('⏳ Attente des permissions...');
         
         return new Promise((resolve) => {
             let attempts = 0;
-            const maxAttempts = 50; // 5 secondes max
+            const maxAttempts = 30; // 3 secondes max au lieu de 5
             
             const checkPermissions = () => {
                 attempts++;
@@ -152,9 +161,10 @@ class SidebarManager {
                 }
                 
                 if (attempts >= maxAttempts) {
-                    console.warn('⚠️ Timeout attente permissions - utilisation fallback');
-                    // Forcer le chargement des permissions
-                    this.forceLoadPermissions().then(resolve);
+                    console.warn('⚠️ Timeout attente permissions - affichage avec permissions par défaut');
+                    // Afficher la sidebar avec des permissions par défaut pour les rôles de base
+                    this.renderSidebarWithDefaultPermissions();
+                    resolve(false);
                     return;
                 }
                 
@@ -173,8 +183,74 @@ class SidebarManager {
             return true;
         } catch (error) {
             console.error('❌ Erreur chargement forcé permissions:', error);
+            // En cas d'erreur, afficher avec permissions par défaut
+            this.renderSidebarWithDefaultPermissions();
             return false;
         }
+    }
+
+    // Afficher la sidebar avec des permissions par défaut basées sur le rôle
+    renderSidebarWithDefaultPermissions() {
+        console.log('🔄 Affichage sidebar avec permissions par défaut...');
+        
+        const menuContainer = document.getElementById('menu');
+        if (!menuContainer) {
+            console.error('❌ #menu non trouvé');
+            return;
+        }
+
+        // Permissions par défaut selon le rôle
+        const userData = Common.getUserData();
+        const role = userData.role || 'TAILLEUR';
+        
+        // Permissions de base pour tous les rôles authentifiés
+        const defaultPermissions = ['CLIENT_VOIR', 'CLIENT_CREER', 'CLIENT_MODIFIER'];
+        
+        // Permissions supplémentaires selon le rôle
+        if (role === 'SUPERADMIN' || role === 'PROPRIETAIRE') {
+            defaultPermissions.push('MODELE_VOIR', 'MODELE_CREER', 'AFFECTATION_VOIR', 'RENDEZ_VOUS_VOIR', 'PAIEMENT_VOIR', 'MENU_PARAMETRES');
+        } else if (role === 'SECRETAIRE') {
+            defaultPermissions.push('MODELE_VOIR', 'AFFECTATION_VOIR', 'RENDEZ_VOUS_VOIR', 'PAIEMENT_VOIR');
+        }
+
+        let html = '';
+        let visibleCount = 0;
+
+        this.menuItems.forEach(item => {
+            const hasAccess = item.alwaysVisible || 
+                            (item.permission && defaultPermissions.includes(item.permission)) ||
+                            !item.permission; // Éléments sans permission requise
+            
+            if (hasAccess) {
+                const isActive = this.currentPage === item.href;
+                const activeClass = isActive ? 'active' : '';
+                
+                html += `
+                    <li class="menu-item ${activeClass}" data-menu="${item.id}">
+                        <a href="${item.href}" class="menu-link">
+                            <div class="parent-icon"><i class="${item.icon}"></i></div>
+                            <div class="menu-title">${item.title}</div>
+                        </a>
+                    </li>
+                `;
+                visibleCount++;
+            } else {
+                console.log(`🚫 Menu caché (permissions par défaut): ${item.title} (permission: ${item.permission})`);
+            }
+        });
+
+        menuContainer.innerHTML = html;
+        console.log(`✅ ${visibleCount} éléments affichés avec permissions par défaut - Rôle: ${role}`);
+        
+        // Tenter de rafraîchir les permissions en arrière-plan
+        setTimeout(() => {
+            Common.refreshPermissions().then(() => {
+                console.log('🔄 Permissions rechargées - rafraîchissement de la sidebar');
+                this.renderSidebar();
+            }).catch(error => {
+                console.warn('⚠️ Impossible de recharger les permissions:', error);
+            });
+        }, 2000);
     }
 
     injectLightCSS() {
@@ -337,6 +413,12 @@ class SidebarManager {
         window.addEventListener('popstate', () => {
             this.currentPage = this.getCurrentPage();
             this.highlightCurrentPage();
+        });
+
+        // Écouter les mises à jour de permissions
+        window.addEventListener('permissionsUpdated', (event) => {
+            console.log('🔄 Permissions mises à jour, rafraîchissement de la sidebar');
+            this.renderSidebar();
         });
     }
 
