@@ -8,6 +8,7 @@ const emptyForm = {
   nom: '',
   prenom: '',
   email: '',
+  telephone: '',
   motdepasse: '',
   role: '',
   atelierId: ''
@@ -114,11 +115,53 @@ const Signup = ({ embedded = false }) => {
     return [];
   })();
 
+  const formatTelephone = (telephone) => {
+    const raw = String(telephone ?? '').trim();
+    if (!raw) return '';
+
+    const normalized = raw.replace(/^00/, '+');
+    const hasPlus = normalized.startsWith('+');
+    const digits = normalized.replace(/\D/g, '');
+
+    const group2 = (value) => (value.match(/.{1,2}/g) || []).join(' ');
+
+    if (hasPlus) {
+      if (digits.startsWith('223')) {
+        const rest = digits.slice(3);
+        const grouped = group2(rest);
+        return `+223${grouped ? ` ${grouped}` : ''}`;
+      }
+      const grouped = group2(digits);
+      return `+${grouped}`;
+    }
+
+    return group2(digits);
+  };
+
+  const handleTelephoneChange = (e) => {
+    const { value } = e.target;
+    setFormData(prev => ({ ...prev, telephone: formatTelephone(value) }));
+  };
+
+  const handleEditTelephoneChange = (e) => {
+    const { value } = e.target;
+    setEditFormData(prev => ({ ...prev, telephone: formatTelephone(value) }));
+  };
+
+  const handleTelephoneBlur = () => {
+    setFormData(prev => ({ ...prev, telephone: formatTelephone(prev.telephone) }));
+  };
+
+  const handleEditTelephoneBlur = () => {
+    setEditFormData(prev => ({ ...prev, telephone: formatTelephone(prev.telephone) }));
+  };
+
   const resetAddForm = () => {
     setFormData({
       nom: '',
       prenom: '',
       email: '',
+      telephone: '',
       motdepasse: '',
       role: currentUser?.role === 'PROPRIETAIRE' ? 'SECRETAIRE' : '',
       atelierId: currentUser?.role === 'PROPRIETAIRE' ? proprietaireAtelierId : ''
@@ -136,6 +179,7 @@ const Signup = ({ embedded = false }) => {
       nom: user.nom || '',
       prenom: user.prenom || '',
       email: user.email || '',
+      telephone: formatTelephone(user.telephone || ''),
       motdepasse: '',
       role: user.role || '',
       atelierId: user.atelier?.id || user.atelierId || ''
@@ -182,7 +226,7 @@ const Signup = ({ embedded = false }) => {
       resetAddForm();
     } catch (error) {
       console.error('Erreur création utilisateur:', error);
-      Swal.fire('Erreur', error.response?.data?.message || "Impossible d'ajouter l'utilisateur", 'error');
+      Swal.fire('Erreur', error.response?.data?.error || error.response?.data?.message || "Impossible d'ajouter l'utilisateur", 'error');
     }
   };
 
@@ -194,6 +238,7 @@ const Signup = ({ embedded = false }) => {
       nom: editFormData.nom,
       prenom: editFormData.prenom,
       email: editFormData.email,
+      telephone: editFormData.telephone,
       role: editFormData.role,
       atelierId: editFormData.atelierId
     };
@@ -240,7 +285,7 @@ const Signup = ({ embedded = false }) => {
       fetchUsers();
     } catch (error) {
       console.error('Erreur modification utilisateur:', error);
-      Swal.fire('Erreur', error.response?.data?.message || 'Impossible de modifier utilisateur', 'error');
+      Swal.fire('Erreur', error.response?.data?.error || error.response?.data?.message || 'Impossible de modifier utilisateur', 'error');
     }
   };
 
@@ -377,6 +422,7 @@ const Signup = ({ embedded = false }) => {
                   <th>Prénom</th>
                   <th>Nom</th>
                   <th>Email</th>
+                  <th>Téléphone</th>
                   <th>Rôle</th>
                   <th>Statut</th>
                   <th style={{ width: '160px' }}>Actions</th>
@@ -385,11 +431,11 @@ const Signup = ({ embedded = false }) => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="7" className="text-center">Chargement...</td>
+                    <td colSpan="8" className="text-center">Chargement...</td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="text-center">Aucun utilisateur trouvé</td>
+                    <td colSpan="8" className="text-center">Aucun utilisateur trouvé</td>
                   </tr>
                 ) : (
                   users.map((user, index) => (
@@ -398,6 +444,7 @@ const Signup = ({ embedded = false }) => {
                       <td>{user.prenom || '-'}</td>
                       <td>{user.nom || '-'}</td>
                       <td>{user.email || '-'}</td>
+                      <td>{formatTelephone(user.telephone) || '-'}</td>
                       <td>
                         <span className={`badge ${roleBadgeClass(user.role)}`}>{user.role}</span>
                       </td>
@@ -457,6 +504,18 @@ const Signup = ({ embedded = false }) => {
                   <div className="col-sm-6">
                     <label className="form-label">Email <span className="text-danger">*</span></label>
                     <input type="email" name="email" className="form-control" value={formData.email} onChange={handleInputChange} required />
+                  </div>
+                  <div className="col-sm-6">
+                    <label className="form-label">Téléphone</label>
+                    <input
+                      type="text"
+                      name="telephone"
+                      className="form-control"
+                      value={formData.telephone}
+                      onChange={handleTelephoneChange}
+                      onBlur={handleTelephoneBlur}
+                      placeholder="Ex: +223 74 74 56 69 ou 67 20 57 36"
+                    />
                   </div>
                   <div className="col-sm-6">
                     <label className="form-label">Mot de passe <span className="text-danger">*</span></label>
@@ -526,6 +585,18 @@ const Signup = ({ embedded = false }) => {
                     onChange={handleEditInputChange}
                     required
                     disabled={['SECRETAIRE', 'TAILLEUR'].includes(currentUser?.role) && editFormData.id === currentUser?.userId}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Téléphone</label>
+                  <input
+                    type="text"
+                    name="telephone"
+                    className="form-control"
+                    value={editFormData.telephone || ''}
+                    onChange={handleEditTelephoneChange}
+                    onBlur={handleEditTelephoneBlur}
+                    placeholder="Ex: +223 74 74 56 69 ou 67 20 57 36"
                   />
                 </div>
                 <div className="mb-3">

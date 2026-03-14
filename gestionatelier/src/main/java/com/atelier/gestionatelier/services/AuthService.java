@@ -77,9 +77,10 @@ public class AuthService {
 //    }
 
     public LoginResponse authenticateUser(LoginRequest loginRequest) {
+        String identifier = loginRequest.getEmail();
+
         // Vérifier manuellement les credentials
-        Utilisateur utilisateur = utilisateurRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+        Utilisateur utilisateur = findByIdentifier(identifier);
 
         // Vérifier le mot de passe
         if (!passwordEncoder.matches(loginRequest.getPassword(), utilisateur.getMotDePasse())) {
@@ -88,10 +89,10 @@ public class AuthService {
 
         // Authentification via Spring Security
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getEmail(),
-                        loginRequest.getPassword()
-                )
+            new UsernamePasswordAuthenticationToken(
+                identifier,
+                loginRequest.getPassword()
+            )
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -139,5 +140,58 @@ public class AuthService {
                 subscriptionBlocked,
                 subscriptionMessage
         );
+    }
+
+    private Utilisateur findByIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new RuntimeException("Email ou téléphone obligatoire");
+        }
+
+        String trimmed = identifier.trim();
+        if (trimmed.contains("@")) {
+            return utilisateurRepository.findByEmailIgnoreCase(trimmed)
+                    .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+        }
+
+        String normalized = normalizeTelephone(trimmed);
+        if (normalized == null) {
+            throw new RuntimeException("Téléphone invalide");
+        }
+
+        return utilisateurRepository.findByTelephone(normalized)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+    }
+
+    private static String normalizeTelephone(String telephone) {
+        if (telephone == null) {
+            return null;
+        }
+
+        String value = telephone.trim();
+        if (value.isEmpty()) {
+            return null;
+        }
+
+        // Remove common separators
+        value = value.replaceAll("[\\s\\-().]", "");
+
+        // Convert international prefix 00 -> +
+        if (value.startsWith("00")) {
+            value = "+" + value.substring(2);
+        }
+
+        if (value.startsWith("+")) {
+            String digits = value.substring(1).replaceAll("\\D", "");
+            if (digits.length() < 6) {
+                return null;
+            }
+            return "+" + digits;
+        }
+
+        String digits = value.replaceAll("\\D", "");
+        if (digits.length() < 6) {
+            return null;
+        }
+        return digits;
     }
 }

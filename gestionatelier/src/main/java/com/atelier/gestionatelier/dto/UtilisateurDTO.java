@@ -15,6 +15,7 @@ public class UtilisateurDTO {
     private String nom;
     private String prenom;
     private String email;
+    private String telephone;
     private String motdepasse;
     private UUID atelierId;  // référence à Atelier
     private String role;

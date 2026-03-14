@@ -246,10 +246,16 @@ public Utilisateur updateUtilisateurWithPermissions(UUID id, UtilisateurDTO dto,
             throw new Exception("Email déjà utilisé !");
         }
 
+        String normalizedTelephone = normalizeTelephone(dto.getTelephone());
+        if (normalizedTelephone != null && utilisateurRepository.existsByTelephone(normalizedTelephone)) {
+            throw new Exception("Téléphone déjà utilisé !");
+        }
+
         Utilisateur utilisateur = new Utilisateur();
         utilisateur.setNom(dto.getNom());
         utilisateur.setPrenom(dto.getPrenom());
         utilisateur.setEmail(dto.getEmail());
+        utilisateur.setTelephone(normalizedTelephone);
         utilisateur.setMotDePasse(passwordEncoder.encode(dto.getMotdepasse()));
         
         if (dto.getAtelierId() != null) {
@@ -280,6 +286,21 @@ public Utilisateur updateUtilisateurWithPermissions(UUID id, UtilisateurDTO dto,
         utilisateur.setPrenom(dto.getPrenom());
         utilisateur.setEmail(dto.getEmail());
 
+        if (dto.getTelephone() != null) {
+            String normalizedTelephone = normalizeTelephone(dto.getTelephone());
+
+            if (normalizedTelephone != null) {
+                var other = utilisateurRepository.findByTelephone(normalizedTelephone);
+                if (other.isPresent() && !other.get().getId().equals(id)) {
+                    throw new Exception("Téléphone déjà utilisé !");
+                }
+                utilisateur.setTelephone(normalizedTelephone);
+            } else {
+                // Allow clearing phone when empty/invalid/blank is sent
+                utilisateur.setTelephone(null);
+            }
+        }
+
         if (dto.getMotdepasse() != null && !dto.getMotdepasse().isBlank()) {
             utilisateur.setMotDePasse(passwordEncoder.encode(dto.getMotdepasse()));
         }
@@ -293,6 +314,36 @@ public Utilisateur updateUtilisateurWithPermissions(UUID id, UtilisateurDTO dto,
         utilisateur.setRole(Role.valueOf(dto.getRole().toUpperCase()));
 
         return utilisateurRepository.save(utilisateur);
+    }
+
+    private static String normalizeTelephone(String telephone) {
+        if (telephone == null) {
+            return null;
+        }
+
+        String value = telephone.trim();
+        if (value.isEmpty()) {
+            return null;
+        }
+
+        value = value.replaceAll("[\\s\\-().]", "");
+        if (value.startsWith("00")) {
+            value = "+" + value.substring(2);
+        }
+
+        if (value.startsWith("+")) {
+            String digits = value.substring(1).replaceAll("\\D", "");
+            if (digits.length() < 6) {
+                return null;
+            }
+            return "+" + digits;
+        }
+
+        String digits = value.replaceAll("\\D", "");
+        if (digits.length() < 6) {
+            return null;
+        }
+        return digits;
     }
 
     public void deleteUtilisateur(UUID id) throws Exception {

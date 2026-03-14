@@ -34,6 +34,42 @@ const Login = () => {
   const navigate = useNavigate();
   const apiBase = (api?.defaults?.baseURL || '').replace(/\/?api\/?$/, '');
 
+  const formatTelephoneForInput = (value) => {
+    const raw = String(value ?? '');
+    const trimmed = raw.trimStart();
+    if (!trimmed) return raw;
+
+    // If user is typing an email (or anything with letters), do not format.
+    if (trimmed.includes('@') || /[a-zA-Z]/.test(trimmed)) {
+      return raw;
+    }
+
+    // Only attempt formatting when it starts like a phone number.
+    const startsLikePhone = trimmed.startsWith('+') || /^\d/.test(trimmed) || trimmed.startsWith('00');
+    if (!startsLikePhone) return raw;
+
+    const normalized = trimmed.replace(/^00/, '+');
+    const hasPlus = normalized.startsWith('+');
+    const digits = normalized.replace(/\D/g, '');
+    const group2 = (s) => (s.match(/.{1,2}/g) || []).join(' ');
+
+    if (hasPlus) {
+      if (digits.startsWith('223')) {
+        const rest = digits.slice(3);
+        const grouped = group2(rest);
+        return `+223${grouped ? ` ${grouped}` : ''}`;
+      }
+      const grouped = group2(digits);
+      return `+${grouped}`;
+    }
+
+    return group2(digits);
+  };
+
+  const handleIdentifierChange = (e) => {
+    setEmail(formatTelephoneForInput(e.target.value));
+  };
+
   const buildAvatarUrl = (photoPath) => {
     if (!photoPath) return '/assets/images/default-user.jpg';
     if (!apiBase) return '/assets/images/default-user.jpg';
@@ -705,7 +741,7 @@ const Login = () => {
           </div>
 
           <div className="login-separater text-center mb-4">
-            <span>CONNEXION AVEC EMAIL</span>
+            <span>CONNEXION AVEC EMAIL OU TÉLÉPHONE</span>
             <hr />
           </div>
 
@@ -713,15 +749,16 @@ const Login = () => {
             <form className="row g-3" onSubmit={handleSubmit}>
               <div className="col-12">
                 <label htmlFor="inputEmailAddress" className="form-label">
-                  Adresse Email
+                  Email ou téléphone
                 </label>
                 <input
                   id="inputEmailAddress"
-                  type="email"
+                  type="text"
                   className="form-control"
-                  placeholder="Adresse Email"
+                  placeholder="Email ou numéro de téléphone"
+                  autoComplete="username"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleIdentifierChange}
                   required
                 />
               </div>

@@ -127,6 +127,9 @@ public class Utilisateur {
     @Column(unique = true)
     private String email;
 
+    @Column(unique = true)
+    private String telephone;
+
     @NotBlank(message = "Le mot de passe est obligatoire")
     @Size(min = 6, message = "Le mot de passe doit avoir au moins 6 caractères")
     @JsonIgnore
