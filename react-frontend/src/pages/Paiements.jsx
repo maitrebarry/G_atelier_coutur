@@ -24,6 +24,9 @@ const Paiements = () => {
     });
 
     const [recuData, setRecuData] = useState(null);
+    const [savingPayment, setSavingPayment] = useState(false);
+    const [sharingReceipt, setSharingReceipt] = useState(false);
+    const [loadingReceiptId, setLoadingReceiptId] = useState(null);
 
     useEffect(() => {
         loadData();
@@ -113,6 +116,10 @@ const Paiements = () => {
 
     const handlePaymentSubmit = async (e) => {
         e.preventDefault();
+        if (savingPayment) {
+            return;
+        }
+
         const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
         const atelierId = userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
         const isClient = activeTab === 'clients';
@@ -125,6 +132,7 @@ const Paiements = () => {
         }
 
         try {
+            setSavingPayment(true);
             const payload = {
                 ...paymentForm,
                 montant: parseFloat(paymentForm.montant),
@@ -148,7 +156,104 @@ const Paiements = () => {
 
         } catch (error) {
             console.error("Erreur enregistrement paiement:", error);
-            Swal.fire('Erreur', 'Impossible d\'enregistrer le paiement', 'error');
+            Swal.fire('Erreur', error?.response?.data || 'Impossible d\'enregistrer le paiement', 'error');
+        } finally {
+            setSavingPayment(false);
+        }
+    };
+
+    const getCurrentAtelierId = () => {
+        const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
+        return userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
+    };
+
+    const buildReceiptFileName = (recu) => {
+        const baseReference = String(recu?.reference || 'recu').replace(/[^a-zA-Z0-9_-]/g, '-');
+        return `recu-${baseReference}.pdf`;
+    };
+
+    const downloadBlob = (blob, fileName) => {
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+    };
+
+    const handleOpenReceipt = async (paiementId, receiptType) => {
+        const atelierId = getCurrentAtelierId();
+        if (!atelierId || !paiementId) {
+            Swal.fire('Erreur', 'Impossible de charger ce reçu.', 'error');
+            return;
+        }
+
+        try {
+            setLoadingReceiptId(paiementId);
+            const recuResponse = await api.get(`/paiements/recu/${receiptType}/${paiementId}?atelierId=${atelierId}`);
+            setRecuData(recuResponse.data);
+        } catch (error) {
+            console.error('Erreur chargement reçu historique:', error);
+            Swal.fire('Erreur', 'Impossible de générer le reçu depuis l\'historique.', 'error');
+        } finally {
+            setLoadingReceiptId(null);
+        }
+    };
+
+    const handleSendReceiptWhatsApp = async () => {
+        if (!recuData) {
+            return;
+        }
+
+        const atelierId = getCurrentAtelierId();
+        if (!atelierId) {
+            Swal.fire('Erreur', 'Atelier introuvable pour générer le reçu PDF.', 'error');
+            return;
+        }
+
+        const receiptType = recuData.typePaiement === 'TAILLEUR' ? 'tailleur' : 'client';
+        const fileName = buildReceiptFileName(recuData);
+
+        try {
+            setSharingReceipt(true);
+            const response = await api.get(`/paiements/recu/${receiptType}/${recuData.id}/pdf?atelierId=${atelierId}`, {
+                responseType: 'blob'
+            });
+
+            const blob = response.data instanceof Blob
+                ? response.data
+                : new Blob([response.data], { type: 'application/pdf' });
+
+            const file = new File([blob], fileName, { type: 'application/pdf' });
+            const canShareFile = typeof navigator !== 'undefined'
+                && typeof navigator.share === 'function'
+                && (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }));
+
+            if (canShareFile) {
+                await navigator.share({
+                    files: [file],
+                    title: 'Reçu de paiement ATELIKO',
+                    text: 'Envoyer le reçu PDF via WhatsApp'
+                });
+                return;
+            }
+
+            downloadBlob(blob, fileName);
+            Swal.fire(
+                'PDF prêt',
+                'Le reçu PDF a été téléchargé. Joignez-le maintenant dans WhatsApp si le partage direct n\'est pas pris en charge par ce navigateur.',
+                'info'
+            );
+        } catch (error) {
+            console.error('Erreur partage reçu PDF:', error);
+            if (error?.name === 'AbortError') {
+                return;
+            }
+            Swal.fire('Erreur', 'Impossible de générer ou partager le reçu PDF.', 'error');
+        } finally {
+            setSharingReceipt(false);
         }
     };
 
@@ -377,15 +482,38 @@ const Paiements = () => {
                                                         <h6 className="text-muted small text-uppercase">Historique</h6>
                                                         <div style={{maxHeight: '150px', overflowY: 'auto'}}>
                                                             {entity.historiquePaiements.map((p, idx) => (
-                                                                <div key={idx} className="d-flex justify-content-between small mb-2 border-bottom pb-1">
-                                                                    <div>
+                                                                <div key={p.id || idx} className="small mb-2 border-bottom pb-2">
+                                                                    <div className="d-flex justify-content-between align-items-start gap-2">
+                                                                        <div>
                                                                         <div>{new Date(p.datePaiement).toLocaleDateString()}</div>
                                                                         <div className="text-muted">{p.moyen}</div>
+                                                                        </div>
+                                                                        <div className="text-end">
+                                                                            <div className="fw-bold">{p.montant?.toLocaleString()} F</div>
+                                                                            <div className="text-muted">{p.reference}</div>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="text-end">
-                                                                        <div className="fw-bold">{p.montant?.toLocaleString()} F</div>
-                                                                        <div className="text-muted">{p.reference}</div>
-                                                                    </div>
+                                                                    {p.id && (
+                                                                        <div className="mt-2 text-end">
+                                                                            <button
+                                                                                type="button"
+                                                                                className="btn btn-sm btn-outline-primary"
+                                                                                disabled={loadingReceiptId === p.id}
+                                                                                onClick={() => handleOpenReceipt(p.id, isClient ? 'client' : 'tailleur')}
+                                                                            >
+                                                                                {loadingReceiptId === p.id ? (
+                                                                                    <>
+                                                                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                                                        Chargement...
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <i className="bx bx-receipt me-1"></i>Générer le reçu
+                                                                                    </>
+                                                                                )}
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -418,6 +546,7 @@ const Paiements = () => {
                                             type="number" 
                                             className="form-control" 
                                             required
+                                            disabled={savingPayment}
                                             value={paymentForm.montant}
                                             onChange={(e) => setPaymentForm(prev => ({ ...prev, montant: e.target.value }))}
                                             max={activeTab === 'clients' ? selectedClient.resteAPayer : selectedTailleur.resteAPayer}
@@ -427,6 +556,7 @@ const Paiements = () => {
                                         <label className="form-label">Mode de paiement</label>
                                         <select 
                                             className="form-select"
+                                            disabled={savingPayment}
                                             value={paymentForm.moyen}
                                             onChange={(e) => setPaymentForm(prev => ({ ...prev, moyen: e.target.value }))}
                                         >
@@ -442,6 +572,7 @@ const Paiements = () => {
                                             type="text" 
                                             className="form-control" 
                                             required
+                                            disabled={savingPayment}
                                             value={paymentForm.reference}
                                             onChange={(e) => setPaymentForm(prev => ({ ...prev, reference: e.target.value }))}
                                         />
@@ -452,12 +583,20 @@ const Paiements = () => {
                                             type="date" 
                                             className="form-control" 
                                             required
+                                            disabled={savingPayment}
                                             value={paymentForm.datePaiement}
                                             onChange={(e) => setPaymentForm(prev => ({ ...prev, datePaiement: e.target.value }))}
                                         />
                                     </div>
-                                    <button type="submit" className={`btn w-100 ${activeTab === 'clients' ? 'btn-primary' : 'btn-warning'}`}>
-                                        Enregistrer le paiement
+                                    <button type="submit" disabled={savingPayment} className={`btn w-100 ${activeTab === 'clients' ? 'btn-primary' : 'btn-warning'}`}>
+                                        {savingPayment ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                Enregistrement...
+                                            </>
+                                        ) : (
+                                            'Enregistrer le paiement'
+                                        )}
                                     </button>
                                 </form>
                             </div>
@@ -510,6 +649,20 @@ const Paiements = () => {
                             </div>
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-secondary" onClick={() => setRecuData(null)}>Fermer</button>
+                                {recuData.clientContact && (
+                                    <button type="button" className="btn btn-success" disabled={sharingReceipt} onClick={handleSendReceiptWhatsApp}>
+                                        {sharingReceipt ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                Préparation du PDF...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="bx bxl-whatsapp me-1"></i>Envoyer le PDF sur WhatsApp
+                                            </>
+                                        )}
+                                    </button>
+                                )}
                                 <button type="button" className="btn btn-primary" onClick={handlePrint}>
                                     <i className="bx bx-printer me-1"></i>Imprimer
                                 </button>

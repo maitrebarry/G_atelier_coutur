@@ -116,6 +116,8 @@ public class SubscriptionController {
         Utilisateur user = getCurrentUserOrNull();
         if (user == null) return ResponseEntity.status(401).body(Map.of("message", "Authentification requise"));
 
+        Path destination = null;
+
         try {
             if (receipt == null || receipt.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("message", "La preuve de paiement est obligatoire"));
@@ -130,7 +132,7 @@ public class SubscriptionController {
 
             Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize().resolve("subscription_receipts");
             Files.createDirectories(uploadPath);
-            Path destination = uploadPath.resolve(fileName).normalize();
+            destination = uploadPath.resolve(fileName).normalize();
 
             if (!destination.startsWith(uploadPath)) {
                 logger.warn("Rejected suspicious receipt path for user {}: {}", user.getId(), destination);
@@ -154,9 +156,38 @@ public class SubscriptionController {
             );
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        } catch (DataAccessException ex) {
+            deleteReceiptQuietly(destination, user.getId());
+            logger.error("manual-submit database failure for user {}: {}", user.getId(), ex.getMessage(), ex);
+            return ResponseEntity.status(503).body(Map.of(
+                    "message", buildDataAccessMessage("Module abonnement non initialisé ou schéma incomplet", ex)
+            ));
         } catch (Exception ex) {
+            deleteReceiptQuietly(destination, user.getId());
             logger.error("manual-submit failed for user {}: {}", user.getId(), ex.getMessage(), ex);
             return ResponseEntity.status(500).body(Map.of("message", "Impossible de soumettre la preuve de paiement"));
+        }
+    }
+
+    private String buildDataAccessMessage(String prefix, DataAccessException ex) {
+        if (ex == null) {
+            return prefix;
+        }
+        Throwable rootCause = ex.getMostSpecificCause();
+        if (rootCause == null || rootCause.getMessage() == null || rootCause.getMessage().isBlank()) {
+            return prefix;
+        }
+        return prefix + " : " + rootCause.getMessage();
+    }
+
+    private void deleteReceiptQuietly(Path destination, Object userId) {
+        if (destination == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(destination);
+        } catch (Exception cleanupEx) {
+            logger.warn("Failed to cleanup receipt for user {}: {}", userId, cleanupEx.getMessage());
         }
     }
 

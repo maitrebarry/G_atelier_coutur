@@ -71,6 +71,8 @@ public class SubscriptionSchemaInitializer implements CommandLineRunner {
             jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_abonnement_paiement_abonnement ON abonnement_paiement(abonnement_id)");
             jdbcTemplate.execute("CREATE INDEX IF NOT EXISTS idx_abonnement_paiement_statut ON abonnement_paiement(statut)");
 
+                    ensureLegacyColumns();
+
             ensureDefaultPlan("MENSUEL", "Mensuel", 1);
             ensureDefaultPlan("TRIMESTRIEL", "Trimestriel", 3);
             ensureDefaultPlan("SEMESTRIEL", "Semestriel", 6);
@@ -96,22 +98,42 @@ public class SubscriptionSchemaInitializer implements CommandLineRunner {
         );
     }
 
-            private void migrateFromOldTableIfPresent() {
-            Number oldTable = jdbcTemplate.queryForObject(
-                "SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'abonnement_boutique'",
-                Number.class
-            );
-            if (oldTable == null || oldTable.longValue() == 0) return;
+    private void ensureLegacyColumns() {
+        jdbcTemplate.execute("ALTER TABLE abonnement_paiement ADD COLUMN IF NOT EXISTS provider VARCHAR(40) NULL");
+        jdbcTemplate.execute("ALTER TABLE abonnement_paiement ADD COLUMN IF NOT EXISTS mode_paiement VARCHAR(40) NULL");
+        jdbcTemplate.execute("ALTER TABLE abonnement_paiement ADD COLUMN IF NOT EXISTS plan_code VARCHAR(50) NULL");
+        jdbcTemplate.execute("ALTER TABLE abonnement_paiement ADD COLUMN IF NOT EXISTS transaction_ref VARCHAR(120) NULL");
+        jdbcTemplate.execute("ALTER TABLE abonnement_paiement ADD COLUMN IF NOT EXISTS owner_note TEXT NULL");
+        jdbcTemplate.execute("ALTER TABLE abonnement_paiement ADD COLUMN IF NOT EXISTS preuve_url VARCHAR(255) NULL");
+        jdbcTemplate.execute("ALTER TABLE abonnement_paiement ADD COLUMN IF NOT EXISTS review_note TEXT NULL");
+        jdbcTemplate.execute("ALTER TABLE abonnement_paiement ADD COLUMN IF NOT EXISTS reviewed_by VARCHAR(36) NULL");
+        jdbcTemplate.execute("ALTER TABLE abonnement_paiement ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP NULL");
+        jdbcTemplate.execute("ALTER TABLE abonnement_plan ADD COLUMN IF NOT EXISTS devise VARCHAR(10) NOT NULL DEFAULT 'XOF'");
+        jdbcTemplate.execute("ALTER TABLE abonnement_plan ADD COLUMN IF NOT EXISTS actif BOOLEAN NOT NULL DEFAULT TRUE");
+        jdbcTemplate.execute("ALTER TABLE abonnement_plan ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NULL");
+        jdbcTemplate.execute("ALTER TABLE abonnement_plan ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NULL");
+        jdbcTemplate.execute("ALTER TABLE abonnement_atelier ADD COLUMN IF NOT EXISTS grace_end_at TIMESTAMP NULL");
+        jdbcTemplate.execute("ALTER TABLE abonnement_atelier ADD COLUMN IF NOT EXISTS auto_renew BOOLEAN NOT NULL DEFAULT FALSE");
+        jdbcTemplate.execute("ALTER TABLE abonnement_atelier ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NULL");
+        jdbcTemplate.execute("ALTER TABLE abonnement_atelier ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NULL");
+    }
 
-            Number migratedCount = jdbcTemplate.queryForObject(
+    private void migrateFromOldTableIfPresent() {
+        Number oldTable = jdbcTemplate.queryForObject(
+                "SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = 'abonnement_boutique'",
+                Number.class
+        );
+        if (oldTable == null || oldTable.longValue() == 0) return;
+
+        Number migratedCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(1) FROM abonnement_atelier",
                 Number.class
-            );
-            if (migratedCount != null && migratedCount.longValue() > 0) return;
+        );
+        if (migratedCount != null && migratedCount.longValue() > 0) return;
 
-            jdbcTemplate.update(
+        jdbcTemplate.update(
                 "INSERT INTO abonnement_atelier (id, atelier_id, plan_id, statut, date_debut, date_fin, grace_end_at, auto_renew, created_at, updated_at) " +
-                    "SELECT id, atelier_id, plan_id, statut, date_debut, date_fin, grace_end_at, auto_renew, created_at, updated_at FROM abonnement_boutique"
-            );
-            }
+                        "SELECT id, atelier_id, plan_id, statut, date_debut, date_fin, grace_end_at, auto_renew, created_at, updated_at FROM abonnement_boutique"
+        );
+    }
 }

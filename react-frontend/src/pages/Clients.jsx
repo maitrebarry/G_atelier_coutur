@@ -20,7 +20,8 @@ const Clients = () => {
   const habitFileInputRef = useRef(null);
   const currentUser = getUserData();
   const isTailleur = currentUser?.role === 'TAILLEUR';
-  const selectedClientMeasure = selectedClient?.mesures?.[0];
+  const selectedClientMeasures = selectedClient?.mesures || [];
+  const selectedClientMeasure = selectedClientMeasures[0];
 
   const getClientPhotoUrl = (mesure) => {
     if (!mesure) return '/assets/images/default_femme.png';
@@ -312,6 +313,8 @@ const Clients = () => {
                               <td>
                                   {mesure.sexe}
                                   {mesure.typeVetement && <><br/><small className="text-muted">{mesure.typeVetement}</small></>}
+                                  <br />
+                                  <small className="text-muted">{client.mesures?.length || 0} modèle(s)</small>
                               </td>
                               <td>
                                   <button className="btn btn-sm btn-info me-1" onClick={() => handleDetailClick(client.id)} title="Détail">
@@ -344,110 +347,135 @@ const Clients = () => {
             <div className="modal-dialog modal-lg">
               <div className="modal-content d-flex flex-row">
                 <div className="flex-shrink-0 p-3" style={{ maxWidth: '45%' }}>
-                  <img 
-                    src={getClientPhotoUrl(selectedClientMeasure)} 
-                    alt="Client" 
-                    className="img-fluid rounded" 
-                    style={{ width: '100%', height: 'auto' }}
-                  />
+                  {selectedClientMeasures.length > 0 ? (
+                    <div className="d-flex flex-column gap-2">
+                      {selectedClientMeasures.map((m, idx) => (
+                        <div key={`preview-${m.id || idx}`} className="border rounded p-2">
+                          <div className="small fw-bold mb-2 text-truncate">
+                            {m.modeleNom?.trim() || `Modèle #${idx + 1}`}
+                          </div>
+                          <img
+                            src={getClientPhotoUrl(m)}
+                            alt={`Modèle ${idx + 1}`}
+                            className="img-fluid rounded"
+                            style={{ width: '100%', height: 'auto', maxHeight: '160px', objectFit: 'cover' }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <img
+                      src={getClientPhotoUrl(selectedClientMeasure)}
+                      alt="Client"
+                      className="img-fluid rounded"
+                      style={{ width: '100%', height: 'auto' }}
+                    />
+                  )}
                 </div>
                 <div className="modal-body flex-grow-1 p-3" style={{ overflowY: 'auto', maxHeight: '500px' }}>
                   <div className="d-flex justify-content-between mb-3">
                     <h5>{selectedClient.prenom} {selectedClient.nom}</h5>
                     <button type="button" className="btn-close" onClick={() => setSelectedClient(null)}></button>
                   </div>
-                  {selectedClientMeasure ? (
-                    <ul className="list-group">
-                      <li className="list-group-item fw-bold bg-light">
-                        <div className="d-flex justify-content-between">
-                          <span>Sexe: {selectedClientMeasure.sexe}</span>
+                  {selectedClientMeasures.length > 0 ? (
+                    <>
+                      <div className="alert alert-secondary mb-3">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div><strong>{selectedClientMeasures.length} modèle(s)</strong></div>
+                          <div><strong>Total: {selectedClientMeasures.reduce((sum, m) => sum + (m.prix || 0), 0)} FCFA</strong></div>
                         </div>
-                      </li>
-                      {selectedClientMeasure.prix && (
-                        <li className="list-group-item fw-bold bg-success text-white">
-                          <div className="d-flex justify-content-between align-items-center">
-                            <span>Prix du modèle:</span>
-                            <span className="badge bg-light text-dark fs-6">{selectedClientMeasure.prix} FCFA</span>
-                          </div>
-                        </li>
-                      )}
-                      <li className="list-group-item">
-                      <div>
-                        <strong>Description:</strong>
-                        <p className="text-muted small mb-0 text-wrap">
-                        {selectedClientMeasure.description?.trim() || 'Aucune description fournie'}
-                        </p>
                       </div>
-                      </li>
-                      {/* Dynamic Measurements Display */}
-                      {(() => {
-                        const m = selectedClientMeasure;
-                        const renderItem = (label, val) => val ? (
-                          <li className="list-group-item d-flex justify-content-between align-items-center">
-                            <span>{label}</span>
-                            <span className="fw-bold">{val}</span>
+                      {selectedClientMeasures.map((m, index) => (
+                        <ul key={m.id || index} className="list-group mb-3">
+                          <li className="list-group-item fw-bold bg-light">
+                            <div className="d-flex justify-content-between">
+                              <span>{m.modeleNom?.trim() || `Modèle #${index + 1}`}</span>
+                              <span>{m.sexe} {m.typeVetement ? `• ${m.typeVetement}` : ''}</span>
+                            </div>
                           </li>
-                        ) : null;
+                          <li className="list-group-item d-flex justify-content-between align-items-center">
+                            <span>Nom du modèle</span>
+                            <span className="fw-bold">{m.modeleNom?.trim() || `Modèle #${index + 1}`}</span>
+                          </li>
+                          {m.prix && (
+                            <li className="list-group-item fw-bold bg-success text-white">
+                              <div className="d-flex justify-content-between align-items-center">
+                                <span>Prix du modèle:</span>
+                                <span className="badge bg-light text-dark fs-6">{m.prix} FCFA</span>
+                              </div>
+                            </li>
+                          )}
+                          <li className="list-group-item">
+                            <div>
+                              <strong>Description:</strong>
+                              <p className="text-muted small mb-0 text-wrap">
+                                {m.description?.trim() || 'Aucune description fournie'}
+                              </p>
+                            </div>
+                          </li>
+                          {(() => {
+                            const renderItem = (label, val) => val ? (
+                              <li className="list-group-item d-flex justify-content-between align-items-center" key={label}>
+                                <span>{label}</span>
+                                <span className="fw-bold">{val}</span>
+                              </li>
+                            ) : null;
 
-                        if (m.sexe === 'Femme') {
-                          return (
-                            <>
-                              {m.typeVetement && (
-                                <li className="list-group-item bg-light fw-bold">Type: {m.typeVetement}</li>
-                              )}
-                              {renderItem('Épaule', m.epaule)}
-                              {renderItem('Manche', m.manche)}
-                              {renderItem('Poitrine', m.poitrine)}
-                              {renderItem('Taille', m.taille)}
-                              {renderItem('Longueur', m.longueur)}
-                                                  
-                              {m.typeVetement === 'jupe' && (
+                            if (m.sexe === 'Femme') {
+                              return (
                                 <>
-                                  {renderItem('Longueur Jupe', m.longueurJupe)}
-                                  {renderItem('Ceinture', m.ceinture)}
+                                  {m.typeVetement && (
+                                    <li className="list-group-item bg-light fw-bold">Type: {m.typeVetement}</li>
+                                  )}
+                                  {renderItem('Épaule', m.epaule)}
+                                  {renderItem('Manche', m.manche)}
+                                  {renderItem('Poitrine', m.poitrine)}
+                                  {renderItem('Taille', m.taille)}
+                                  {renderItem('Longueur', m.longueur)}
+                                  {m.typeVetement === 'jupe' && (
+                                    <>
+                                      {renderItem('Longueur Jupe', m.longueurJupe)}
+                                      {renderItem('Ceinture', m.ceinture)}
+                                    </>
+                                  )}
+                                  {renderItem('Fesse', m.fesse)}
+                                  {renderItem('Tour de manche', m.tourManche)}
+                                  {renderItem('Longueur poitrine', m.longueurPoitrine)}
+                                  {renderItem('Longueur taille', m.longueurTaille)}
+                                  {renderItem('Longueur fesse', m.longueurFesse)}
                                 </>
-                              )}
-                                                  
-                              {renderItem('Fesse', m.fesse)}
-                              {renderItem('Tour de manche', m.tourManche)}
-                              {renderItem('Longueur poitrine', m.longueurPoitrine)}
-                              {renderItem('Longueur taille', m.longueurTaille)}
-                              {renderItem('Longueur fesse', m.longueurFesse)}
-                            </>
-                          );
-                        } else {
-                          // Homme
-                          return (
-                            <>
-                              {renderItem('Épaule', m.epaule)}
-                              {renderItem('Manche', m.manche)}
-                              {renderItem('Longueur', m.longueur)}
-                              {renderItem('Longueur Pantalon', m.longueurPantalon)}
-                              {renderItem('Ceinture', m.ceinture)}
-                              {renderItem('Cuisse', m.cuisse)}
-                              {renderItem('Poitrine', m.poitrine)}
-                              {renderItem('Coude', m.corps)}
-                              {renderItem('Tour de manche', m.tourManche)}
-                            </>
-                          );
-                        }
-                      })()}
-
-                      {/* Habit photo displayed after measurements */}
-                      {selectedClientMeasure.habitPhotoPath && (
-                        <li className="list-group-item">
-                          <strong>Photo de l'habit:</strong>
-                          <div className="mt-2 text-center">
-                            <img
-                              src={getHabitPhotoUrl(selectedClientMeasure)}
-                              alt="Habit"
-                              className="img-fluid"
-                              style={{ maxWidth: '200px' }}
-                            />
-                          </div>
-                        </li>
-                      )}
-                    </ul>
+                              );
+                            }
+                            return (
+                              <>
+                                {renderItem('Épaule', m.epaule)}
+                                {renderItem('Manche', m.manche)}
+                                {renderItem('Longueur', m.longueur)}
+                                {renderItem('Longueur Pantalon', m.longueurPantalon)}
+                                {renderItem('Ceinture', m.ceinture)}
+                                {renderItem('Cuisse', m.cuisse)}
+                                {renderItem('Poitrine', m.poitrine)}
+                                {renderItem('Coude', m.corps)}
+                                {renderItem('Tour de manche', m.tourManche)}
+                              </>
+                            );
+                          })()}
+                          {m.habitPhotoPath && (
+                            <li className="list-group-item">
+                              <strong>Photo de l'habit:</strong>
+                              <div className="mt-2 text-center">
+                                <img
+                                  src={getHabitPhotoUrl(m)}
+                                  alt="Habit"
+                                  className="img-fluid"
+                                  style={{ maxWidth: '200px' }}
+                                />
+                              </div>
+                            </li>
+                          )}
+                        </ul>
+                      ))}
+                    </>
                   ) : (
                     <div className="alert alert-info">Aucune mesure disponible</div>
                   )}

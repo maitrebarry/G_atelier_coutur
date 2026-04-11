@@ -1,14 +1,39 @@
 package com.atelier.gestionatelier.services;
+import com.lowagie.text.Chunk;
+import com.lowagie.text.FontFactory;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Element;
+import com.lowagie.text.Font;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Rectangle;
+import com.lowagie.text.Image;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
 import com.atelier.gestionatelier.dto.*;
 import com.atelier.gestionatelier.entities.*;
 import com.atelier.gestionatelier.repositories.*;
+import com.atelier.gestionatelier.security.Role;
 import lombok.RequiredArgsConstructor;
+import javax.imageio.ImageIO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -154,13 +179,16 @@ public class PaiementService {
     public PaiementClientResponseDto getPaiementsClient(UUID clientId, UUID atelierId) {
         log.info("👤 Récupération historique paiements CLIENT - Client: {}, Atelier: {}", clientId, atelierId);
 
-        // Récupérer le client avec vérification d'atelier
-        Client client = clientRepository.findByIdAndAtelierId(clientId, atelierId)
+        // Récupérer le client avec ses mesures et vérification d'atelier
+        Client client = clientRepository.findByIdAndAtelierIdWithMesures(clientId, atelierId)
                 .orElseThrow(() -> {
                     log.warn("❌ Client non trouvé dans cet atelier - Client: {}, Atelier: {}", clientId, atelierId);
                     return new RuntimeException("Client non trouvé dans cet atelier");
                 });
         log.info("✅ Client récupéré: {} {}", client.getPrenom(), client.getNom());
+
+        List<Mesure> mesures = client.getMesures() == null ? Collections.emptyList() : client.getMesures();
+        log.info("📏 {} mesure(s) trouvée(s) pour le client {}", mesures.size(), clientId);
 
         // Récupérer les paiements du client
         List<Paiement> paiements = paiementRepository.findPaiementsByClientAndAtelier(clientId, atelierId);
@@ -178,12 +206,9 @@ public class PaiementService {
                 .mapToDouble(Paiement::getMontant)
                 .sum();
 
-        // Utiliser le prix du modèle depuis l'entité Mesure
-        Double prixTotalModeles = affectations.stream()
-                .mapToDouble(affectation -> {
-                    Mesure mesure = affectation.getMesure();
-                    return mesure.getPrix() != null ? mesure.getPrix() : 0.0;
-                })
+        // Utiliser tous les modèles enregistrés pour le client, avec ou sans affectation.
+        Double prixTotalModeles = mesures.stream()
+            .mapToDouble(mesure -> mesure.getPrix() != null ? mesure.getPrix() : 0.0)
                 .sum();
 
         Double resteAPayer = prixTotalModeles - totalPaiements;
@@ -195,12 +220,15 @@ public class PaiementService {
 
         // CORRECTION: Déterminer le nom du modèle principal
         String modeleNomPrincipal = "Aucun modèle";
-        if (!affectations.isEmpty()) {
-            // Prendre le nom du modèle de la première affectation
-            Mesure premiereMesure = affectations.get(0).getMesure();
-            modeleNomPrincipal = premiereMesure.getModeleNom() != null ?
-                    premiereMesure.getModeleNom() :
-                    premiereMesure.getTypeVetement() + " personnalisé";
+        Mesure mesurePrincipale = mesures.stream()
+            .sorted(Comparator.comparing(Mesure::getDateMesure,
+                Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+            .findFirst()
+            .orElse(null);
+        if (mesurePrincipale != null) {
+            modeleNomPrincipal = mesurePrincipale.getModeleNom() != null && !mesurePrincipale.getModeleNom().trim().isEmpty()
+                ? mesurePrincipale.getModeleNom()
+                : (mesurePrincipale.getTypeVetement() != null ? mesurePrincipale.getTypeVetement() + " personnalisé" : "Modèle personnalisé");
         }
 
         // Construire la réponse
@@ -340,6 +368,7 @@ public class PaiementService {
 //    }
 private HistoriquePaiementDto convertToHistoriqueDto(Paiement paiement) {
     HistoriquePaiementDto dto = new HistoriquePaiementDto();
+    dto.setId(paiement.getId());
     dto.setMontant(paiement.getMontant());
     dto.setMoyen(paiement.getMoyen());
     dto.setReference(paiement.getReference());
@@ -467,9 +496,9 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
     // ==================== MÉTHODES DE RECHERCHE ====================
 
     public List<PaiementClientResponseDto> rechercherPaiementsClients(RecherchePaiementDto criteres) {
-        // Implémentation de la recherche des clients avec filtres
-        // Cette méthode peut être enrichie selon les besoins
-        List<Client> clients = clientRepository.findByAtelierId(criteres.getAtelierId());
+        // Rechercher les clients ayant au moins une mesure enregistrée,
+        // indépendamment d'une éventuelle affectation.
+        List<Client> clients = clientRepository.findByAtelierIdWithMesures(criteres.getAtelierId());
 
         return clients.stream()
                 .map(client -> getPaiementsClient(client.getId(), criteres.getAtelierId()))
@@ -541,6 +570,16 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
         return buildRecuFromPaiement(paiement);
     }
 
+    public byte[] genererRecuPaiementClientPdf(UUID paiementId, UUID atelierId) {
+        RecuPaiementDto recu = genererRecuPaiementClient(paiementId, atelierId);
+        return buildPdfFromRecu(recu);
+    }
+
+    public byte[] genererRecuPaiementTailleurPdf(UUID paiementId, UUID atelierId) {
+        RecuPaiementDto recu = genererRecuPaiementTailleur(paiementId, atelierId);
+        return buildPdfFromRecu(recu);
+    }
+
     private RecuPaiementDto buildRecuFromPaiement(Paiement paiement) {
         RecuPaiementDto recu = new RecuPaiementDto();
         recu.setId(paiement.getId());
@@ -555,6 +594,13 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
         recu.setAtelierNom(atelier.getNom());
         recu.setAtelierAdresse(atelier.getAdresse());
         recu.setAtelierTelephone(atelier.getTelephone());
+
+        Utilisateur proprietaire = getProprietaireAtelier(atelier.getId());
+        if (proprietaire != null) {
+            recu.setProprietaireNom(proprietaire.getNom());
+            recu.setProprietairePrenom(proprietaire.getPrenom());
+        }
+        recu.setMessageMarketing(buildMarketingMessage(atelier.getNom(), proprietaire));
 
         // Informations selon le type de paiement
         if (paiement.getTypePaiement() == Paiement.TypePaiement.CLIENT && paiement.getClient() != null) {
@@ -578,13 +624,280 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
     }
 
     private String genererQRCodeData(RecuPaiementDto recu) {
-        // Générer une string simple pour le QR code
-        return String.format(
-                "RECU:%s|REF:%s|MONTANT:%.0fF|DATE:%s",
-                recu.getTypePaiement(),
-                recu.getReference(),
-                recu.getMontant(),
-                recu.getDatePaiement().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+        String beneficiaire = buildReceiptRecipient(recu);
+        String contact = recu.getClientContact() != null ? recu.getClientContact() : recu.getTailleurContact();
+
+        return String.join("\n",
+            "TICKET DE PAIEMENT",
+            "Atelier: " + safeText(recu.getAtelierNom()),
+            "Reference: " + safeText(recu.getReference()),
+            "Type: " + safeText(recu.getStatut()),
+            "Beneficiaire: " + safeText(beneficiaire),
+            "Montant: " + String.format("%.0f FCFA", recu.getMontant() != null ? recu.getMontant() : 0.0),
+            "Date: " + formatReceiptDate(recu.getDatePaiement()),
+            "Reglement: " + formatPaymentMethod(recu.getMoyenPaiement()),
+            "Contact: " + safeText(contact)
         );
+    }
+
+    private byte[] buildPdfFromRecu(RecuPaiementDto recu) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        Rectangle receiptPage = new Rectangle(226, 720);
+        Document document = new Document(receiptPage, 14, 14, 16, 18);
+
+        try {
+            PdfWriter.getInstance(document, outputStream);
+            document.open();
+
+            Font brandFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 15, new Color(20, 20, 20));
+            Font subtitleFont = FontFactory.getFont(FontFactory.HELVETICA, 8, new Color(90, 90, 90));
+            Font badgeFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, Color.WHITE);
+            Font sectionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, new Color(30, 30, 30));
+            Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8, new Color(75, 75, 75));
+            Font valueFont = FontFactory.getFont(FontFactory.HELVETICA, 8, Color.BLACK);
+            Font amountFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 17, Color.BLACK);
+            Font amountCaptionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 7, new Color(95, 95, 95));
+            Font footerFont = FontFactory.getFont(FontFactory.HELVETICA, 7, new Color(105, 105, 105));
+
+            addCenteredText(document, safeText(recu.getAtelierNom()).toUpperCase(), brandFont, 0f, 2f);
+            addCenteredText(document, safeText(recu.getAtelierAdresse()), subtitleFont, 0f, 1f);
+            addCenteredText(document, safeText(recu.getAtelierTelephone()), subtitleFont, 0f, 8f);
+
+            addBadge(document, safeText(recu.getStatut()).toUpperCase(), badgeFont);
+            addDivider(document, subtitleFont, 6f, 6f);
+
+            addSectionTitle(document, "DETAILS DU TICKET", sectionFont);
+            addKeyValueTable(
+                    document,
+                    new String[][] {
+                            {"Reference", safeText(recu.getReference())},
+                            {"Date", formatReceiptDate(recu.getDatePaiement())},
+                            {"Beneficiaire", buildReceiptRecipient(recu)},
+                            {"Reglement", formatPaymentMethod(recu.getMoyenPaiement())}
+                    },
+                    labelFont,
+                    valueFont
+            );
+
+            String contact = recu.getClientContact() != null ? recu.getClientContact() : recu.getTailleurContact();
+            if (contact != null && !contact.isBlank()) {
+                addKeyValueTable(
+                        document,
+                        new String[][] {
+                                {"Contact", contact}
+                        },
+                        labelFont,
+                        valueFont
+                );
+            }
+
+            addAmountBox(document, String.format("%.0f FCFA", recu.getMontant()), amountFont, amountCaptionFont);
+            addDivider(document, subtitleFont, 8f, 6f);
+
+            addSectionTitle(document, "VERIFICATION", sectionFont);
+            addCenteredText(document, "Conservez ce ticket comme preuve de paiement.", subtitleFont, 0f, 3f);
+
+            if (recu.getQrCodeData() != null && !recu.getQrCodeData().isBlank()) {
+                addQrCodeBlock(document, recu.getQrCodeData(), footerFont);
+            }
+
+            String marketingMessage = buildMarketingMessage(recu);
+            addDivider(document, subtitleFont, 2f, 6f);
+            addCenteredText(document, "Merci pour votre confiance.", sectionFont, 0f, 2f);
+            addCenteredText(document, marketingMessage, footerFont, 0f, 2f);
+            addCenteredText(document, buildOwnerSignature(recu), footerFont, 0f, 0f);
+        } catch (DocumentException e) {
+            throw new RuntimeException("Impossible de generer le PDF du recu", e);
+        } finally {
+            document.close();
+        }
+
+        return outputStream.toByteArray();
+    }
+
+    private void addCenteredText(Document document, String text, Font font, float spacingBefore, float spacingAfter) throws DocumentException {
+        Paragraph paragraph = new Paragraph(safeText(text), font);
+        paragraph.setAlignment(Element.ALIGN_CENTER);
+        paragraph.setSpacingBefore(spacingBefore);
+        paragraph.setSpacingAfter(spacingAfter);
+        document.add(paragraph);
+    }
+
+    private void addBadge(Document document, String text, Font badgeFont) throws DocumentException {
+        PdfPTable badgeTable = new PdfPTable(1);
+        badgeTable.setWidthPercentage(54f);
+        badgeTable.setHorizontalAlignment(Element.ALIGN_CENTER);
+
+        PdfPCell badgeCell = new PdfPCell(new Phrase(safeText(text), badgeFont));
+        badgeCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        badgeCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        badgeCell.setPaddingTop(5f);
+        badgeCell.setPaddingBottom(5f);
+        badgeCell.setBackgroundColor(new Color(35, 35, 35));
+        badgeCell.setBorder(Rectangle.NO_BORDER);
+        badgeTable.addCell(badgeCell);
+        badgeTable.setSpacingAfter(4f);
+        document.add(badgeTable);
+    }
+
+    private void addSectionTitle(Document document, String title, Font font) throws DocumentException {
+        Paragraph paragraph = new Paragraph(safeText(title), font);
+        paragraph.setAlignment(Element.ALIGN_LEFT);
+        paragraph.setSpacingBefore(2f);
+        paragraph.setSpacingAfter(4f);
+        document.add(paragraph);
+    }
+
+    private void addKeyValueTable(Document document, String[][] rows, Font labelFont, Font valueFont) throws DocumentException {
+        PdfPTable table = new PdfPTable(new float[] { 1.2f, 1.8f });
+        table.setWidthPercentage(100f);
+        table.setSpacingAfter(4f);
+
+        for (String[] row : rows) {
+            PdfPCell labelCell = new PdfPCell(new Phrase(safeText(row[0]), labelFont));
+            labelCell.setBorder(Rectangle.NO_BORDER);
+            labelCell.setPaddingTop(2f);
+            labelCell.setPaddingBottom(3f);
+            labelCell.setPaddingLeft(0f);
+            labelCell.setPaddingRight(4f);
+
+            PdfPCell valueCell = new PdfPCell(new Phrase(safeText(row[1]), valueFont));
+            valueCell.setBorder(Rectangle.NO_BORDER);
+            valueCell.setPaddingTop(2f);
+            valueCell.setPaddingBottom(3f);
+            valueCell.setPaddingLeft(0f);
+            valueCell.setPaddingRight(0f);
+            valueCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+
+            table.addCell(labelCell);
+            table.addCell(valueCell);
+        }
+
+        document.add(table);
+    }
+
+    private void addAmountBox(Document document, String amount, Font amountFont, Font captionFont) throws DocumentException {
+        PdfPTable amountTable = new PdfPTable(1);
+        amountTable.setWidthPercentage(100f);
+        amountTable.setSpacingBefore(8f);
+        amountTable.setSpacingAfter(8f);
+
+        PdfPCell amountCell = new PdfPCell();
+        amountCell.setPaddingTop(10f);
+        amountCell.setPaddingBottom(10f);
+        amountCell.setPaddingLeft(6f);
+        amountCell.setPaddingRight(6f);
+        amountCell.setBorderWidth(1.2f);
+        amountCell.setBorderColor(new Color(45, 45, 45));
+        amountCell.setBackgroundColor(new Color(245, 245, 245));
+
+        Paragraph caption = new Paragraph("MONTANT ENCAISSE", captionFont);
+        caption.setAlignment(Element.ALIGN_CENTER);
+        caption.setSpacingAfter(3f);
+        amountCell.addElement(caption);
+
+        Paragraph value = new Paragraph(safeText(amount), amountFont);
+        value.setAlignment(Element.ALIGN_CENTER);
+        amountCell.addElement(value);
+
+        amountTable.addCell(amountCell);
+        document.add(amountTable);
+    }
+
+    private void addQrCodeBlock(Document document, String qrData, Font footerFont) throws DocumentException {
+        PdfPTable qrBox = new PdfPTable(1);
+        qrBox.setWidthPercentage(100f);
+
+        PdfPCell qrCell = new PdfPCell();
+        qrCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        qrCell.setPaddingTop(8f);
+        qrCell.setPaddingBottom(8f);
+        qrCell.setPaddingLeft(6f);
+        qrCell.setPaddingRight(6f);
+        qrCell.setBorderColor(new Color(180, 180, 180));
+        qrCell.setBackgroundColor(new Color(250, 250, 250));
+
+        try {
+            QRCodeWriter qrCodeWriter = new QRCodeWriter();
+            BitMatrix bitMatrix = qrCodeWriter.encode(qrData, BarcodeFormat.QR_CODE, 92, 92);
+            BufferedImage bufferedQr = MatrixToImageWriter.toBufferedImage(bitMatrix);
+            ByteArrayOutputStream qrOutput = new ByteArrayOutputStream();
+            ImageIO.write(bufferedQr, "png", qrOutput);
+
+            Image qrImage = Image.getInstance(qrOutput.toByteArray());
+            qrImage.setAlignment(Element.ALIGN_CENTER);
+            qrImage.scaleToFit(92f, 92f);
+            qrCell.addElement(qrImage);
+        } catch (WriterException | java.io.IOException e) {
+            throw new RuntimeException("Impossible de generer le QR code du recu", e);
+        }
+
+        Paragraph qrCaption = new Paragraph("Scannez pour verifier le recu", footerFont);
+        qrCaption.setAlignment(Element.ALIGN_CENTER);
+        qrCaption.setSpacingBefore(4f);
+        qrCell.addElement(qrCaption);
+
+        qrBox.addCell(qrCell);
+        qrBox.setSpacingBefore(2f);
+        qrBox.setSpacingAfter(8f);
+        document.add(qrBox);
+    }
+
+    private void addDivider(Document document, Font font, float spacingBefore, float spacingAfter) throws DocumentException {
+        Paragraph divider = new Paragraph("--------------------------------", font);
+        divider.setAlignment(Element.ALIGN_CENTER);
+        divider.setSpacingBefore(spacingBefore);
+        divider.setSpacingAfter(spacingAfter);
+        document.add(divider);
+    }
+
+    private String buildReceiptRecipient(RecuPaiementDto recu) {
+        if (recu.getClientNom() != null) {
+            return (safeText(recu.getClientPrenom()) + " " + safeText(recu.getClientNom())).trim();
+        }
+        return (safeText(recu.getTailleurPrenom()) + " " + safeText(recu.getTailleurNom())).trim();
+    }
+
+    private String formatReceiptDate(LocalDateTime datePaiement) {
+        if (datePaiement == null) {
+            return "";
+        }
+        return datePaiement.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+    }
+
+    private String formatPaymentMethod(String paymentMethod) {
+        if (paymentMethod == null || paymentMethod.isBlank()) {
+            return "";
+        }
+        return paymentMethod.replace('_', ' ');
+    }
+
+    private String buildMarketingMessage(RecuPaiementDto recu) {
+        if (recu.getMessageMarketing() != null && !recu.getMessageMarketing().isBlank()) {
+            return recu.getMessageMarketing();
+        }
+        return safeText(recu.getAtelierNom()) + " habille votre elegance.";
+    }
+
+    private String buildMarketingMessage(String atelierNom, Utilisateur proprietaire) {
+        return safeText(atelierNom) + " habille votre elegance.";
+    }
+
+    private String buildOwnerSignature(RecuPaiementDto recu) {
+        return safeText(recu.getAtelierNom());
+    }
+
+    private Utilisateur getProprietaireAtelier(UUID atelierId) {
+        if (atelierId == null) {
+            return null;
+        }
+        return utilisateurRepository.findByAtelierIdAndRole(atelierId, Role.PROPRIETAIRE)
+                .stream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String safeText(String value) {
+        return value == null ? "" : value;
     }
 }

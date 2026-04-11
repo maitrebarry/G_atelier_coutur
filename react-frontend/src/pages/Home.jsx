@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import api, { clearAuthData } from '../api/api';
 import Swal from 'sweetalert2';
 import Chart from 'chart.js/auto';
@@ -14,13 +14,22 @@ import {
   updateAdminAtelierSubscriptionDates
 } from '../api/adminSubscription';
 
+const SUPERADMIN_PENDING_PAYMENTS_FORCE_KEY = '__SUPERADMIN_PENDING_PAYMENTS_FORCE_KEY__';
+
 const Home = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
-  const role = (JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData') || '{}')?.role || '').toUpperCase();
+  const pendingPaymentsModalShownRef = useRef(false);
+  const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData') || '{}');
+  const role = String(userData?.role || '').toUpperCase().replace(/^ROLE_/, '');
+  const permissions = Array.isArray(userData?.permissions)
+    ? userData.permissions.map((p) => String(typeof p === 'string' ? p : (p?.code || p?.name || '')).toUpperCase().replace(/^ROLE_/, ''))
+    : [];
+  const isSuperAdmin = role === 'SUPERADMIN' || permissions.includes('SUPERADMIN');
   const openOverdueAffectations = () => {
     navigate('/affectations?retard=1');
   };
@@ -74,13 +83,20 @@ const Home = () => {
   }, [dashboardData]);
 
   useEffect(() => {
-    if (role === 'SUPERADMIN') {
+    if (isSuperAdmin) {
+      let forcePendingPaymentsModal = false;
+      try {
+        const fromNavigationState = Boolean(location.state?.forceSuperAdminPendingPaymentsModal);
+        forcePendingPaymentsModal = fromNavigationState || sessionStorage.getItem(SUPERADMIN_PENDING_PAYMENTS_FORCE_KEY) === '1';
+        sessionStorage.removeItem(SUPERADMIN_PENDING_PAYMENTS_FORCE_KEY);
+      } catch (e) {
+        forcePendingPaymentsModal = Boolean(location.state?.forceSuperAdminPendingPaymentsModal);
+      }
       loadSubscriptions();
-      // pass `true` to display confirmation modal with image when payments are fetched
-      loadSubscriptionPayments(true);
+      loadSubscriptionPayments(true, forcePendingPaymentsModal);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role]);
+  }, [isSuperAdmin, location.state]);
 
   const subscriptionStatusLabel = (s) => {
     const v = String(s || '').toUpperCase();
@@ -142,8 +158,11 @@ const Home = () => {
    * describing the first pending request so that the image is visible
    * and the user can approve/reject without drilling into the table.
    */
-  const maybeShowSuperAdminPendingPaymentModal = async (rows) => {
+  const maybeShowSuperAdminPendingPaymentModal = async (rows, force = false) => {
     if (!rows || rows.length === 0) return;
+    if (!force && pendingPaymentsModalShownRef.current) return;
+    pendingPaymentsModalShownRef.current = true;
+
     const first = rows[0] || {};
     const img = buildUploadUrl(first.preuve_url || first.preuveUrl);
     const r = await Swal.fire({
@@ -172,14 +191,15 @@ const Home = () => {
     }
   };
 
-  const loadSubscriptionPayments = async (showConfirmModal = false) => {
+  const loadSubscriptionPayments = async (showConfirmModal = false, forceModal = false) => {
     try {
       setPaymentsLoading(true);
       const rows = await fetchAdminSubscriptionPayments();
       setSubscriptionPayments(Array.isArray(rows) ? rows : []);
       if (showConfirmModal) {
-        const pending = (rows || []).filter((r) => String((r.statut || r.status || '').toUpperCase()) === 'PENDING');
-        await maybeShowSuperAdminPendingPaymentModal(pending);
+        const pendingRows = await fetchAdminSubscriptionPayments('PENDING');
+        const pending = Array.isArray(pendingRows) ? pendingRows : [];
+        await maybeShowSuperAdminPendingPaymentModal(pending, forceModal);
       }
     } catch (e) {
       setSubscriptionsError(e?.response?.data?.message || e?.message || 'Erreur chargement paiements abonnement');

@@ -1,6 +1,7 @@
 package com.atelier.gestionatelier.controllers;
 
 import com.atelier.gestionatelier.dto.ClientDTO;
+import com.atelier.gestionatelier.dto.MesureItemDTO;
 import com.atelier.gestionatelier.dto.ModeleDTO;
 import com.atelier.gestionatelier.dto.ModeleListDTO;
 import com.atelier.gestionatelier.entities.Client;
@@ -13,6 +14,7 @@ import com.atelier.gestionatelier.services.ModeleService;
 import com.atelier.gestionatelier.services.UtilisateurService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -430,6 +432,42 @@ public class ClientController {
             return "L'adresse est obligatoire";
         if (dto.getSexe() == null || dto.getSexe().isBlank())
             return "Le sexe est obligatoire";
+        if (dto.getContact() == null || !dto.getContact().matches("\\d{8}"))
+            return "Le contact doit contenir exactement 8 chiffres";
+
+        if (dto.getMesuresJson() != null && !dto.getMesuresJson().isBlank()) {
+            List<MesureItemDTO> items;
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                items = Arrays.asList(mapper.readValue(dto.getMesuresJson(), MesureItemDTO[].class));
+            } catch (Exception e) {
+                return "Impossible de lire la liste des modèles";
+            }
+
+            if (items.isEmpty()) {
+                return "Au moins un modèle doit être ajouté";
+            }
+
+            for (int i = 0; i < items.size(); i++) {
+                MesureItemDTO item = items.get(i);
+                if (item.getPrix() == null || item.getPrix().isBlank()) {
+                    return "Le prix est obligatoire pour chaque modèle";
+                }
+                try {
+                    Double prix = Double.parseDouble(item.getPrix().trim());
+                    if (prix <= 0) {
+                        return "Le prix doit être supérieur à 0 pour chaque modèle";
+                    }
+                } catch (NumberFormatException e) {
+                    return "Le prix doit être un nombre valide pour chaque modèle";
+                }
+                if (item.getHabitPhotoIndex() < 0) {
+                    return "Chaque modèle doit avoir une photo de l'habit";
+                }
+            }
+            return null;
+        }
+
         // === NOUVEAU : Validation du prix ===
         if (dto.getPrix() == null || dto.getPrix().isBlank())
             return "Le prix du modèle est obligatoire";
@@ -442,9 +480,6 @@ public class ClientController {
         } catch (NumberFormatException e) {
             return "Le prix doit être un nombre valide";
         }
-        // Validation contact : exactement 8 chiffres
-        if (dto.getContact() == null || !dto.getContact().matches("\\d{8}"))
-            return "Le contact doit contenir exactement 8 chiffres";
 
         boolean hasHabitPhotoUpload = dto.getHabitPhoto() != null && !dto.getHabitPhoto().isEmpty();
         boolean hasExistingHabitPhoto = dto.getExisting_habit_photo() != null && !dto.getExisting_habit_photo().isBlank();

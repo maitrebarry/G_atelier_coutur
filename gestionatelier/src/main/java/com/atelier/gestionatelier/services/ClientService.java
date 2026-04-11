@@ -3,7 +3,9 @@
 package com.atelier.gestionatelier.services;
 
 import com.atelier.gestionatelier.dto.ClientDTO;
+import com.atelier.gestionatelier.dto.ClientAvecMesuresDTO;
 import com.atelier.gestionatelier.dto.ClientRechercheRendezVousDTO;
+import com.atelier.gestionatelier.dto.MesureItemDTO;
 import com.atelier.gestionatelier.entities.Atelier;
 import com.atelier.gestionatelier.entities.Client;
 import com.atelier.gestionatelier.entities.Mesure;
@@ -11,8 +13,8 @@ import com.atelier.gestionatelier.entities.Modele;
 import com.atelier.gestionatelier.repositories.AtelierRepository;
 import com.atelier.gestionatelier.repositories.ClientRepository;
 import com.atelier.gestionatelier.repositories.MesureRepository;
-
 import com.atelier.gestionatelier.repositories.ModeleRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +26,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.UUID;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import com.atelier.gestionatelier.dto.ClientAvecMesuresDTO;
-import com.atelier.gestionatelier.dto.ClientRechercheRendezVousDTO;
+import java.util.UUID;
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,9 +47,7 @@ public class ClientService {
     public Client enregistrerClientAvecMesures(ClientDTO dto) {
         System.out.println("=== ENREGISTREMENT CLIENT AVEC MESURES ===");
         System.out.println("Atelier ID reçu: " + dto.getAtelierId());
-        System.out.println("Prix reçu: " + dto.getPrix());
-        System.out.println("Modèle sélectionné ID: " + dto.getSelectedModelId());
-        System.out.println("Nom modèle: " + dto.getModeleNom()); // NOUVEAU
+        System.out.println("Modèles reçus JSON: " + dto.getMesuresJson());
 
         Client client = new Client();
         client.setNom(dto.getNom());
@@ -56,7 +56,6 @@ public class ClientService {
         client.setAdresse(dto.getAdresse());
         client.setEmail(dto.getEmail());
 
-        // ✅ Récupérer l'atelier existant
         if (dto.getAtelierId() != null) {
             Atelier atelier = atelierRepository.findById(dto.getAtelierId())
                     .orElseThrow(() -> new EntityNotFoundException("Atelier non trouvé avec l'ID: " + dto.getAtelierId()));
@@ -67,95 +66,229 @@ public class ClientService {
             System.out.println("Aucun atelier associé");
         }
 
-        // Sauvegarder le client
         Client clientSauvegarde = clientRepository.save(client);
         System.out.println("Client sauvegardé avec ID: " + clientSauvegarde.getId());
 
-        // Créer la mesure
+        if (clientSauvegarde.getMesures() == null) {
+            clientSauvegarde.setMesures(new ArrayList<>());
+        }
+
+                List<MesureItemDTO> mesureItems = parseMesureItems(dto);
+        List<MultipartFile> photoFiles = dto.getPhotos() != null ? Arrays.asList(dto.getPhotos()) : new ArrayList<>();
+        List<MultipartFile> habitFiles = dto.getHabitPhotos() != null ? Arrays.asList(dto.getHabitPhotos()) : new ArrayList<>();
+
+        if (mesureItems != null && !mesureItems.isEmpty()) {
+            for (MesureItemDTO item : mesureItems) {
+                Mesure mesure = createMesureFromItem(item, clientSauvegarde, photoFiles, habitFiles);
+                clientSauvegarde.getMesures().add(mesure);
+            }
+        } else {
+            Mesure mesure = createMesureFromDto(dto);
+            if (mesure != null) {
+                mesure.setClient(clientSauvegarde);
+                mesure.setAtelier(clientSauvegarde.getAtelier());
+                clientSauvegarde.getMesures().add(mesure);
+            }
+        }
+
+        Client clientFinal = clientRepository.save(clientSauvegarde);
+        System.out.println("=== FIN ENREGISTREMENT ===");
+        return clientFinal;
+    }
+
+    private List<MesureItemDTO> parseMesureItems(ClientDTO dto) {
+        if (dto.getMesuresJson() == null || dto.getMesuresJson().isBlank()) {
+            return null;
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            MesureItemDTO[] items = mapper.readValue(dto.getMesuresJson(), MesureItemDTO[].class);
+            return Arrays.asList(items);
+        } catch (Exception e) {
+            throw new RuntimeException("Impossible de parser les mesures JSON: " + e.getMessage(), e);
+        }
+    }
+
+    private Mesure createMesureFromItem(MesureItemDTO item, Client client, List<MultipartFile> photoFiles, List<MultipartFile> habitFiles) {
+        if (item == null) {
+            throw new IllegalArgumentException("Le modèle est invalide");
+        }
+
         Mesure mesure = new Mesure();
-        mesure.setClient(clientSauvegarde);
-        mesure.setAtelier(clientSauvegarde.getAtelier());
+        mesure.setClient(client);
+        mesure.setAtelier(client.getAtelier());
+        mesure.setDateMesure(LocalDateTime.now());
+        mesure.setSexe(item.getSexe());
+        mesure.setDescription(item.getDescription());
+        mesure.setTypeVetement(item.getTypeVetement() != null ? item.getTypeVetement().trim().toLowerCase() : null);
+
+        Double prix = parsePrix(item.getPrix());
+        if (prix == null || prix <= 0) {
+            throw new IllegalArgumentException("Chaque modèle doit avoir un prix valide supérieur à 0");
+        }
+        mesure.setPrix(prix);
+
+        if (item.getSelectedModelId() != null) {
+            Modele modele = modeleRepository.findById(item.getSelectedModelId())
+                    .orElseThrow(() -> new EntityNotFoundException("Modèle non trouvé avec l'ID: " + item.getSelectedModelId()));
+            mesure.setModeleReferenceId(modele.getId());
+            mesure.setModeleNom(modele.getNom());
+            if ((item.getPhotoIndex() < 0 || item.getPhotoIndex() >= photoFiles.size()) && modele.getPhotoPath() != null) {
+                mesure.setPhotoPath(modele.getPhotoPath());
+            }
+            System.out.println("Modèle existant sélectionné: " + modele.getNom());
+        }
+
+        if (item.getPhotoIndex() >= 0 && item.getPhotoIndex() < photoFiles.size()) {
+            MultipartFile photo = photoFiles.get(item.getPhotoIndex());
+            if (photo != null && !photo.isEmpty()) {
+                try {
+                    String uniqueFileName = fileStorageService.storeFile(photo, "model_photo");
+                    mesure.setPhotoPath(uniqueFileName);
+                    System.out.println("Photo personnalisée sauvegardée pour le modèle: " + uniqueFileName);
+                } catch (Exception e) {
+                    throw new RuntimeException("Erreur lors de l'upload de la photo du modèle", e);
+                }
+            }
+        }
+
+        if (item.getHabitPhotoIndex() >= 0 && item.getHabitPhotoIndex() < habitFiles.size()) {
+            MultipartFile habitPhoto = habitFiles.get(item.getHabitPhotoIndex());
+            if (habitPhoto != null && !habitPhoto.isEmpty()) {
+                try {
+                    String habitFileName = fileStorageService.storeFile(habitPhoto, "habit_photo");
+                    mesure.setHabitPhotoPath(habitFileName);
+                    System.out.println("Photo de l'habit sauvegardée pour le modèle: " + habitFileName);
+                } catch (Exception e) {
+                    throw new RuntimeException("Erreur lors de l'upload de la photo de l'habit", e);
+                }
+            }
+        }
+
+        fillMesureFromItem(mesure, item);
+        return mesureRepository.save(mesure);
+    }
+
+    private Double parsePrix(String prix) {
+        if (prix == null || prix.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(prix.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Mesure createMesureFromDto(ClientDTO dto) {
+        Mesure mesure = new Mesure();
         mesure.setDateMesure(LocalDateTime.now());
         mesure.setSexe(dto.getSexe());
         mesure.setDescription(dto.getDescription());
 
-        // === CORRECTION CRITIQUE : GESTION MODÈLE EXISTANT ===
         if (dto.getSelectedModelId() != null) {
-            // Récupérer le modèle existant
             Modele modele = modeleRepository.findById(dto.getSelectedModelId())
                     .orElseThrow(() -> new EntityNotFoundException("Modèle non trouvé avec l'ID: " + dto.getSelectedModelId()));
-
-            // ✅ CORRECTION : Stocker TOUS les champs du modèle
             mesure.setModeleReferenceId(modele.getId());
-            mesure.setModeleNom(modele.getNom()); // ← Utiliser le nom du modèle, pas du DTO
-            System.out.println("✅ Modèle existant sélectionné: " + modele.getNom() + " (ID: " + modele.getId() + ")");
-
-            // ✅ Utiliser la photo du modèle si aucune photo personnelle n'est uploadée
+            mesure.setModeleNom(modele.getNom());
             if ((dto.getPhoto() == null || dto.getPhoto().isEmpty()) && modele.getPhotoPath() != null) {
                 mesure.setPhotoPath(modele.getPhotoPath());
-                System.out.println("✅ Photo du modèle utilisée: " + modele.getPhotoPath());
             }
-
-            // ✅ OPTIONNEL : Copier le prix du modèle si pas de prix spécifié
             if (dto.getPrixAsDouble() == null && modele.getPrix() != null) {
                 mesure.setPrix(modele.getPrix());
-                System.out.println("✅ Prix du modèle utilisé: " + modele.getPrix() + " FCFA");
             }
         }
 
-        // === PRIX (si pas déjà défini par le modèle) ===
         if (mesure.getPrix() == null) {
             Double prix = dto.getPrixAsDouble();
             if (prix == null || prix <= 0) {
                 throw new IllegalArgumentException("Le prix du modèle est obligatoire et doit être supérieur à 0");
             }
             mesure.setPrix(prix);
-            System.out.println("Prix défini manuellement: " + prix + " FCFA");
         }
 
-        // Déterminer le type de vêtement
         String type = (dto.getFemme_type() != null) ? dto.getFemme_type().trim().toLowerCase() : null;
         if (type == null || type.isBlank()) {
             if ("homme".equalsIgnoreCase(dto.getSexe())) type = "homme";
         }
         mesure.setTypeVetement(type);
-        System.out.println("Type de vêtement: " + type);
 
-        // === GESTION PHOTO (Modèle existant vs Upload) ===
         MultipartFile photo = dto.getPhoto();
         if (photo != null && !photo.isEmpty()) {
-            // Upload d'une photo personnelle (écrase la photo du modèle si elle existe)
             try {
                 String uniqueFileName = fileStorageService.storeFile(photo, "model_photo");
                 mesure.setPhotoPath(uniqueFileName);
-                System.out.println("✅ Photo personnelle sauvegardée: " + uniqueFileName);
             } catch (Exception e) {
-                System.err.println("❌ Erreur upload photo personnelle: " + e.getMessage());
-                throw new RuntimeException("Erreur lors de l'upload de la photo: " + e.getMessage());
+                throw new RuntimeException("Erreur lors de l'upload de la photo du modèle", e);
             }
         }
 
-        // Nouvelle photo de l'habit
         MultipartFile habitPhoto = dto.getHabitPhoto();
         if (habitPhoto != null && !habitPhoto.isEmpty()) {
             try {
                 String habitFileName = fileStorageService.storeFile(habitPhoto, "habit_photo");
                 mesure.setHabitPhotoPath(habitFileName);
-                System.out.println("✅ Photo de l'habit sauvegardée: " + habitFileName);
             } catch (Exception e) {
-                System.err.println("❌ Erreur upload photo habit: " + e.getMessage());
-                throw new RuntimeException("Erreur lors de l'upload de la photo de l'habit: " + e.getMessage());
+                throw new RuntimeException("Erreur lors de l'upload de la photo de l'habit", e);
             }
         }
 
-        // Si pas de photo uploadée et pas de modèle sélectionné avec photo, photoPath reste null
-        if (mesure.getPhotoPath() == null) {
-            System.out.println("Aucune photo définie (ni upload, ni modèle avec photo)");
-        }
+        fillMesureFromDto(mesure, dto);
+        return mesureRepository.save(mesure);
+    }
 
-        // ====== MAPPINGS PAR TYPE (votre code existant) ======
+    private void fillMesureFromItem(Mesure mesure, MesureItemDTO item) {
+        if (item == null) {
+            return;
+        }
+        if ("robe".equalsIgnoreCase(item.getTypeVetement())) {
+            mesure.setEpaule(toDouble(item.getRobe_epaule()));
+            mesure.setManche(toDouble(item.getRobe_manche()));
+            mesure.setPoitrine(toDouble(item.getRobe_poitrine()));
+            mesure.setTaille(toDouble(item.getRobe_taille()));
+            mesure.setLongueur(toDouble(item.getRobe_longueur()));
+            mesure.setFesse(toDouble(item.getRobe_fesse()));
+            mesure.setTourManche(toDouble(item.getRobe_tour_manche()));
+            mesure.setLongueurPoitrine(toDouble(item.getRobe_longueur_poitrine()));
+            mesure.setLongueurTaille(toDouble(item.getRobe_longueur_taille()));
+            mesure.setLongueurFesse(toDouble(item.getRobe_longueur_fesse()));
+            mesure.setLongueurPoitrineRobe(toDouble(item.getRobe_longueur_poitrine()));
+            mesure.setLongueurTailleRobe(toDouble(item.getRobe_longueur_taille()));
+            mesure.setLongueurFesseRobe(toDouble(item.getRobe_longueur_fesse()));
+        } else if ("jupe".equalsIgnoreCase(item.getTypeVetement())) {
+            mesure.setEpaule(toDouble(item.getJupe_epaule()));
+            mesure.setManche(toDouble(item.getJupe_manche()));
+            mesure.setPoitrine(toDouble(item.getJupe_poitrine()));
+            mesure.setTaille(toDouble(item.getJupe_taille()));
+            mesure.setLongueur(toDouble(item.getJupe_longueur()));
+            mesure.setFesse(toDouble(item.getJupe_fesse()));
+            mesure.setTourManche(toDouble(item.getJupe_tour_manche()));
+            mesure.setLongueurPoitrine(toDouble(item.getJupe_longueur_poitrine()));
+            mesure.setLongueurTaille(toDouble(item.getJupe_longueur_taille()));
+            mesure.setLongueurFesse(toDouble(item.getJupe_longueur_fesse()));
+            mesure.setLongueurJupe(toDouble(item.getJupe_longueur_jupe()));
+            mesure.setCeinture(toDouble(item.getJupe_ceinture()));
+        } else if ("homme".equalsIgnoreCase(item.getTypeVetement())) {
+            mesure.setEpaule(toDouble(item.getHomme_epaule()));
+            mesure.setManche(toDouble(item.getHomme_manche()));
+            mesure.setLongueur(toDouble(item.getHomme_longueur()));
+            mesure.setPoitrine(toDouble(item.getHomme_poitrine()));
+            Double ceint = toDouble(item.getHomme_ceinture());
+            mesure.setTaille(ceint);
+            mesure.setCeinture(ceint);
+            mesure.setTourManche(toDouble(item.getHomme_tour_manche()));
+            mesure.setLongueurPantalon(toDouble(item.getHomme_longueur_pantalon()));
+            mesure.setCuisse(toDouble(item.getHomme_cuisse()));
+            mesure.setCorps(toDouble(item.getHomme_corps()));
+        }
+    }
+
+    private void fillMesureFromDto(Mesure mesure, ClientDTO dto) {
+        if (dto == null) {
+            return;
+        }
+        String type = dto.getFemme_type() != null ? dto.getFemme_type().trim().toLowerCase() : null;
         if ("robe".equalsIgnoreCase(type)) {
-            // génériques
             mesure.setEpaule(toDouble(dto.getRobe_epaule()));
             mesure.setManche(toDouble(dto.getRobe_manche()));
             mesure.setPoitrine(toDouble(dto.getRobe_poitrine()));
@@ -166,16 +299,13 @@ public class ClientService {
             mesure.setLongueurPoitrine(toDouble(dto.getRobe_longueur_poitrine()));
             mesure.setLongueurTaille(toDouble(dto.getRobe_longueur_taille()));
             mesure.setLongueurFesse(toDouble(dto.getRobe_longueur_fesse()));
-            // spécifiques robe
             mesure.setLongueurPoitrineRobe(toDouble(dto.getRobe_longueur_poitrine()));
             mesure.setLongueurTailleRobe(toDouble(dto.getRobe_longueur_taille()));
             mesure.setLongueurFesseRobe(toDouble(dto.getRobe_longueur_fesse()));
-
         } else if ("jupe".equalsIgnoreCase(type)) {
-            // génériques (on mappe les équivalents "jupe_*" vers les champs communs)
-            mesure.setEpaule(toDouble(dto.getJupe_epaule()));                // si tu mesures l'épaule pour jupe
-            mesure.setManche(toDouble(dto.getJupe_manche()));                // idem
-            mesure.setPoitrine(toDouble(dto.getJupe_poitrine()));            // idem
+            mesure.setEpaule(toDouble(dto.getJupe_epaule()));
+            mesure.setManche(toDouble(dto.getJupe_manche()));
+            mesure.setPoitrine(toDouble(dto.getJupe_poitrine()));
             mesure.setTaille(toDouble(dto.getJupe_taille()));
             mesure.setLongueur(toDouble(dto.getJupe_longueur()));
             mesure.setFesse(toDouble(dto.getJupe_fesse()));
@@ -183,40 +313,22 @@ public class ClientService {
             mesure.setLongueurPoitrine(toDouble(dto.getJupe_longueur_poitrine()));
             mesure.setLongueurTaille(toDouble(dto.getJupe_longueur_taille()));
             mesure.setLongueurFesse(toDouble(dto.getJupe_longueur_fesse()));
-            // spécifiques jupe
             mesure.setLongueurJupe(toDouble(dto.getJupe_longueur_jupe()));
             mesure.setCeinture(toDouble(dto.getJupe_ceinture()));
-
-        } else if ("homme".equalsIgnoreCase(type)) {
-            // génériques depuis "homme_*"
+        } else if ("homme".equalsIgnoreCase(dto.getSexe())) {
             mesure.setEpaule(toDouble(dto.getHomme_epaule()));
             mesure.setManche(toDouble(dto.getHomme_manche()));
             mesure.setLongueur(toDouble(dto.getHomme_longueur()));
             mesure.setPoitrine(toDouble(dto.getHomme_poitrine()));
-            // pour l'homme, "ceinture" est l'équivalent de la taille : on remplit les deux si tu veux
             Double ceint = toDouble(dto.getHomme_ceinture());
             mesure.setTaille(ceint);
             mesure.setCeinture(ceint);
             mesure.setTourManche(toDouble(dto.getHomme_tour_manche()));
-            // spécifiques homme
             mesure.setLongueurPantalon(toDouble(dto.getHomme_longueur_pantalon()));
             mesure.setCuisse(toDouble(dto.getHomme_cuisse()));
             mesure.setCorps(toDouble(dto.getHomme_corps()));
         }
-
-        // Sauvegarder la mesure
-        Mesure mesureSauvegardee = mesureRepository.save(mesure);
-        System.out.println("Mesure sauvegardée avec ID: " + mesureSauvegardee.getId());
-        System.out.println("Atelier de la mesure: " + (mesureSauvegardee.getAtelier() != null ? mesureSauvegardee.getAtelier().getId() : "null"));
-        System.out.println("Prix de la mesure: " + mesureSauvegardee.getPrix() + " FCFA");
-        System.out.println("Modèle référence ID: " + mesureSauvegardee.getModeleReferenceId());
-        System.out.println("Modèle nom: " + mesureSauvegardee.getModeleNom());
-        System.out.println("Photo path: " + mesureSauvegardee.getPhotoPath());
-        System.out.println("=== FIN ENREGISTREMENT ===");
-
-        return clientSauvegarde;
     }
-
 
     private Double toDouble(String value) {
         if (value == null || value.trim().isEmpty()) {

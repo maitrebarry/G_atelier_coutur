@@ -151,9 +151,7 @@ export default function AbonnementScreen({ navigation }) {
 
     try {
       setSubmitting(true);
-      await api.post('/subscription/payments/manual-submit', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      await api.post('/subscription/payments/manual-submit', formData);
       Alert.alert('Succès', 'Demande envoyée au SuperAdmin pour validation.');
       setTransactionRef('');
       setOwnerNote('');

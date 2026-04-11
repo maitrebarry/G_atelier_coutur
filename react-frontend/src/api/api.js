@@ -76,6 +76,10 @@ export const setAuthData = (token, userData, remember = true) => {
   try {
     sessionStorage.removeItem('__SUB_MODAL_KEY__');
     localStorage.removeItem('__SUB_MODAL_KEY__');
+    sessionStorage.removeItem('__SUPERADMIN_PENDING_PAYMENTS_MODAL_KEY__');
+    localStorage.removeItem('__SUPERADMIN_PENDING_PAYMENTS_MODAL_KEY__');
+    sessionStorage.removeItem('__SUPERADMIN_PENDING_PAYMENTS_FORCE_KEY__');
+    localStorage.removeItem('__SUPERADMIN_PENDING_PAYMENTS_FORCE_KEY__');
   } catch (e) {
     /* ignore */
   }
@@ -107,6 +111,10 @@ export const clearAuthData = () => {
   try {
     sessionStorage.removeItem('__SUB_MODAL_KEY__');
     localStorage.removeItem('__SUB_MODAL_KEY__');
+    sessionStorage.removeItem('__SUPERADMIN_PENDING_PAYMENTS_MODAL_KEY__');
+    localStorage.removeItem('__SUPERADMIN_PENDING_PAYMENTS_MODAL_KEY__');
+    sessionStorage.removeItem('__SUPERADMIN_PENDING_PAYMENTS_FORCE_KEY__');
+    localStorage.removeItem('__SUPERADMIN_PENDING_PAYMENTS_FORCE_KEY__');
   } catch (e) {
     /* ignore */
   }

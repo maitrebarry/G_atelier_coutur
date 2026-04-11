@@ -79,15 +79,11 @@ const Mesures = () => {
   const [selectedModel, setSelectedModel] = useState(null);
   
   // Modal States
-  const [showPriceModal, setShowPriceModal] = useState(false);
+  const [modelsToAdd, setModelsToAdd] = useState([]);
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [habitPhotoFile, setHabitPhotoFile] = useState(null);
   const [habitPreview, setHabitPreview] = useState(null);
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const [cameraStream, setCameraStream] = useState(null);
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [showModelPreviewModal, setShowModelPreviewModal] = useState(false);
   const [previewModelData, setPreviewModelData] = useState(null);
   const [showClientPicker, setShowClientPicker] = useState(false);
@@ -109,11 +105,6 @@ const Mesures = () => {
     });
   };
 
-  const handleRetakePhoto = () => {
-    clearHabitPhoto();
-    openCamera();
-  };
-
   const resetFormState = () => {
     setFormData(createInitialFormData());
     setDescription('');
@@ -121,23 +112,44 @@ const Mesures = () => {
     clearHabitPhoto();
     setPhotoFile(null);
     setSelectedModel(null);
+    setModelsToAdd([]);
     setPrefilledClientInfo(null);
     setHasPrefilledPreview(false);
     setPreviewImage('assets/images/model4.jpg');
   };
 
-  const getLatestMesure = (client) => {
+  const resetCurrentModelSection = () => {
+    setSelectedModel(null);
+    setFormData(prev => ({
+      ...prev,
+      selectedModelId: '',
+      modeleNom: ''
+    }));
+    setPhotoFile(null);
+    setPrice('');
+    setDescription('');
+    clearHabitPhoto();
+    setHasPrefilledPreview(false);
+    updateAvatar(formData.genderPreview || 'Femme');
+  };
+
+  const removeModelItem = (index) => {
+    setModelsToAdd(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const getSortedMesures = (client) => {
     if (!client?.mesures || client.mesures.length === 0) {
-      return null;
+      return [];
     }
-    return client.mesures.reduce((latest, current) => {
-      if (!latest) return current;
-      const latestDate = latest.dateMesure ? new Date(latest.dateMesure) : null;
-      const currentDate = current.dateMesure ? new Date(current.dateMesure) : null;
-      if (!latestDate) return current;
-      if (!currentDate) return latest;
-      return currentDate > latestDate ? current : latest;
-    }, null);
+    return [...client.mesures].sort((a, b) => {
+      const aTime = a?.dateMesure ? new Date(a.dateMesure).getTime() : 0;
+      const bTime = b?.dateMesure ? new Date(b.dateMesure).getTime() : 0;
+      return bTime - aTime;
+    });
+  };
+
+  const getLatestMesure = (client) => {
+    return getSortedMesures(client)[0] || null;
   };
 
   const closeClientPicker = () => {
@@ -166,9 +178,38 @@ const Mesures = () => {
     }
   };
 
-  const handleSelectExistingClient = (client) => {
+  const handleSelectExistingClient = async (client) => {
     if (!client) return;
-    const latestMesure = getLatestMesure(client);
+    const mesures = getSortedMesures(client);
+    let latestMesure = mesures[0] || null;
+
+    if (mesures.length > 1) {
+      const options = mesures.reduce((acc, mesure, index) => {
+        const dateLabel = mesure?.dateMesure ? formatMesureDate(mesure.dateMesure) : 'Date inconnue';
+        const typeLabel = mesure?.typeVetement || 'Type inconnu';
+        const modeleLabel = mesure?.modeleNom || `Modèle ${index + 1}`;
+        acc[String(index)] = `${modeleLabel} - ${typeLabel} (${dateLabel || 'Date inconnue'})`;
+        return acc;
+      }, {});
+
+      const choice = await Swal.fire({
+        title: 'Choisir le modèle à préremplir',
+        text: `Ce client a ${mesures.length} modèles enregistrés.`,
+        input: 'select',
+        inputOptions: options,
+        inputValue: '0',
+        showCancelButton: true,
+        confirmButtonText: 'Utiliser ce modèle',
+        cancelButtonText: 'Annuler'
+      });
+
+      if (!choice.isConfirmed) return;
+      const selectedIndex = Number(choice.value);
+      if (!Number.isNaN(selectedIndex) && mesures[selectedIndex]) {
+        latestMesure = mesures[selectedIndex];
+      }
+    }
+
     const nextData = createInitialFormData();
     const toFieldValue = (value) => (value === null || value === undefined ? '' : `${value}`);
 
@@ -294,12 +335,14 @@ const Mesures = () => {
     const fullName = `${client.prenom || ''} ${client.nom || ''}`.toLowerCase();
     const contactValue = String(client.contact || '').toLowerCase();
     const emailValue = (client.email || '').toLowerCase();
-    const typeValue = ((client.mesures && client.mesures[0]?.typeVetement) || '').toLowerCase();
+    const mesuresText = (client.mesures || [])
+      .map((m) => `${m?.typeVetement || ''} ${m?.modeleNom || ''}`.toLowerCase())
+      .join(' ');
     return (
       fullName.includes(normalizedSearch) ||
       contactValue.includes(normalizedSearch) ||
       emailValue.includes(normalizedSearch) ||
-      typeValue.includes(normalizedSearch)
+      mesuresText.includes(normalizedSearch)
     );
   });
 
@@ -322,6 +365,17 @@ const Mesures = () => {
       updateAvatar(formData.genderPreview);
     }
   }, [formData.genderPreview, photoFile, selectedModel, hasPrefilledPreview]);
+
+  useEffect(() => {
+    if (!formData.sexe) return;
+    const expectedPreview = formData.sexe === 'Homme' ? 'Homme' : 'Femme';
+    if (formData.genderPreview !== expectedPreview) {
+      setFormData(prev => ({
+        ...prev,
+        genderPreview: expectedPreview
+      }));
+    }
+  }, [formData.sexe, formData.genderPreview]);
 
   const updateAvatar = (gender) => {
     setHasPrefilledPreview(false);
@@ -411,6 +465,102 @@ const Mesures = () => {
     }
   };
 
+  const capturePhotoWithCamera = async (title) => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      await Swal.fire('Caméra indisponible', 'Votre appareil ne permet pas la capture directe.', 'warning');
+      return null;
+    }
+
+    let stream = null;
+    try {
+      const captureResult = await Swal.fire({
+        title,
+        html: `
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:center">
+            <video id="swal-camera-video" autoplay playsinline style="width:100%;max-height:360px;background:#000;border:1px solid #ddd;border-radius:6px"></video>
+            <small style="color:#666">Placez bien l'image, puis cliquez sur Capturer</small>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Capturer',
+        cancelButtonText: 'Annuler',
+        didOpen: async () => {
+          const video = document.getElementById('swal-camera-video');
+          stream = await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS);
+          if (video) {
+            video.srcObject = stream;
+            await video.play().catch(() => {});
+          }
+        },
+        preConfirm: async () => {
+          const video = document.getElementById('swal-camera-video');
+          if (!video || !video.videoWidth || !video.videoHeight) {
+            Swal.showValidationMessage('Impossible de capturer la photo.');
+            return null;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+          const blob = await (await fetch(dataUrl)).blob();
+          return new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        },
+        willClose: () => {
+          if (stream) {
+            stream.getTracks().forEach((track) => track.stop());
+            stream = null;
+          }
+        }
+      });
+
+      return captureResult.isConfirmed ? captureResult.value : null;
+    } catch (error) {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      await Swal.fire('Erreur caméra', 'Impossible d\'ouvrir la caméra.', 'error');
+      return null;
+    }
+  };
+
+  const openModelPhotoUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const openModelPhotoCamera = async () => {
+    const file = await capturePhotoWithCamera('Prendre une photo du modèle');
+    if (!file) return;
+
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setPreviewImage(event.target.result);
+    };
+    reader.readAsDataURL(file);
+    setHasPrefilledPreview(false);
+
+    setSelectedModel(null);
+    setFormData(prev => ({
+      ...prev,
+      selectedModelId: '',
+      modeleNom: ''
+    }));
+  };
+
+  const openHabitPhotoCamera = async () => {
+    const file = await capturePhotoWithCamera('Prendre une photo de l\'habit');
+    if (!file) return;
+
+    setHabitPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = (event) => setHabitPreview(event.target.result);
+    reader.readAsDataURL(file);
+  };
 
   const handleModelClick = (model) => {
     setPreviewModelData(model);
@@ -449,7 +599,6 @@ const Mesures = () => {
     if (!formData.prenom.trim()) errors.push("Le champ Prénom est obligatoire.");
     if (!formData.contact.trim()) errors.push("Le champ Contact est obligatoire.");
     if (formData.contact && !/^\d{8}$/.test(formData.contact)) errors.push("Le contact doit contenir exactement 8 chiffres.");
-    if (!formData.email.trim()) errors.push("Le champ Email est obligatoire.");
     if (!formData.sexe) errors.push("Le champ Sexe est obligatoire.");
 
     if (formData.sexe === 'Femme' && !formData.femme_type) {
@@ -459,10 +608,8 @@ const Mesures = () => {
     return errors;
   };
 
-  const handlePreSubmit = (e) => {
-    e.preventDefault();
+  const handleAddModelToClient = () => {
     const errors = validateForm();
-    
     if (errors.length > 0) {
       Swal.fire({
         icon: 'error',
@@ -472,74 +619,6 @@ const Mesures = () => {
       return;
     }
 
-    // clear previous modal fields only when aucune donnée pré-remplie n'est disponible
-    if (!prefilledClientInfo) {
-      setPrice('');
-      setDescription('');
-      clearHabitPhoto();
-    }
-
-    setShowPriceModal(true);
-  };
-
-  const openCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS);
-      setCameraStream(stream);
-      setIsCameraOpen(true);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-    } catch (err) {
-      console.error('Camera access denied or not available', err);
-      Swal.fire('Erreur', 'Impossible d\'accéder à la caméra. Assurez-vous d\'avoir autorisé l\'accès.', 'error');
-    }
-  };
-
-  const closeCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(t => t.stop());
-      setCameraStream(null);
-    }
-    if (videoRef.current) {
-      try { videoRef.current.pause(); videoRef.current.srcObject = null; } catch(e) {}
-    }
-    setIsCameraOpen(false);
-  };
-
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const sourceWidth = video.videoWidth || 1280;
-    const sourceHeight = video.videoHeight || 720;
-    const aspectRatio = sourceWidth > 0 ? sourceHeight / sourceWidth : 0.75;
-    const targetWidth = Math.max(960, sourceWidth);
-    const targetHeight = Math.floor(targetWidth * aspectRatio);
-    canvas.width = targetWidth;
-    canvas.height = targetHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob(blob => {
-      if (!blob) return;
-      const file = new File([blob], `habit-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
-      const previewUrl = URL.createObjectURL(file);
-      setHabitPhotoFile(file);
-      setHabitPreview(prev => {
-        if (prev && prev.startsWith('blob:')) {
-          URL.revokeObjectURL(prev);
-        }
-        return previewUrl;
-      });
-      closeCamera();
-    }, 'image/jpeg', 0.92);
-  };
-
-  const handleFinalSubmit = async () => {
     if (!price || isNaN(price) || parseFloat(price) <= 0) {
       Swal.fire({
         icon: 'error',
@@ -553,38 +632,138 @@ const Mesures = () => {
       Swal.fire({
         icon: 'error',
         title: 'Photo requise',
-        text: 'Veuillez prendre/enregistrer une photo de l\'habit à coudre.',
+        text: 'Veuillez ajouter une photo de l\'habit pour ce modèle.',
       });
       return;
     }
 
-    setShowPriceModal(false);
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(t => t.stop());
-      setCameraStream(null);
-    }
-    setLoading(true);
+    const requiredMeasurements = formData.sexe === 'Femme'
+      ? formData.femme_type === 'jupe'
+        ? ['jupe_epaule', 'jupe_manche', 'jupe_poitrine', 'jupe_taille', 'jupe_longueur', 'jupe_longueur_jupe', 'jupe_ceinture', 'jupe_fesse']
+        : ['robe_epaule', 'robe_manche', 'robe_poitrine', 'robe_taille', 'robe_longueur', 'robe_fesse']
+      : ['homme_epaule', 'homme_manche', 'homme_longueur', 'homme_longueur_pantalon', 'homme_ceinture', 'homme_cuisse'];
 
+    const missingFields = requiredMeasurements.filter(field => !formData[field]);
+    if (missingFields.length > 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Mesures manquantes',
+        text: 'Veuillez remplir toutes les mesures obligatoires pour ce modèle.',
+      });
+      return;
+    }
+
+    const item = {
+      selectedModelId: formData.selectedModelId || null,
+      modeleNom: formData.modeleNom || (selectedModel ? selectedModel.nom : ''),
+      sexe: formData.sexe,
+      typeVetement: formData.sexe === 'Femme' ? formData.femme_type : 'homme',
+      prix: price,
+      description,
+      robe_epaule: formData.robe_epaule,
+      robe_manche: formData.robe_manche,
+      robe_poitrine: formData.robe_poitrine,
+      robe_taille: formData.robe_taille,
+      robe_longueur: formData.robe_longueur,
+      robe_fesse: formData.robe_fesse,
+      robe_tour_manche: formData.robe_tour_manche,
+      robe_longueur_poitrine: formData.robe_longueur_poitrine,
+      robe_longueur_taille: formData.robe_longueur_taille,
+      robe_longueur_fesse: formData.robe_longueur_fesse,
+      jupe_epaule: formData.jupe_epaule,
+      jupe_manche: formData.jupe_manche,
+      jupe_poitrine: formData.jupe_poitrine,
+      jupe_taille: formData.jupe_taille,
+      jupe_longueur: formData.jupe_longueur,
+      jupe_longueur_jupe: formData.jupe_longueur_jupe,
+      jupe_ceinture: formData.jupe_ceinture,
+      jupe_fesse: formData.jupe_fesse,
+      jupe_tour_manche: formData.jupe_tour_manche,
+      jupe_longueur_poitrine: formData.jupe_longueur_poitrine,
+      jupe_longueur_taille: formData.jupe_longueur_taille,
+      jupe_longueur_fesse: formData.jupe_longueur_fesse,
+      homme_epaule: formData.homme_epaule,
+      homme_manche: formData.homme_manche,
+      homme_longueur: formData.homme_longueur,
+      homme_longueur_pantalon: formData.homme_longueur_pantalon,
+      homme_ceinture: formData.homme_ceinture,
+      homme_cuisse: formData.homme_cuisse,
+      homme_poitrine: formData.homme_poitrine,
+      homme_corps: formData.homme_corps,
+      homme_tour_manche: formData.homme_tour_manche,
+      photoFile: photoFile || null,
+      habitPhotoFile,
+    };
+
+    setModelsToAdd(prev => [...prev, item]);
+    Swal.fire({
+      icon: 'success',
+      title: 'Modèle ajouté',
+      text: `Le modèle a été ajouté au client`,
+      timer: 1800,
+      showConfirmButton: false,
+      toast: true,
+      position: 'top-end'
+    });
+
+    resetCurrentModelSection();
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errors = validateForm();
+    if (errors.length > 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Erreur de validation',
+        html: errors.join('<br>'),
+      });
+      return;
+    }
+
+    if (modelsToAdd.length === 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Aucun modèle ajouté',
+        text: 'Veuillez ajouter au moins un modèle avant d\'enregistrer le client.',
+      });
+      return;
+    }
+
+    setLoading(true);
     try {
       const data = new FormData();
-      
-      // Append all text fields
-      Object.keys(formData).forEach(key => {
+      const clientFields = ['nom', 'prenom', 'contact', 'adresse', 'email', 'sexe', 'genderPreview', 'femme_type'];
+      clientFields.forEach(key => {
         if (formData[key] !== null && formData[key] !== undefined) {
-           data.append(key, formData[key]);
+          data.append(key, formData[key]);
         }
       });
 
-      data.append('prix', price);
-      // Description (optional) for the pricing note
-      data.append('description', description.trim());
-      
-      if (photoFile) {
-        data.append('photo', photoFile);
-      }
-      if (habitPhotoFile) {
-        data.append('habitPhoto', habitPhotoFile);
-      }
+      const photoFiles = [];
+      const habitFiles = [];
+      const mesurePayload = modelsToAdd.map(item => {
+        const payload = { ...item };
+        if (item.photoFile) {
+          payload.photoIndex = photoFiles.length;
+          photoFiles.push(item.photoFile);
+        } else {
+          payload.photoIndex = -1;
+        }
+        if (item.habitPhotoFile) {
+          payload.habitPhotoIndex = habitFiles.length;
+          habitFiles.push(item.habitPhotoFile);
+        } else {
+          payload.habitPhotoIndex = -1;
+        }
+        delete payload.photoFile;
+        delete payload.habitPhotoFile;
+        return payload;
+      });
+
+      data.append('mesuresJson', JSON.stringify(mesurePayload));
+      photoFiles.forEach(file => data.append('photos', file));
+      habitFiles.forEach(file => data.append('habitPhotos', file));
 
       await api.post('/clients/ajouter', data, {
         headers: {
@@ -595,14 +774,12 @@ const Mesures = () => {
       Swal.fire({
         icon: 'success',
         title: 'Succès',
-        text: 'Client et mesures enregistrés avec succès',
+        text: 'Client et modèles enregistrés avec succès',
         timer: 2500,
         showConfirmButton: false
       });
 
-      // Reset form
       resetFormState();
-
     } catch (error) {
       console.error('Submission error:', error);
       Swal.fire({
@@ -687,7 +864,7 @@ const Mesures = () => {
               </div>
             )}
 
-            <form onSubmit={handlePreSubmit}>
+            <form onSubmit={handleSubmit}>
               <div className="row">
                 {/* Left Column: Photo & Models */}
                 <div className="col-md-4">
@@ -695,7 +872,7 @@ const Mesures = () => {
                     <div className="image-preview-container mb-3 position-relative" style={{ cursor: 'pointer' }}>
                       <img 
                         src={previewImage} 
-                        onClick={() => fileInputRef.current.click()}
+                        onClick={openModelPhotoUpload}
                         className="img-fluid rounded" 
                         alt="Modèle" 
                         style={{ maxHeight: '300px', objectFit: 'cover', width: '100%' }}
@@ -711,6 +888,12 @@ const Mesures = () => {
                         accept="image/*" 
                         style={{ display: 'none' }} 
                       />
+                    </div>
+
+                    <div className="d-flex flex-wrap gap-2 justify-content-center mb-3">
+                      <button type="button" className="btn btn-outline-primary btn-sm" onClick={openModelPhotoCamera}>
+                        <i className="fas fa-camera me-1"></i> Prendre photo du modèle
+                      </button>
                     </div>
 
                     <div className="divider mb-3 w-100 text-center border-bottom">
@@ -830,7 +1013,7 @@ const Mesures = () => {
                     </div>
                     <div className="row">
                       <div className="col-md-6 mb-3">
-                        <label className="form-label">Email <span className="text-danger">*</span></label>
+                        <label className="form-label">Email <small className="text-muted">(optionnel)</small></label>
                         <input type="email" className="form-control" name="email" value={formData.email} onChange={handleInputChange} />
                       </div>
                       <div className="col-md-6 mb-3">
@@ -977,6 +1160,92 @@ const Mesures = () => {
                     </div>
                   )}
 
+                  <div className="form-section mb-4">
+                    <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-tag me-2"></i> Détails du modèle</h5>
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <label className="form-label">Prix du modèle (FCFA) <span className="text-danger">*</span></label>
+                        <input
+                          type="number"
+                          className="form-control"
+                          value={price}
+                          onChange={(e) => setPrice(e.target.value)}
+                          placeholder="Entrez le prix en FCFA"
+                          min="0"
+                        />
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label className="form-label">Photo de l'habit (caméra directe) <span className="text-danger">*</span></label>
+                        <div className="d-flex flex-wrap gap-2">
+                          <button type="button" className="btn btn-outline-primary btn-sm" onClick={openHabitPhotoCamera}>
+                            <i className="fas fa-camera me-1"></i> Prendre photo directe
+                          </button>
+                        </div>
+                        {/* <small className="text-muted d-block mt-2">L'upload manuel est désactivé. Utilisez uniquement la caméra.</small> */}
+                      </div>
+                    </div>
+                    <div className="row">
+                      <div className="col-md-12 mb-3">
+                        <label className="form-label">Description <small className="text-muted">(optionnel)</small></label>
+                        <textarea
+                          className="form-control"
+                          rows={3}
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          placeholder="Ajouter une description ou note pour ce modèle..."
+                        />
+                      </div>
+                    </div>
+                    {habitPreview && (
+                      <div className="row mb-3">
+                        <div className="col-md-12 text-center">
+                          <img
+                            src={habitPreview}
+                            alt="Aperçu de l'habit"
+                            className="img-fluid rounded border"
+                            style={{ maxHeight: '220px', objectFit: 'cover' }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <div className="row mb-3">
+                      <div className="col-md-12 text-end">
+                        <button type="button" className="btn btn-success" onClick={handleAddModelToClient}>
+                          <i className="fas fa-plus me-2"></i> Ajouter ce modèle
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {modelsToAdd.length > 0 && (
+                    <div className="card mb-4">
+                      <div className="card-body">
+                        <h5 className="mb-3">Modèles ajoutés ({modelsToAdd.length})</h5>
+                        <div className="list-group">
+                          {modelsToAdd.map((item, index) => (
+                            <div key={index} className="list-group-item d-flex justify-content-between align-items-start gap-3">
+                              <div>
+                                <div className="fw-semibold">{item.modeleNom || `Modèle ${index + 1}`}</div>
+                                <div className="small text-muted">
+                                  {item.typeVetement ? `${item.typeVetement.toUpperCase()} •` : ''} {item.sexe}
+                                </div>
+                                <div className="small text-success">{item.prix} FCFA</div>
+                              </div>
+                              <div className="d-flex align-items-center gap-2">
+                                <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeModelItem(index)}>
+                                  Supprimer
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 text-end">
+                          <strong>Total:</strong> {modelsToAdd.reduce((sum, item) => sum + Number(item.prix || 0), 0)} FCFA
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="row mt-4">
                     <div className="col-md-12 text-end">
                       <button type="submit" className="btn btn-primary px-4" disabled={loading}>
@@ -1037,6 +1306,7 @@ const Mesures = () => {
                             <div>
                               <div className="fw-semibold">{client.prenom} {client.nom}</div>
                               <div className="text-muted small">{client.contact || '—'} • {client.email || '—'}</div>
+                              <div className="small text-muted">Modèles enregistrés : {Array.isArray(client.mesures) ? client.mesures.length : 0}</div>
                               {lastMesure && (
                                 <div className="small mt-1">
                                   Dernier modèle : <strong>{lastMesure.typeVetement || 'N/A'}</strong>
@@ -1068,102 +1338,6 @@ const Mesures = () => {
         </div>
       )}
 
-      {/* Price Modal */}
-      {showPriceModal && (
-        <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Prix du modèle</h5>
-                <button type="button" className="btn-close" onClick={() => setShowPriceModal(false)}></button>
-              </div>
-              <div className="modal-body">
-                {/* button to open camera */}
-                <div className="mb-3 text-center">
-                  {!isCameraOpen && (
-                    <button type="button" className="btn btn-primary" onClick={openCamera}>
-                      Ouvrir la caméra
-                    </button>
-                  )}
-                  {isCameraOpen && (
-                    <button type="button" className="btn btn-danger" onClick={closeCamera}>
-                      Fermer la caméra
-                    </button>
-                  )}
-                </div>
-                {/* camera preview and capture */}
-                {isCameraOpen && (
-                  <div className="mb-3 text-center">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      style={{ width: '100%', maxHeight: '300px' }}
-                    />
-                    <canvas ref={canvasRef} style={{ display: 'none' }} />
-                    <button type="button" className="btn btn-success mt-2" onClick={capturePhoto}>
-                      Prendre la photo
-                    </button>
-                  </div>
-                )}
-                {!isCameraOpen && !cameraStream && (
-                  <div className="mb-3 text-center text-muted">Caméra non ouverte</div>
-                )}
-
-                {habitPreview ? (
-                  <div className="mb-3 text-center">
-                    <label className="form-label d-block">Aperçu de l'habit à coudre</label>
-                    <img
-                      src={habitPreview}
-                      alt="Aperçu de l'habit"
-                      className="img-fluid rounded border"
-                      style={{ maxHeight: '280px', objectFit: 'cover' }}
-                    />
-                    <div className="d-flex justify-content-center gap-2 mt-2">
-                      <button type="button" className="btn btn-outline-primary" onClick={handleRetakePhoto}>
-                        Reprendre la photo
-                      </button>
-                      <button type="button" className="btn btn-outline-secondary" onClick={clearHabitPhoto}>
-                        Supprimer
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mb-3 text-center text-muted small">
-                    L'aperçu de la photo apparaîtra ici après la capture.
-                  </div>
-                )}
-
-                <div className="mb-3">
-                  <label className="form-label">Prix du modèle (FCFA) <span className="text-danger">*</span></label>
-                  <input 
-                    type="number" 
-                    className="form-control" 
-                    value={price} 
-                    onChange={(e) => setPrice(e.target.value)} 
-                    placeholder="Entrez le prix en FCFA" 
-                    min="0" 
-                  />
-                </div>
-                  <div className="mb-3">
-                    <label className="form-label">Description <small className="text-muted">(optionnel)</small></label>
-                    <textarea
-                      className="form-control"
-                      rows={3}
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Ajouter une description ou note pour ce modèle..."
-                    />
-                  </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowPriceModal(false)}>Annuler</button>
-                <button type="button" className="btn btn-primary" onClick={handleFinalSubmit}>Confirmer l'enregistrement</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Model Preview Modal */}
       {showModelPreviewModal && previewModelData && (

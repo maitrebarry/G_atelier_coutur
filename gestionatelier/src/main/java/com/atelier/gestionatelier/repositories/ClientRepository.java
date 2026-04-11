@@ -25,6 +25,12 @@ public interface ClientRepository extends JpaRepository<Client, UUID> {
     @Query("SELECT c FROM Client c WHERE c.id = :id AND c.atelier.id = :atelierId")
     Optional<Client> findByIdAndAtelier(@Param("id") UUID id, @Param("atelierId") UUID atelierId);
 
+    @Query("SELECT DISTINCT c FROM Client c LEFT JOIN FETCH c.mesures m WHERE c.id = :id AND c.atelier.id = :atelierId")
+    Optional<Client> findByIdAndAtelierIdWithMesures(@Param("id") UUID id, @Param("atelierId") UUID atelierId);
+
+    @Query("SELECT DISTINCT c FROM Client c JOIN FETCH c.mesures m WHERE c.atelier.id = :atelierId")
+    List<Client> findByAtelierIdWithMesures(@Param("atelierId") UUID atelierId);
+
     // ✅ Compter le nombre de clients par atelier (utile pour les statistiques)
     long countByAtelierId(UUID atelierId);
 

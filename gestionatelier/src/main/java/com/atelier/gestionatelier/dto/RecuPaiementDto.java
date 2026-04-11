@@ -31,6 +31,11 @@ public class RecuPaiementDto {
     // Statut
     private String statut;
 
+    // Informations proprietaire / marketing
+    private String proprietaireNom;
+    private String proprietairePrenom;
+    private String messageMarketing;
+
     // QR Code (optionnel)
     private String qrCodeData;
 }

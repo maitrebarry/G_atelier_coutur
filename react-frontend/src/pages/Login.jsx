@@ -24,6 +24,15 @@ const backgroundImages = [
   { url: '/assets/images/model5.jpg', title: 'Nouvelle Collection' }
 ];
 
+const manualPaymentNumbers = {
+  ORANGE_MONEY: '74745669',
+  WAVE: '74745669',
+  MOBICASH: '67205736'
+};
+
+const SUPERADMIN_PENDING_PAYMENTS_MODAL_KEY = '__SUPERADMIN_PENDING_PAYMENTS_MODAL_KEY__';
+const SUPERADMIN_PENDING_PAYMENTS_FORCE_KEY = '__SUPERADMIN_PENDING_PAYMENTS_FORCE_KEY__';
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -74,6 +83,22 @@ const Login = () => {
     if (!photoPath) return '/assets/images/default-user.jpg';
     if (!apiBase) return '/assets/images/default-user.jpg';
     return `${apiBase}/user_photo/${photoPath}`;
+  };
+
+  const hasShownSuperAdminPendingPaymentsModal = () => {
+    try {
+      return sessionStorage.getItem(SUPERADMIN_PENDING_PAYMENTS_MODAL_KEY) === '1';
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const markSuperAdminPendingPaymentsModalShown = () => {
+    try {
+      sessionStorage.setItem(SUPERADMIN_PENDING_PAYMENTS_MODAL_KEY, '1');
+    } catch (e) {
+      /* ignore */
+    }
   };
 
   useEffect(() => {
@@ -167,45 +192,30 @@ const Login = () => {
         confirmButtonText: 'Soumettre',
         cancelButtonText: 'Annuler',
         didOpen: async (popup) => {
-          // load manual payment numbers
-          try {
-            const init = await (await import('../api/subscription')).initiateSubscriptionPayment({ planCode: defaultPlanCode });
-            const nums = init?.manualPaymentNumbers || null;
-            const container = popup.querySelector('#swal-payment-numbers');
-            const loading = popup.querySelector('#swal-pn-loading');
-            if (loading) loading.remove();
-            if (nums && typeof nums === 'object') {
-              Object.keys(nums).forEach((k) => {
-                const v = nums[k];
-                const el = document.createElement('a');
-                el.href = '#';
-                el.dataset.payNumber = v;
-                el.dataset.payProvider = k;
-                el.style.marginRight = '8px';
-                el.style.color = '#0d6efd';
-                el.style.textDecoration = 'underline';
-                el.innerText = `${k.replace('_', ' ')}: ${v}`;
-                el.addEventListener('click', (ev) => {
-                  ev.preventDefault();
-                  try { navigator.clipboard.writeText(v); } catch (e) { /* ignore */ }
-                  const refInput = popup.querySelector('#swal-sub-ref');
-                  if (refInput) refInput.value = v;
-                  el.innerText = `${k.replace('_', ' ')}: ${v} (copié)`;
-                  setTimeout(() => { el.innerText = `${k.replace('_', ' ')}: ${v}`; }, 1200);
-                });
-                container.appendChild(el);
-              });
-            } else {
-              const span = document.createElement('span');
-              span.style.color = '#888';
-              span.innerText = 'numéros indisponibles';
-              container.appendChild(span);
-            }
-          } catch (e) {
-            const popupEl = Swal.getPopup();
-            const container = popupEl && popupEl.querySelector('#swal-payment-numbers');
-            if (container) container.innerHTML = '<span style="color:#888">numéros indisponibles</span>';
-          }
+          const nums = manualPaymentNumbers;
+          const container = popup.querySelector('#swal-payment-numbers');
+          const loading = popup.querySelector('#swal-pn-loading');
+          if (loading) loading.remove();
+          Object.keys(nums).forEach((k) => {
+            const v = nums[k];
+            const el = document.createElement('a');
+            el.href = '#';
+            el.dataset.payNumber = v;
+            el.dataset.payProvider = k;
+            el.style.marginRight = '8px';
+            el.style.color = '#0d6efd';
+            el.style.textDecoration = 'underline';
+            el.innerText = `${k.replace('_', ' ')}: ${v}`;
+            el.addEventListener('click', (ev) => {
+              ev.preventDefault();
+              try { navigator.clipboard.writeText(v); } catch (e) { /* ignore */ }
+              const refInput = popup.querySelector('#swal-sub-ref');
+              if (refInput) refInput.value = v;
+              el.innerText = `${k.replace('_', ' ')}: ${v} (copié)`;
+              setTimeout(() => { el.innerText = `${k.replace('_', ' ')}: ${v}`; }, 1200);
+            });
+            container.appendChild(el);
+          });
 
           // setup camera preview + capture
           try {
@@ -292,7 +302,7 @@ const Login = () => {
       await Swal.fire({ icon: 'success', title: 'Demande envoyée', text: 'Votre preuve a été soumise au SuperAdmin pour validation.' });
     } catch (e) {
       console.error(e);
-      await Swal.fire({ icon: 'error', title: 'Erreur', text: e?.message || 'Impossible de soumettre la preuve.' });
+      await Swal.fire({ icon: 'error', title: 'Erreur', text: e?.response?.data?.message || e?.response?.data || e?.message || 'Impossible de soumettre la preuve.' });
     }
   };
 
@@ -313,8 +323,11 @@ const Login = () => {
   // SuperAdmin: show pending manual subscription payments at login (preview + approve/reject)
   const showSuperAdminPendingPayments = async () => {
     try {
+      if (hasShownSuperAdminPendingPaymentsModal()) return;
+
       const rows = await fetchAdminSubscriptionPayments('PENDING');
       if (!Array.isArray(rows) || rows.length === 0) return;
+      markSuperAdminPendingPaymentsModalShown();
 
       const buildUploadUrl = (p) => {
         if (!p) return '';
@@ -477,6 +490,26 @@ const Login = () => {
         avatar: buildAvatarUrl(photoPath)
       };
 
+      const role = String(userData.role || '').toUpperCase().replace(/^ROLE_/, '');
+      const perms = Array.isArray(userData.permissions) ? userData.permissions : [];
+      const normalizedPerms = perms.map((p) => String(p || '').toUpperCase().replace(/^ROLE_/, ''));
+      const isSuperAdmin = role === 'SUPERADMIN' || normalizedPerms.includes('SUPERADMIN');
+
+      const navigateToHome = async () => {
+        localStorage.removeItem('smb_sub_blocked');
+        let forcePendingModal = false;
+        if (isSuperAdmin) {
+          try {
+            sessionStorage.removeItem(SUPERADMIN_PENDING_PAYMENTS_MODAL_KEY);
+            sessionStorage.setItem(SUPERADMIN_PENDING_PAYMENTS_FORCE_KEY, '1');
+            forcePendingModal = true;
+          } catch (e) {
+            /* ignore */
+          }
+        }
+        navigate('/home', { state: { forceSuperAdminPendingPaymentsModal: forcePendingModal } });
+      };
+
       setAuthData(token, userData, remember);
 
       // Afficher modal bloqué + possibilité de soumettre une preuve (logique JAKO‑DANAYA)
@@ -535,44 +568,30 @@ const Login = () => {
             confirmButtonText: 'Soumettre',
             cancelButtonText: 'Annuler',
             didOpen: async (popup) => {
-              try {
-                const init = await (await import('../api/subscription')).initiateSubscriptionPayment({ planCode: defaultPlanCode });
-                const nums = init?.manualPaymentNumbers || null;
-                const container = popup.querySelector('#swal-payment-numbers');
-                const loading = popup.querySelector('#swal-pn-loading');
-                if (loading) loading.remove();
-                if (nums && typeof nums === 'object') {
-                  Object.keys(nums).forEach((k) => {
-                    const v = nums[k];
-                    const el = document.createElement('a');
-                    el.href = '#';
-                    el.dataset.payNumber = v;
-                    el.dataset.payProvider = k;
-                    el.style.marginRight = '8px';
-                    el.style.color = '#0d6efd';
-                    el.style.textDecoration = 'underline';
-                    el.innerText = `${k.replace('_', ' ')}: ${v}`;
-                    el.addEventListener('click', (ev) => {
-                      ev.preventDefault();
-                      try { navigator.clipboard.writeText(v); } catch (e) { /* ignore */ }
-                      const refInput = popup.querySelector('#swal-sub-ref');
-                      if (refInput) refInput.value = v;
-                      el.innerText = `${k.replace('_', ' ')}: ${v} (copié)`;
-                      setTimeout(() => { el.innerText = `${k.replace('_', ' ')}: ${v}`; }, 1200);
-                    });
-                    container.appendChild(el);
-                  });
-                } else {
-                  const span = document.createElement('span');
-                  span.style.color = '#888';
-                  span.innerText = 'numéros indisponibles';
-                  container.appendChild(span);
-                }
-              } catch (e) {
-                const popupEl = Swal.getPopup();
-                const container = popupEl && popupEl.querySelector('#swal-payment-numbers');
-                if (container) container.innerHTML = '<span style="color:#888">numéros indisponibles</span>';
-              }
+              const nums = manualPaymentNumbers;
+              const container = popup.querySelector('#swal-payment-numbers');
+              const loading = popup.querySelector('#swal-pn-loading');
+              if (loading) loading.remove();
+              Object.keys(nums).forEach((k) => {
+                const v = nums[k];
+                const el = document.createElement('a');
+                el.href = '#';
+                el.dataset.payNumber = v;
+                el.dataset.payProvider = k;
+                el.style.marginRight = '8px';
+                el.style.color = '#0d6efd';
+                el.style.textDecoration = 'underline';
+                el.innerText = `${k.replace('_', ' ')}: ${v}`;
+                el.addEventListener('click', (ev) => {
+                  ev.preventDefault();
+                  try { navigator.clipboard.writeText(v); } catch (e) { /* ignore */ }
+                  const refInput = popup.querySelector('#swal-sub-ref');
+                  if (refInput) refInput.value = v;
+                  el.innerText = `${k.replace('_', ' ')}: ${v} (copié)`;
+                  setTimeout(() => { el.innerText = `${k.replace('_', ' ')}: ${v}`; }, 1200);
+                });
+                container.appendChild(el);
+              });
 
               try {
                 const video = popup.querySelector('#swal-video');
@@ -658,7 +677,7 @@ const Login = () => {
           await Swal.fire({ icon: 'success', title: 'Demande envoyée', text: 'Votre preuve a été soumise au SuperAdmin pour validation.' });
         } catch (e) {
           console.error(e);
-          await Swal.fire({ icon: 'error', title: 'Erreur', text: e?.message || 'Impossible de soumettre la preuve.' });
+          await Swal.fire({ icon: 'error', title: 'Erreur', text: e?.response?.data?.message || e?.response?.data || e?.message || 'Impossible de soumettre la preuve.' });
         }
       };
 
@@ -692,21 +711,10 @@ const Login = () => {
           await showBlockedSubscriptionFlow(subRes?.data?.message);
           return;
         } else {
-          localStorage.removeItem('smb_sub_blocked');
-          // if SuperAdmin, show pending manual payments preview before redirect
-          try {
-            const role = userData.role || '';
-            const perms = Array.isArray(userData.permissions) ? userData.permissions : [];
-            if (String(role).toUpperCase() === 'SUPERADMIN' || perms.includes('SUPERADMIN')) {
-              await showSuperAdminPendingPayments();
-            }
-          } catch (e) {
-            /* ignore */
-          }
-          navigate('/home');
+          await navigateToHome();
         }
       } catch (e) {
-        navigate('/home');
+        await navigateToHome();
       }
     } catch (err) {
       console.error('Login exception:', err);

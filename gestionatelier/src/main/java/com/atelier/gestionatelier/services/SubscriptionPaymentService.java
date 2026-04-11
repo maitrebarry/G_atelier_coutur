@@ -543,9 +543,20 @@ public class SubscriptionPaymentService {
         return out;
     }
 
-    public Utilisateur getCurrentUserOrNull(String email) {
-        if (email == null || email.isBlank()) return null;
-        return utilisateurRepository.findByEmailIgnoreCase(email).orElse(null);
+    public Utilisateur getCurrentUserOrNull(String identifier) {
+        if (identifier == null || identifier.isBlank()) return null;
+
+        String trimmed = identifier.trim();
+        if (trimmed.contains("@")) {
+            return utilisateurRepository.findByEmailIgnoreCase(trimmed).orElse(null);
+        }
+
+        String normalizedTelephone = normalizeTelephone(trimmed);
+        if (normalizedTelephone == null) {
+            return null;
+        }
+
+        return utilisateurRepository.findByTelephone(normalizedTelephone).orElse(null);
     }
 
     public boolean isSuperAdmin(Utilisateur user) {
@@ -556,10 +567,34 @@ public class SubscriptionPaymentService {
         return ex != null;
     }
 
+    private String normalizeTelephone(String telephone) {
+        if (telephone == null) {
+            return null;
+        }
+
+        String value = telephone.trim();
+        if (value.isEmpty()) {
+            return null;
+        }
+
+        value = value.replaceAll("[\\s\\-().]", "");
+        if (value.startsWith("00")) {
+            value = "+" + value.substring(2);
+        }
+
+        if (value.startsWith("+")) {
+            String digits = value.substring(1).replaceAll("\\D", "");
+            return digits.length() < 6 ? null : "+" + digits;
+        }
+
+        String digits = value.replaceAll("\\D", "");
+        return digits.length() < 6 ? null : digits;
+    }
+
     private Number insertPaymentAndReturnId(String sql, Object... params) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
             for (int i = 0; i < params.length; i++) {
                 ps.setObject(i + 1, params[i]);
             }

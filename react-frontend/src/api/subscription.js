@@ -34,10 +34,6 @@ export const submitManualSubscriptionPayment = async ({
   if (ownerNote) formData.append('ownerNote', ownerNote);
   formData.append('receipt', receipt);
 
-  const res = await api.post('/subscription/payments/manual-submit', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  });
+  const res = await api.post('/subscription/payments/manual-submit', formData);
   return res.data;
 };

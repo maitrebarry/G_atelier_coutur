@@ -7,6 +7,8 @@ import com.atelier.gestionatelier.services.PaiementService;
 import com.atelier.gestionatelier.services.UtilisateurService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -211,11 +213,6 @@ public class PaiementController {
                 return ResponseEntity.badRequest().body("Le montant doit être supérieur à 0");
             }
 
-            // Vérifier que le client a des affectations (sinon pas de paiement possible)
-            if (infoClient.getAffectations().isEmpty()) {
-                return ResponseEntity.badRequest().body("Ce client n'a aucune affectation en cours");
-            }
-
             return null;
 
         } catch (Exception e) {
@@ -305,6 +302,54 @@ public class PaiementController {
 
             RecuPaiementDto recu = paiementService.genererRecuPaiementTailleur(paiementId, atelierId);
             return ResponseEntity.ok(recu);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Erreur: " + e.getMessage());
+        }
+    }
+
+    @GetMapping(value = "/recu/client/{paiementId}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<?> downloadRecuPaiementClientPdf(
+            @PathVariable UUID paiementId,
+            @RequestParam UUID atelierId) {
+        try {
+            Utilisateur currentUser = getCurrentUser();
+
+            if (!hasPermissionForPaiement(currentUser, atelierId)) {
+                return ResponseEntity.badRequest().body("Permission refusée pour cet atelier");
+            }
+
+            RecuPaiementDto recu = paiementService.genererRecuPaiementClient(paiementId, atelierId);
+            byte[] pdf = paiementService.genererRecuPaiementClientPdf(paiementId, atelierId);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=recu-client-" + recu.getReference() + ".pdf")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(pdf);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Erreur: " + e.getMessage());
+        }
+    }
+
+    @GetMapping(value = "/recu/tailleur/{paiementId}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<?> downloadRecuPaiementTailleurPdf(
+            @PathVariable UUID paiementId,
+            @RequestParam UUID atelierId) {
+        try {
+            Utilisateur currentUser = getCurrentUser();
+
+            if (!hasPermissionForPaiement(currentUser, atelierId)) {
+                return ResponseEntity.badRequest().body("Permission refusée pour cet atelier");
+            }
+
+            RecuPaiementDto recu = paiementService.genererRecuPaiementTailleur(paiementId, atelierId);
+            byte[] pdf = paiementService.genererRecuPaiementTailleurPdf(paiementId, atelierId);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=recu-tailleur-" + recu.getReference() + ".pdf")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(pdf);
 
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Erreur: " + e.getMessage());

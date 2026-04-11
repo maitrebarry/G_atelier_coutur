@@ -109,7 +109,7 @@ public class AuthService {
         Set<String> permissions = utilisateur.getPermissionCodes();
 
         // Générer le token JWT avec l'atelierId
-        String jwt = jwtUtil.generateToken(authentication.getName(), atelierId);
+        String jwt = jwtUtil.generateToken(utilisateur.getEmail(), atelierId);
 
         // Déterminer l'état d'abonnement (blocked + message) pour inclure dans la réponse de login
         boolean subscriptionBlocked = false;
