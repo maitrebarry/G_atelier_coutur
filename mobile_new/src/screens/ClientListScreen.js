@@ -441,7 +441,7 @@ export default function ClientListScreen({ navigation }) {
                   {renderMeasureLine('Ceinture', selectedMesure?.ceinture)}
                   {renderMeasureLine('Cuisse', selectedMesure?.cuisse)}
                   {renderMeasureLine('Poitrine', selectedMesure?.poitrine)}
-                  {renderMeasureLine('Coude', selectedMesure?.corps)}
+                  {renderMeasureLine('Cou', selectedMesure?.corps)}
                   {renderMeasureLine('Tour de manche', selectedMesure?.tourManche)}
                 </>
               )}
@@ -572,7 +572,7 @@ export default function ClientListScreen({ navigation }) {
                   <TextInput style={styles.input} placeholder="Ceinture" value={String(editFormData?.ceinture || '')} onChangeText={(v) => onEditChange('ceinture', v)} keyboardType="numeric" />
                   <TextInput style={styles.input} placeholder="Cuisse" value={String(editFormData?.cuisse || '')} onChangeText={(v) => onEditChange('cuisse', v)} keyboardType="numeric" />
                   <TextInput style={styles.input} placeholder="Poitrine" value={String(editFormData?.poitrine || '')} onChangeText={(v) => onEditChange('poitrine', v)} keyboardType="numeric" />
-                  <TextInput style={styles.input} placeholder="Coude / Corps" value={String(editFormData?.corps || '')} onChangeText={(v) => onEditChange('corps', v)} keyboardType="numeric" />
+                  <TextInput style={styles.input} placeholder="Cou / Corps" value={String(editFormData?.corps || '')} onChangeText={(v) => onEditChange('corps', v)} keyboardType="numeric" />
                   <TextInput style={styles.input} placeholder="Tour manche" value={String(editFormData?.tourManche || '')} onChangeText={(v) => onEditChange('tourManche', v)} keyboardType="numeric" />
                 </>
               ) : null}

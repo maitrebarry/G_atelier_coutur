@@ -401,7 +401,19 @@ public class ClientService {
         }
 
         // 4. Récupérer ou créer la mesure
-        Mesure mesure = client.getMesures().isEmpty() ? new Mesure() : client.getMesures().get(0);
+        Mesure mesure;
+        if (dto.getSelectedMesureId() != null) {
+            mesure = client.getMesures().stream()
+                    .filter(m -> dto.getSelectedMesureId().equals(m.getId()))
+                    .findFirst()
+                    .orElse(null);
+            if (mesure == null) {
+                mesure = client.getMesures().isEmpty() ? new Mesure() : client.getMesures().get(0);
+                System.out.println("⚠️ Mesure sélectionnée introuvable, utilisation du premier modèle existant");
+            }
+        } else {
+            mesure = client.getMesures().isEmpty() ? new Mesure() : client.getMesures().get(0);
+        }
         mesure.setClient(client);
         mesure.setAtelier(client.getAtelier()); // ✅ Utiliser l'atelier du client
         mesure.setDateMesure(LocalDateTime.now());
@@ -418,10 +430,8 @@ public class ClientService {
             mesure.setModeleNom(modele.getNom());
             System.out.println("✅ Modèle existant sélectionné pour modification: " + modele.getNom() + " (ID: " + modele.getId() + ")");
         } else {
-            // Si aucun modèle n'est sélectionné, effacer les références
-            mesure.setModeleReferenceId(null);
-            mesure.setModeleNom(null);
-            System.out.println("✅ Aucun modèle sélectionné - références effacées");
+            // Conserver les références existantes si aucune nouvelle sélection n'est fournie
+            System.out.println("✅ Aucun nouveau modèle sélectionné - conservation des références existantes");
         }
         // === NOUVEAU : Mettre à jour le prix ===
         Double nouveauPrix = dto.getPrixAsDouble();

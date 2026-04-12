@@ -61,6 +61,8 @@ public class ClientDTO implements Serializable {
     private UUID atelierId;
     // NOUVEAU : Référence au modèle existant
     private UUID selectedModelId;
+    // NOUVEAU : Référence à la mesure existante à modifier
+    private UUID selectedMesureId;
     private String mesuresJson;
     private MultipartFile[] photos;
     private MultipartFile[] habitPhotos;
@@ -399,6 +401,15 @@ public class ClientDTO implements Serializable {
     public void setSelectedModelId(UUID selectedModelId) {
         this.selectedModelId = selectedModelId;
     }
+
+    public UUID getSelectedMesureId() {
+        return selectedMesureId;
+    }
+
+    public void setSelectedMesureId(UUID selectedMesureId) {
+        this.selectedMesureId = selectedMesureId;
+    }
+
     public String getModeleNom() {
         return modeleNom;
     }

@@ -438,7 +438,7 @@ document.addEventListener("DOMContentLoaded", () => {
             { key: "tourManche", label: "Tour de manche" },
             { key: "longueurPantalon", label: "Longueur pantalon" },
             { key: "cuisse", label: "Cuisse" },
-            { key: "corps", label: "Coude" }
+            { key: "corps", label: "Cou" }
           ];
 
           const sectionHomme = document.createElement("li");

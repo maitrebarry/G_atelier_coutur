@@ -354,43 +354,43 @@ export default function MesureAddScreen({ navigation }) {
     
     if (formData.sexe === 'Femme' && formData.femme_type === 'robe') {
       mesures.push(
-        { label: 'Épaule', field: 'robe_epaule' },
-        { label: 'Manche', field: 'robe_manche' },
-        { label: 'Poitrine', field: 'robe_poitrine' },
-        { label: 'Taille', field: 'robe_taille' },
-        { label: 'Longueur', field: 'robe_longueur' },
-        { label: 'Fesse', field: 'robe_fesse' },
-        { label: 'Tour de manche', field: 'robe_tour_manche' },
-        { label: 'Longueur poitrine', field: 'robe_longueur_poitrine' },
-        { label: 'Longueur taille', field: 'robe_longueur_taille' },
-        { label: 'Longueur fesse', field: 'robe_longueur_fesse' }
+        { short: 'E', label: 'Épaule', field: 'robe_epaule' },
+        { short: 'M', label: 'Manche', field: 'robe_manche' },
+        { short: 'P', label: 'Poitrine', field: 'robe_poitrine' },
+        { short: 'T', label: 'Taille', field: 'robe_taille' },
+        { short: 'LR', label: 'Longueur robe', field: 'robe_longueur' },
+        { short: 'F', label: 'Fesse', field: 'robe_fesse' },
+        { short: 'Tm', label: 'Tour de manche', field: 'robe_tour_manche' },
+        { short: 'Lp', label: 'Longueur poitrine', field: 'robe_longueur_poitrine' },
+        { short: 'Lt', label: 'Longueur taille', field: 'robe_longueur_taille' },
+        { short: 'Lf', label: 'Longueur fesse', field: 'robe_longueur_fesse' }
       );
     } else if (formData.sexe === 'Femme' && formData.femme_type === 'jupe') {
       mesures.push(
-        { label: 'Épaule', field: 'jupe_epaule' },
-        { label: 'Manche', field: 'jupe_manche' },
-        { label: 'Poitrine', field: 'jupe_poitrine' },
-        { label: 'Taille', field: 'jupe_taille' },
-        { label: 'Longueur', field: 'jupe_longueur' },
-        { label: 'Longueur jupe', field: 'jupe_longueur_jupe' },
-        { label: 'Ceinture', field: 'jupe_ceinture' },
-        { label: 'Fesse', field: 'jupe_fesse' },
-        { label: 'Tour de manche', field: 'jupe_tour_manche' },
-        { label: 'Longueur poitrine', field: 'jupe_longueur_poitrine' },
-        { label: 'Longueur taille', field: 'jupe_longueur_taille' },
-        { label: 'Longueur fesse', field: 'jupe_longueur_fesse' }
+        { short: 'E', label: 'Épaule', field: 'jupe_epaule' },
+        { short: 'M', label: 'Manche', field: 'jupe_manche' },
+        { short: 'P', label: 'Poitrine', field: 'jupe_poitrine' },
+        { short: 'T', label: 'Taille', field: 'jupe_taille' },
+        { short: 'L', label: 'Longueur', field: 'jupe_longueur' },
+        { short: 'LJ', label: 'Longueur jupe', field: 'jupe_longueur_jupe' },
+        { short: 'C', label: 'Ceinture', field: 'jupe_ceinture' },
+        { short: 'F', label: 'Fesse', field: 'jupe_fesse' },
+        { short: 'TM', label: 'Tour de manche', field: 'jupe_tour_manche' },
+        { short: 'LP', label: 'Longueur poitrine', field: 'jupe_longueur_poitrine' },
+        { short: 'Lt', label: 'Longueur taille', field: 'jupe_longueur_taille' },
+        { short: 'Lf', label: 'Longueur fesse', field: 'jupe_longueur_fesse' }
       );
     } else if (formData.sexe === 'Homme') {
       mesures.push(
-        { label: 'Épaule', field: 'homme_epaule' },
-        { label: 'Manche', field: 'homme_manche' },
-        { label: 'Longueur', field: 'homme_longueur' },
-        { label: 'Poitrine', field: 'homme_poitrine' },
-        { label: 'Pantalon (Long.)', field: 'homme_longueur_pantalon' },
-        { label: 'Ceinture', field: 'homme_ceinture' },
-        { label: 'Cuisse', field: 'homme_cuisse' },
-        { label: 'Coude / Corps', field: 'homme_corps' },
-        { label: 'Tour de manche', field: 'homme_tour_manche' }
+        { short: 'E', label: 'Épaule', field: 'homme_epaule' },
+        { short: 'M', label: 'Manche', field: 'homme_manche' },
+        { short: 'L', label: 'Longueur', field: 'homme_longueur' },
+        { short: 'Lp', label: 'Longueur pantalon', field: 'homme_longueur_pantalon' },
+        { short: 'C', label: 'Ceinture', field: 'homme_ceinture' },
+        { short: 'Q', label: 'Cuisse', field: 'homme_cuisse' },
+        { short: 'P', label: 'Poitrine', field: 'homme_poitrine' },
+        { short: 'Cd', label: 'Cou', field: 'homme_corps' },
+        { short: 'Tm', label: 'Tour de manche', field: 'homme_tour_manche' }
       );
     }
 
@@ -400,6 +400,7 @@ export default function MesureAddScreen({ navigation }) {
         <View style={styles.mesuresGrid}>
           {mesures.map((mesure, index) => (
             <View key={index} style={styles.mesureItem}>
+              <Text style={styles.mesureLabelShort}>{mesure.short}</Text>
               <Text style={styles.mesureLabel}>{mesure.label}</Text>
               <TextInput
                 style={styles.mesureInput}
@@ -732,10 +733,16 @@ const styles = StyleSheet.create({
   mesureItem: {
     width: (width - 56) / 2,
   },
+  mesureLabelShort: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#212529',
+    marginBottom: 2,
+  },
   mesureLabel: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#6c757d',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   mesureInput: {
     borderWidth: 1,

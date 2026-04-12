@@ -15,6 +15,13 @@ const Sidebar = ({ onToggleSidebar }) => {
       alwaysVisible: true
     },
     {
+      id: 'add-client',
+      title: 'Ajouter un client',
+      icon: 'bx bx-user-plus',
+      href: '/mesures',
+      permission: 'CLIENT_VOIR'
+    },
+    {
       id: 'clients',
       title: 'Liste des clients',
       icon: 'bx bx-user',

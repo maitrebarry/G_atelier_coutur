@@ -225,6 +225,7 @@ const Mesures = () => {
       nextData.genderPreview = mesureSexe === 'Homme' ? 'Homme' : 'Femme';
     }
 
+    let matchedModel = null;
     if (latestMesure) {
       const type = (latestMesure.typeVetement || '').toLowerCase();
       if (nextData.sexe === 'Femme') {
@@ -233,8 +234,12 @@ const Mesures = () => {
         nextData.femme_type = type === 'jupe' || type === 'robe' ? type : '';
       }
 
+      matchedModel = models.find(m => String(m.id) === String(latestMesure.modeleReferenceId));
       nextData.selectedModelId = latestMesure.modeleReferenceId || '';
-      nextData.modeleNom = latestMesure.modeleNom || '';
+      nextData.modeleNom = latestMesure.modeleNom || matchedModel?.nom || '';
+      if (matchedModel) {
+        setSelectedModel(matchedModel);
+      }
 
       if (type === 'robe') {
         nextData.robe_epaule = toFieldValue(latestMesure.epaule);
@@ -291,7 +296,9 @@ const Mesures = () => {
     }
 
     setPhotoFile(null);
-    setSelectedModel(null);
+    if (!matchedModel) {
+      setSelectedModel(null);
+    }
 
     setHabitPhotoFile(null);
     setHabitPreview(prev => {
@@ -792,10 +799,14 @@ const Mesures = () => {
     }
   };
 
-  // Helper to render input field
-  const renderInput = (label, name, required = false) => (
+  const renderMeasureInput = (shortLabel, description, name, required = false) => (
     <div className="col-md-6 mb-3">
-      <label className="form-label">{label} {required && <span className="text-danger">*</span>}</label>
+      <label className="form-label">
+        <span className="fw-bold">{shortLabel}</span>
+        <br />
+        <small className="text-muted">{description}</small>
+        {required && <span className="text-danger"> *</span>}
+      </label>
       <input 
         type="text" 
         className="form-control" 
@@ -1081,24 +1092,24 @@ const Mesures = () => {
                     <div className="form-section mb-4">
                       <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-ruler-combined me-2"></i> Mesures pour Robe</h5>
                       <div className="row">
-                        {renderInput('Épaule', 'robe_epaule', true)}
-                        {renderInput('Manche', 'robe_manche', true)}
+                        {renderMeasureInput('E', 'Épaule', 'robe_epaule', true)}
+                        {renderMeasureInput('M', 'Manche', 'robe_manche', true)}
                       </div>
                       <div className="row">
-                        {renderInput('Poitrine', 'robe_poitrine', true)}
-                        {renderInput('Taille', 'robe_taille', true)}
+                        {renderMeasureInput('P', 'Poitrine', 'robe_poitrine', true)}
+                        {renderMeasureInput('T', 'Taille', 'robe_taille', true)}
                       </div>
                       <div className="row">
-                        {renderInput('Longueur de robe', 'robe_longueur', true)}
-                        {renderInput('Fesse', 'robe_fesse', true)}
+                        {renderMeasureInput('LR', 'Longueur robe', 'robe_longueur', true)}
+                        {renderMeasureInput('F', 'Fesse', 'robe_fesse', true)}
                       </div>
                       <div className="row">
-                        {renderInput('Tour de manche', 'robe_tour_manche')}
-                        {renderInput('Longueur de poitrine', 'robe_longueur_poitrine')}
+                        {renderMeasureInput('Tm', 'Tour de manche', 'robe_tour_manche')}
+                        {renderMeasureInput('Lp', 'Longueur de poitrine', 'robe_longueur_poitrine')}
                       </div>
                       <div className="row">
-                        {renderInput('Longueur de taille', 'robe_longueur_taille')}
-                        {renderInput('Longueur de fesse', 'robe_longueur_fesse')}
+                        {renderMeasureInput('Lt', 'Longueur de taille', 'robe_longueur_taille')}
+                        {renderMeasureInput('Lf', 'Longueur de fesse', 'robe_longueur_fesse')}
                       </div>
                     </div>
                   )}
@@ -1108,28 +1119,28 @@ const Mesures = () => {
                     <div className="form-section mb-4">
                       <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-ruler-combined me-2"></i> Mesures pour Jupe</h5>
                       <div className="row">
-                        {renderInput('Épaule', 'jupe_epaule', true)}
-                        {renderInput('Manche', 'jupe_manche', true)}
+                        {renderMeasureInput('E', 'Épaule', 'jupe_epaule', true)}
+                        {renderMeasureInput('M', 'Manche', 'jupe_manche', true)}
                       </div>
                       <div className="row">
-                        {renderInput('Poitrine', 'jupe_poitrine', true)}
-                        {renderInput('Taille', 'jupe_taille', true)}
+                        {renderMeasureInput('P', 'Poitrine', 'jupe_poitrine', true)}
+                        {renderMeasureInput('T', 'Taille', 'jupe_taille', true)}
                       </div>
                       <div className="row">
-                        {renderInput('Longueur', 'jupe_longueur', true)}
-                        {renderInput('Longueur de jupe', 'jupe_longueur_jupe', true)}
+                        {renderMeasureInput('L', 'Longueur', 'jupe_longueur', true)}
+                        {renderMeasureInput('LJ', 'Longueur jupe', 'jupe_longueur_jupe', true)}
                       </div>
                       <div className="row">
-                        {renderInput('Ceinture', 'jupe_ceinture', true)}
-                        {renderInput('Fesse', 'jupe_fesse', true)}
+                        {renderMeasureInput('C', 'Ceinture', 'jupe_ceinture', true)}
+                        {renderMeasureInput('F', 'Fesse', 'jupe_fesse', true)}
                       </div>
                       <div className="row">
-                        {renderInput('Tour de manche', 'jupe_tour_manche')}
-                        {renderInput('Longueur de poitrine', 'jupe_longueur_poitrine')}
+                        {renderMeasureInput('TM', 'Tour de manche', 'jupe_tour_manche')}
+                        {renderMeasureInput('LP', 'Longueur de poitrine', 'jupe_longueur_poitrine')}
                       </div>
                       <div className="row">
-                        {renderInput('Longueur de taille', 'jupe_longueur_taille')}
-                        {renderInput('Longueur de fesse', 'jupe_longueur_fesse')}
+                        {renderMeasureInput('Lt', 'Longueur de taille', 'jupe_longueur_taille')}
+                        {renderMeasureInput('Lf', 'Longueur de fesse', 'jupe_longueur_fesse')}
                       </div>
                     </div>
                   )}
@@ -1139,23 +1150,23 @@ const Mesures = () => {
                     <div className="form-section mb-4">
                       <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-ruler-combined me-2"></i> Mesures pour Homme</h5>
                       <div className="row">
-                        {renderInput('Épaule', 'homme_epaule', true)}
-                        {renderInput('Manche', 'homme_manche', true)}
+                        {renderMeasureInput('E', 'Épaule', 'homme_epaule', true)}
+                        {renderMeasureInput('M', 'Manche', 'homme_manche', true)}
                       </div>
                       <div className="row">
-                        {renderInput('Longueur', 'homme_longueur', true)}
-                        {renderInput('Longueur pantalon', 'homme_longueur_pantalon', true)}
+                        {renderMeasureInput('L', 'Longueur', 'homme_longueur', true)}
+                        {renderMeasureInput('Lp', 'Longueur pantalon', 'homme_longueur_pantalon', true)}
                       </div>
                       <div className="row">
-                        {renderInput('Ceinture', 'homme_ceinture', true)}
-                        {renderInput('Cuisse', 'homme_cuisse', true)}
+                        {renderMeasureInput('C', 'Ceinture', 'homme_ceinture', true)}
+                        {renderMeasureInput('Q', 'Cuisse', 'homme_cuisse', true)}
                       </div>
                       <div className="row">
-                        {renderInput('Poitrine', 'homme_poitrine')}
-                        {renderInput('Coude', 'homme_corps')}
+                        {renderMeasureInput('P', 'Poitrine', 'homme_poitrine')}
+                        {renderMeasureInput('Cd', 'Cou', 'homme_corps')}
                       </div>
                       <div className="row">
-                        {renderInput('Tour de manche', 'homme_tour_manche')}
+                        {renderMeasureInput('Tm', 'Tour de manche', 'homme_tour_manche')}
                       </div>
                     </div>
                   )}

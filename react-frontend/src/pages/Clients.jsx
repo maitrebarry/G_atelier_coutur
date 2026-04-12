@@ -15,13 +15,18 @@ const Clients = () => {
   const [habitPhotoPreview, setHabitPhotoPreview] = useState(null);
   const [habitPhotoFile, setHabitPhotoFile] = useState(null);
   const [habitPhotoCleared, setHabitPhotoCleared] = useState(false);
+  const [editingMesureIndex, setEditingMesureIndex] = useState(0);
   
   const fileInputRef = useRef(null);
   const habitFileInputRef = useRef(null);
   const currentUser = getUserData();
   const isTailleur = currentUser?.role === 'TAILLEUR';
-  const selectedClientMeasures = selectedClient?.mesures || [];
-  const selectedClientMeasure = selectedClientMeasures[0];
+
+  const getDisplayModelName = (m, idx) => {
+    if (m?.modeleNom?.trim()) return m.modeleNom.trim();
+    if (m?.modeleReferenceId) return 'Ancien modèle';
+    return `Modèle #${idx + 1}`;
+  };
 
   const getClientPhotoUrl = (mesure) => {
     if (!mesure) return '/assets/images/default_femme.png';
@@ -30,6 +35,65 @@ const Clients = () => {
       return buildMediaUrl(`model_photo/${cleanPath}`);
     }
     return mesure.sexe === 'Homme' ? '/assets/images/default_homme.png' : '/assets/images/default_femme.png';
+  };
+
+  const getSortedMesures = (client) => {
+    if (!client?.mesures || client.mesures.length === 0) return [];
+    return [...client.mesures].sort((a, b) => {
+      const aTime = a?.dateMesure ? new Date(a.dateMesure).getTime() : 0;
+      const bTime = b?.dateMesure ? new Date(b.dateMesure).getTime() : 0;
+      return bTime - aTime;
+    });
+  };
+
+  const selectedClientMeasures = getSortedMesures(selectedClient);
+  const selectedClientMeasure = selectedClientMeasures[0];
+
+  const getEditingMesure = () => {
+    const mesures = getSortedMesures(editingClient);
+    if (mesures.length === 0) return {};
+    const index = Math.min(Math.max(editingMesureIndex, 0), mesures.length - 1);
+    return mesures[index] || mesures[0];
+  };
+
+  const selectEditingMesure = (index, clientArg) => {
+    const client = clientArg || editingClient;
+    if (!client) return;
+    const mesures = getSortedMesures(client);
+    const mesure = mesures[index] || mesures[0] || {};
+    setEditingMesureIndex(index);
+    setEditFormData(prev => ({
+      ...prev,
+      sexe: mesure.sexe || client.sexe || 'Femme',
+      typeVetement: mesure.typeVetement || '',
+      prix: mesure.prix || 0,
+      description: mesure.description || '',
+      mesureId: mesure.id || null,
+      selectedModelId: mesure.modeleReferenceId || null,
+      photo: null,
+      epaule: mesure.epaule || '',
+      manche: mesure.manche || '',
+      poitrine: mesure.poitrine || '',
+      taille: mesure.taille || '',
+      longueur: mesure.longueur || '',
+      fesse: mesure.fesse || '',
+      tourManche: mesure.tourManche || '',
+      longueurPoitrine: mesure.longueurPoitrine || '',
+      longueurTaille: mesure.longueurTaille || '',
+      longueurFesse: mesure.longueurFesse || '',
+      longueurJupe: mesure.longueurJupe || '',
+      ceinture: mesure.ceinture || '',
+      longueurPantalon: mesure.longueurPantalon || '',
+      cuisse: mesure.cuisse || '',
+      corps: mesure.corps || '',
+      existing_photo: mesure.photoPath ? mesure.photoPath.replace(/^\/+/, '').replace('model_photo/', '') : '',
+      existing_habit_photo: mesure.habitPhotoPath ? mesure.habitPhotoPath.replace(/^\/+/, '').replace('habit_photo/', '') : '',
+    }));
+    setHabitPhotoFile(null);
+    setHabitPhotoCleared(false);
+    setHabitPhotoPreview(getHabitPhotoUrl(mesure));
+    const photoUrl = mesure.photoPath ? getClientPhotoUrl(mesure) : (mesure.sexe === 'Homme' ? '/assets/images/model3.jpg' : '/assets/images/model4.jpg');
+    setPhotoPreview(photoUrl);
   };
 
   // helper to build URL for habit photo stored on server
@@ -48,7 +112,12 @@ const Clients = () => {
     setLoading(true);
     try {
       const res = await api.get('/clients');
-      setClients(res.data);
+      const sortedClients = (res.data || []).slice().sort((a, b) => {
+        const nameA = `${a.nom || ''} ${a.prenom || ''}`.trim().toLowerCase();
+        const nameB = `${b.nom || ''} ${b.prenom || ''}`.trim().toLowerCase();
+        return nameA.localeCompare(nameB, 'fr', { sensitivity: 'base' });
+      });
+      setClients(sortedClients);
     } catch (err) {
       console.error(err);
       Swal.fire('Erreur', 'Impossible de charger les clients', 'error');
@@ -95,38 +164,16 @@ const Clients = () => {
     try {
       const res = await api.get(`/clients/${id}`);
       const client = res.data;
-      const mesure = client.mesures?.[0] || {};
-      
       setEditingClient(client);
-      
-      // Initialize form data
-      const initialData = {
+      setEditingMesureIndex(0);
+      setEditFormData({
         nom: client.nom || '',
         prenom: client.prenom || '',
         contact: client.contact || '',
         adresse: client.adresse || '',
         email: client.email || '',
-        sexe: mesure.sexe || client.sexe || 'Femme',
-        prix: mesure.prix || 0,
-        description: mesure.description || '',
-        typeVetement: mesure.typeVetement || '',
-        // Measurements
-        ...mesure
-      };
-      
-      setEditFormData(initialData);
-      
-      // Handle photo preview
-      let photoUrl = initialData.sexe === 'Homme' ? '/assets/images/model3.jpg' : '/assets/images/model4.jpg';
-      if (mesure.photoPath) {
-        const cleanPath = mesure.photoPath.replace(/^\/+/, '').replace('model_photo/', '');
-        photoUrl = buildMediaUrl(`model_photo/${cleanPath}`);
-      }
-      setPhotoPreview(photoUrl);
-      setHabitPhotoFile(null);
-      setHabitPhotoCleared(false);
-      setHabitPhotoPreview(getHabitPhotoUrl(mesure));
-
+      });
+      selectEditingMesure(0, client);
     } catch (err) {
       console.error(err);
       Swal.fire('Erreur', 'Impossible de charger les données pour modification', 'error');
@@ -135,6 +182,7 @@ const Clients = () => {
 
   const closeEditModal = () => {
     setEditingClient(null);
+    setEditingMesureIndex(0);
     setPhotoPreview(null);
     setHabitPhotoPreview(null);
     setHabitPhotoFile(null);
@@ -190,18 +238,26 @@ const Clients = () => {
         formData.append(key, editFormData[key]);
       });
 
+      const selectedMesure = getEditingMesure();
+      if (editFormData.mesureId) {
+        formData.append('selectedMesureId', editFormData.mesureId);
+      }
+      if (editFormData.selectedModelId) {
+        formData.append('selectedModelId', editFormData.selectedModelId);
+      }
+
       // Append photo if new one selected
       if (editFormData.photo instanceof File) {
         formData.append('photo', editFormData.photo);
-      } else if (editingClient.mesures?.[0]?.photoPath) {
-         const cleanPath = editingClient.mesures[0].photoPath.replace(/^\/+/, "").replace("model_photo/", "");
+      } else if (selectedMesure?.photoPath) {
+         const cleanPath = selectedMesure.photoPath.replace(/^\/+/,'').replace("model_photo/", "");
          formData.append('existing_photo', cleanPath);
       }
 
       if (habitPhotoFile instanceof File) {
         formData.append('habitPhoto', habitPhotoFile);
-      } else if (!habitPhotoCleared && editingClient.mesures?.[0]?.habitPhotoPath) {
-        const cleanHabitPath = editingClient.mesures[0].habitPhotoPath.replace(/^\/+/, "").replace("habit_photo/", "");
+      } else if (!habitPhotoCleared && selectedMesure?.habitPhotoPath) {
+        const cleanHabitPath = selectedMesure.habitPhotoPath.replace(/^\/+/,'').replace("habit_photo/", "");
         formData.append('existing_habit_photo', cleanHabitPath);
       }
 
@@ -302,7 +358,8 @@ const Clients = () => {
                   <tr><td colSpan="7" className="text-center">Aucun client trouvé</td></tr>
                 ) : (
                   clients.map(client => {
-                      const mesure = client.mesures?.[0] || {};
+                                      const sortedMesures = getSortedMesures(client);
+                      const mesure = sortedMesures[0] || {};
                       return (
                           <tr key={client.id}>
                               <td>{client.prenom}</td>
@@ -352,7 +409,7 @@ const Clients = () => {
                       {selectedClientMeasures.map((m, idx) => (
                         <div key={`preview-${m.id || idx}`} className="border rounded p-2">
                           <div className="small fw-bold mb-2 text-truncate">
-                            {m.modeleNom?.trim() || `Modèle #${idx + 1}`}
+                            {getDisplayModelName(m, idx)}
                           </div>
                           <img
                             src={getClientPhotoUrl(m)}
@@ -389,13 +446,13 @@ const Clients = () => {
                         <ul key={m.id || index} className="list-group mb-3">
                           <li className="list-group-item fw-bold bg-light">
                             <div className="d-flex justify-content-between">
-                              <span>{m.modeleNom?.trim() || `Modèle #${index + 1}`}</span>
+                              <span>{getDisplayModelName(m, index)}</span>
                               <span>{m.sexe} {m.typeVetement ? `• ${m.typeVetement}` : ''}</span>
                             </div>
                           </li>
                           <li className="list-group-item d-flex justify-content-between align-items-center">
                             <span>Nom du modèle</span>
-                            <span className="fw-bold">{m.modeleNom?.trim() || `Modèle #${index + 1}`}</span>
+                            <span className="fw-bold">{getDisplayModelName(m, index)}</span>
                           </li>
                           {m.prix && (
                             <li className="list-group-item fw-bold bg-success text-white">
@@ -578,6 +635,30 @@ const Clients = () => {
                                         </div>
                                   </div>
 
+                                  {editingClient && getSortedMesures(editingClient).length > 1 && (
+                                    <div className="mb-4">
+                                      <h5 className="mb-3"><i className="bx bx-list-ul"></i> Modèle à modifier</h5>
+                                      <div className="list-group">
+                                        {getSortedMesures(editingClient).map((m, index) => (
+                                          <button
+                                            key={m.id || index}
+                                            type="button"
+                                            className={`list-group-item list-group-item-action ${editingMesureIndex === index ? 'active' : ''}`}
+                                            onClick={() => selectEditingMesure(index)}
+                                          >
+                                            <div className="d-flex justify-content-between align-items-center">
+                                              <div>
+                                                <strong>{getDisplayModelName(m, index)}</strong>
+                                                <div className="small text-muted">{m.sexe} {m.typeVetement ? `• ${m.typeVetement}` : ''}</div>
+                                              </div>
+                                              <span className="badge bg-secondary rounded-pill">{m.prix || '0'} FCFA</span>
+                                            </div>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
                                   {/* Type Selection for Femme */}
                                   {editFormData.sexe === 'Femme' && (
                                       <div className="mb-4">
@@ -639,7 +720,7 @@ const Clients = () => {
                                               {renderMeasurementInput('Ceinture', 'ceinture', true)}
                                               {renderMeasurementInput('Cuisse', 'cuisse', true)}
                                               {renderMeasurementInput('Poitrine', 'poitrine')}
-                                              {renderMeasurementInput('Coude', 'corps')}
+                                              {renderMeasurementInput('Cou', 'corps')}
                                               {renderMeasurementInput('Tour de manche', 'tourManche')}
                                           </>
                                       )}

@@ -230,30 +230,36 @@ const Paiements = () => {
         }
     };
 
+    const fetchReceiptPdfBlob = async (recu) => {
+        if (!recu) {
+            throw new Error('Reçu introuvable');
+        }
+
+        const atelierId = getCurrentAtelierId();
+        if (!atelierId) {
+            throw new Error('Atelier introuvable pour générer le PDF.');
+        }
+
+        const receiptType = recu.typePaiement === 'TAILLEUR' ? 'tailleur' : 'client';
+        const response = await api.get(`/paiements/recu/${receiptType}/${recu.id}/pdf?atelierId=${atelierId}`, {
+            responseType: 'blob'
+        });
+
+        return response.data instanceof Blob
+            ? response.data
+            : new Blob([response.data], { type: 'application/pdf' });
+    };
+
     const handleSendReceiptWhatsApp = async () => {
         if (!recuData) {
             return;
         }
 
-        const atelierId = getCurrentAtelierId();
-        if (!atelierId) {
-            Swal.fire('Erreur', 'Atelier introuvable pour générer le reçu PDF.', 'error');
-            return;
-        }
-
-        const receiptType = recuData.typePaiement === 'TAILLEUR' ? 'tailleur' : 'client';
         const fileName = buildReceiptFileName(recuData);
 
         try {
             setSharingReceipt(true);
-            const response = await api.get(`/paiements/recu/${receiptType}/${recuData.id}/pdf?atelierId=${atelierId}`, {
-                responseType: 'blob'
-            });
-
-            const blob = response.data instanceof Blob
-                ? response.data
-                : new Blob([response.data], { type: 'application/pdf' });
-
+            const blob = await fetchReceiptPdfBlob(recuData);
             const file = new File([blob], fileName, { type: 'application/pdf' });
             const canShareFile = typeof navigator !== 'undefined'
                 && typeof navigator.share === 'function'
@@ -285,6 +291,31 @@ const Paiements = () => {
         }
     };
 
+    const handlePrint = async () => {
+        if (!recuData) {
+            Swal.fire('Erreur', 'Aucun reçu sélectionné pour impression.', 'error');
+            return;
+        }
+
+        try {
+            const blob = await fetchReceiptPdfBlob(recuData);
+            const fileUrl = window.URL.createObjectURL(blob);
+            const printWindow = window.open(fileUrl, '_blank');
+            if (printWindow) {
+                printWindow.focus();
+                printWindow.onload = () => {
+                    printWindow.print();
+                };
+            } else {
+                downloadBlob(blob, buildReceiptFileName(recuData));
+                Swal.fire('PDF prêt', 'Le reçu PDF a été téléchargé. Vous pouvez l’imprimer depuis votre PDF viewer.', 'info');
+            }
+        } catch (error) {
+            console.error('Erreur impression reçu PDF:', error);
+            Swal.fire('Erreur', 'Impossible de générer le reçu PDF pour impression.', 'error');
+        }
+    };
+
     const getStatusBadge = (status) => {
         switch (status) {
             case 'PAYE': return <span className="badge bg-success">Payé</span>;
@@ -296,39 +327,6 @@ const Paiements = () => {
 
     const getInitials = (nom, prenom) => {
         return `${(prenom || '').charAt(0)}${(nom || '').charAt(0)}`.toUpperCase();
-    };
-
-    const handlePrint = () => {
-        const printContent = document.getElementById('printable-receipt').innerHTML;
-        const win = window.open('', '', 'height=700,width=500');
-        win.document.write('<html><head><title>Reçu de Paiement</title>');
-        win.document.write(`
-            <style>
-                /* thermal ticket style */
-                @page { size: 80mm auto; margin: 0; }
-                body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 5px; margin: 0; font-size: 11px; color: #333; }
-                .receipt-container { border: none; padding: 0; width: 80mm; margin: 0 auto; }
-                .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-                .header h2 { margin: 0; color: #2c3e50; font-size: 18px; text-transform: uppercase; }
-                .header p { margin: 2px 0; color: #7f8c8d; font-size: 10px; }
-                .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dashed #eee; padding-bottom: 4px; }
-                .info-label { font-weight: bold; color: #7f8c8d; }
-                .info-value { font-weight: 600; color: #2c3e50; }
-                .amount-box { background-color: #f8f9fa; border: 2px dashed #2c3e50; padding: 15px; text-align: center; margin: 20px 0; border-radius: 8px; }
-                .amount-value { font-size: 24px; font-weight: bold; color: #2c3e50; margin: 0; }
-                .amount-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #7f8c8d; }
-                .footer { text-align: center; margin-top: 30px; font-size: 9px; color: #95a5a6; font-style: italic; }
-                .signature { margin-top: 30px; text-align: right; font-style: italic; font-size: 10px; }
-            </style>
-        `);
-        win.document.write('</head><body>');
-        win.document.write('<div class="receipt-container">');
-        win.document.write(printContent);
-        win.document.write('<div class="footer">Merci de votre confiance !<br/>Ce reçu est généré électroniquement.</div>');
-        win.document.write('</div>');
-        win.document.write('</body></html>');
-        win.document.close();
-        win.print();
     };
 
     return (

@@ -7,6 +7,7 @@ import com.atelier.gestionatelier.dto.ModeleListDTO;
 import com.atelier.gestionatelier.entities.Client;
 import com.atelier.gestionatelier.entities.Modele;
 import com.atelier.gestionatelier.entities.Utilisateur;
+import com.atelier.gestionatelier.repositories.ModeleRepository;
 import com.atelier.gestionatelier.security.Role;
 import com.atelier.gestionatelier.services.ClientService;
 import com.atelier.gestionatelier.services.FileStorageService;
@@ -31,6 +32,7 @@ public class ClientController {
     private final ClientService clientService;
     private final UtilisateurService utilisateurService;
     private final ModeleService modeleService;
+    private final ModeleRepository modeleRepository;
 
 
     @PostMapping("/ajouter")
@@ -194,6 +196,8 @@ public class ClientController {
             System.out.println("Recherche client " + id + " (SUPERADMIN)");
         }
 
+        clientOpt.ifPresent(this::populateMissingModeleInfo);
+
         return clientOpt
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> {
@@ -202,6 +206,24 @@ public class ClientController {
                 });
     }
 
+    private void populateMissingModeleInfo(Client client) {
+        if (client.getMesures() == null) {
+            return;
+        }
+
+        client.getMesures().forEach(mesure -> {
+            if ((mesure.getModeleNom() == null || mesure.getModeleNom().trim().isEmpty())
+                    && mesure.getModeleReferenceId() != null) {
+                modeleRepository.findById(mesure.getModeleReferenceId()).ifPresent(modele -> {
+                    mesure.setModeleNom(modele.getNom());
+                    if ((mesure.getPhotoPath() == null || mesure.getPhotoPath().trim().isEmpty())
+                            && modele.getPhotoPath() != null && !modele.getPhotoPath().trim().isEmpty()) {
+                        mesure.setPhotoPath(modele.getPhotoPath());
+                    }
+                });
+            }
+        });
+    }
 
 
     @PutMapping("/{id}")
