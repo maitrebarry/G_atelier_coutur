@@ -512,6 +512,14 @@ const Login = () => {
 
       setAuthData(token, userData, remember);
 
+      if (isSuperAdmin) {
+        try {
+          await showSuperAdminPendingPayments();
+        } catch (e) {
+          console.warn('Erreur lors de l\'affichage des paiements en attente SuperAdmin à la connexion :', e);
+        }
+      }
+
       // Afficher modal bloqué + possibilité de soumettre une preuve (logique JAKO‑DANAYA)
       const openRenewSubscriptionModal = async () => {
         try {

@@ -10,6 +10,10 @@ const Paiements = () => {
     const [selectedClient, setSelectedClient] = useState(null);
     const [selectedTailleur, setSelectedTailleur] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [loadingRecouvrement, setLoadingRecouvrement] = useState(false);
+    const [recouvrementMensuel, setRecouvrementMensuel] = useState(0);
+    const [recouvrementMonth, setRecouvrementMonth] = useState(new Date().getMonth() + 1);
+    const [recouvrementYear, setRecouvrementYear] = useState(new Date().getFullYear());
     
     const [filters, setFilters] = useState({
         statut: '',
@@ -31,6 +35,11 @@ const Paiements = () => {
     useEffect(() => {
         loadData();
     }, [activeTab, filters]); // Reload when tab or filters change
+
+    useEffect(() => {
+        loadRecouvrementMensuel();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [recouvrementMonth, recouvrementYear]);
 
     // Reset selection when tab changes
     useEffect(() => {
@@ -165,6 +174,25 @@ const Paiements = () => {
     const getCurrentAtelierId = () => {
         const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
         return userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
+    };
+
+    const loadRecouvrementMensuel = async () => {
+        const atelierId = getCurrentAtelierId();
+        if (!atelierId) {
+            setRecouvrementMensuel(0);
+            return;
+        }
+
+        setLoadingRecouvrement(true);
+        try {
+            const response = await api.get(`/paiements/recouvrement-mensuel?atelierId=${atelierId}&month=${recouvrementMonth}&year=${recouvrementYear}`);
+            setRecouvrementMensuel(response.data?.totalRecouvrement || 0);
+        } catch (error) {
+            console.error('Erreur chargement recouvrement mensuel:', error);
+            setRecouvrementMensuel(0);
+        } finally {
+            setLoadingRecouvrement(false);
+        }
     };
 
     const buildReceiptFileName = (recu) => {
@@ -344,7 +372,7 @@ const Paiements = () => {
                     <div className="card mb-4">
                         <div className="card-body">
                             <div className="row g-3">
-                                <div className="col-md-4">
+                                <div className="col-md-3">
                                     <select 
                                         className="form-select"
                                         value={filters.statut}
@@ -356,7 +384,31 @@ const Paiements = () => {
                                         <option value="PAYE">Payé</option>
                                     </select>
                                 </div>
-                                <div className="col-md-8">
+                                <div className="col-md-3">
+                                    <select
+                                        className="form-select"
+                                        value={recouvrementMonth}
+                                        onChange={(e) => setRecouvrementMonth(Number(e.target.value))}
+                                    >
+                                        {Array.from({ length: 12 }, (_, idx) => idx + 1).map((month) => (
+                                            <option key={month} value={month}>
+                                                {new Date(0, month - 1).toLocaleString('fr-FR', { month: 'long' })}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="col-md-2">
+                                    <select
+                                        className="form-select"
+                                        value={recouvrementYear}
+                                        onChange={(e) => setRecouvrementYear(Number(e.target.value))}
+                                    >
+                                        {Array.from({ length: 2 }, (_, idx) => new Date().getFullYear() - 1 + idx).map((year) => (
+                                            <option key={year} value={year}>{year}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="col-md-4">
                                     <input 
                                         type="text" 
                                         className="form-control" 
@@ -364,6 +416,21 @@ const Paiements = () => {
                                         value={filters.search}
                                         onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                                     />
+                                </div>
+                            </div>
+                            <div className="row mt-3">
+                                <div className="col-12">
+                                    <div className="alert alert-info d-flex align-items-center justify-content-between mb-0">
+                                        <div>
+                                            <div className="small text-uppercase text-muted">Recouvrement mensuel</div>
+                                            <div className="h5 mb-0">
+                                                {loadingRecouvrement ? 'Chargement...' : `${recouvrementMensuel?.toLocaleString('fr-FR')} FCFA`}
+                                            </div>
+                                        </div>
+                                        <div className="small text-muted">
+                                            {`${new Date(recouvrementYear, recouvrementMonth - 1).toLocaleString('fr-FR', { month: 'long' })} ${recouvrementYear}`}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

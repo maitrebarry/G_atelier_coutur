@@ -4,6 +4,8 @@ import com.atelier.gestionatelier.entities.Atelier;
 import com.atelier.gestionatelier.entities.Utilisateur;
 import com.atelier.gestionatelier.repositories.AtelierRepository;
 import com.atelier.gestionatelier.services.SubscriptionPaymentService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -18,6 +20,8 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/admin/subscriptions")
 public class AdminSubscriptionController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AdminSubscriptionController.class);
 
     private final SubscriptionPaymentService subscriptionPaymentService;
     private final AtelierRepository atelierRepository;
@@ -275,7 +279,12 @@ public class AdminSubscriptionController {
         try {
             return ResponseEntity.ok(subscriptionPaymentService.listPaymentsForAdmin(status));
         } catch (DataAccessException ex) {
-            return ResponseEntity.status(503).body("Module abonnement non initialisé");
+            logger.error("Erreur lors de la récupération des paiements d'abonnement", ex);
+            String message = "Erreur de lecture des paiements d'abonnement";
+            if (ex.getMostSpecificCause() != null && ex.getMostSpecificCause().getMessage() != null) {
+                message += ": " + ex.getMostSpecificCause().getMessage();
+            }
+            return ResponseEntity.status(503).body(Map.of("message", message));
         }
     }
 

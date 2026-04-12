@@ -23,6 +23,8 @@ const Signup = ({ embedded = false }) => {
   const [ateliers, setAteliers] = useState([]);
   const [formData, setFormData] = useState(emptyForm);
   const [editFormData, setEditFormData] = useState({ ...emptyForm, id: null });
+  const [addingUser, setAddingUser] = useState(false);
+  const [editingUser, setEditingUser] = useState(false);
 
   const addModalRef = useRef(null);
   const editModalRef = useRef(null);
@@ -218,6 +220,8 @@ const Signup = ({ embedded = false }) => {
       delete payload.atelierId;
     }
 
+    if (addingUser) return;
+    setAddingUser(true);
     try {
       await api.post('/utilisateurs', payload);
       Swal.fire('Succès', 'Utilisateur ajouté avec succès', 'success');
@@ -227,6 +231,8 @@ const Signup = ({ embedded = false }) => {
     } catch (error) {
       console.error('Erreur création utilisateur:', error);
       Swal.fire('Erreur', error.response?.data?.error || error.response?.data?.message || "Impossible d'ajouter l'utilisateur", 'error');
+    } finally {
+      setAddingUser(false);
     }
   };
 
@@ -278,6 +284,8 @@ const Signup = ({ embedded = false }) => {
       delete payload.atelierId;
     }
 
+    if (editingUser) return;
+    setEditingUser(true);
     try {
       await api.put(`/utilisateurs/${editFormData.id}`, payload);
       Swal.fire('Succès', 'Utilisateur mis à jour avec succès', 'success');
@@ -286,6 +294,8 @@ const Signup = ({ embedded = false }) => {
     } catch (error) {
       console.error('Erreur modification utilisateur:', error);
       Swal.fire('Erreur', error.response?.data?.error || error.response?.data?.message || 'Impossible de modifier utilisateur', 'error');
+    } finally {
+      setEditingUser(false);
     }
   };
 
@@ -550,8 +560,14 @@ const Signup = ({ embedded = false }) => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="submit" className="btn btn-primary">Enregistrer</button>
+                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal" disabled={addingUser}>Annuler</button>
+                <button type="submit" className="btn btn-primary" disabled={addingUser}>
+                  {addingUser ? (
+                    <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Enregistrement...</>
+                  ) : (
+                    'Enregistrer'
+                  )}
+                </button>
               </div>
             </form>
           </div>
@@ -640,8 +656,14 @@ const Signup = ({ embedded = false }) => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="submit" className="btn btn-primary">Enregistrer</button>
+                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal" disabled={editingUser}>Annuler</button>
+                <button type="submit" className="btn btn-primary" disabled={editingUser}>
+                  {editingUser ? (
+                    <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Enregistrement...</>
+                  ) : (
+                    'Enregistrer'
+                  )}
+                </button>
               </div>
             </form>
           </div>

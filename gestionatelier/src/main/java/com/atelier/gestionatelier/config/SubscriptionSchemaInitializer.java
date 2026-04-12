@@ -78,11 +78,15 @@ public class SubscriptionSchemaInitializer implements CommandLineRunner {
             ensureDefaultPlan("SEMESTRIEL", "Semestriel", 6);
             ensureDefaultPlan("ANNUEL", "Annuel", 12);
 
-            migrateFromOldTableIfPresent();
+            try {
+                migrateFromOldTableIfPresent();
+            } catch (Exception ex) {
+                logger.warn("Migration legacy abonnement échouée, mais module initialisé : {}", ex.getMessage());
+            }
 
             logger.info("Module abonnement initialisé");
         } catch (Exception ex) {
-            logger.warn("Initialisation module abonnement ignorée: {}", ex.getMessage());
+            logger.error("Erreur d'initialisation du module abonnement : {}", ex.getMessage(), ex);
         }
     }
 

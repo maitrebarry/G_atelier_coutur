@@ -5,6 +5,8 @@ import com.atelier.gestionatelier.entities.Utilisateur;
 import com.atelier.gestionatelier.repositories.NotificationRepository;
 import com.atelier.gestionatelier.repositories.UtilisateurRepository;
 import com.atelier.gestionatelier.security.Role;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -25,6 +27,8 @@ import java.util.UUID;
 
 @Service
 public class SubscriptionPaymentService {
+
+    private static final Logger log = LoggerFactory.getLogger(SubscriptionPaymentService.class);
 
     private final JdbcTemplate jdbcTemplate;
     private final UtilisateurRepository utilisateurRepository;
@@ -51,24 +55,44 @@ public class SubscriptionPaymentService {
 
     public List<Map<String, Object>> listPaymentsForAdmin(String status) {
         String normalizedStatus = status == null ? null : status.trim().toUpperCase();
-        if (normalizedStatus == null || normalizedStatus.isBlank()) {
+        try {
+            if (normalizedStatus == null || normalizedStatus.isBlank()) {
+                return jdbcTemplate.queryForList(
+                    "SELECT ap.id, ap.reference, ap.provider, ap.mode_paiement, ap.plan_code, ap.transaction_ref, ap.owner_note, ap.preuve_url, ap.review_note, ap.montant, ap.devise, ap.statut, ap.paid_at, ap.created_at, ap.reviewed_at, ab.atelier_id, at.nom AS atelier_nom " +
+                        "FROM abonnement_paiement ap " +
+                        "JOIN abonnement_atelier ab ON ab.id = ap.abonnement_id " +
+                        "LEFT JOIN ateliers at ON at.id = ab.atelier_id " +
+                        "ORDER BY ap.id DESC"
+                );
+            }
             return jdbcTemplate.queryForList(
                 "SELECT ap.id, ap.reference, ap.provider, ap.mode_paiement, ap.plan_code, ap.transaction_ref, ap.owner_note, ap.preuve_url, ap.review_note, ap.montant, ap.devise, ap.statut, ap.paid_at, ap.created_at, ap.reviewed_at, ab.atelier_id, at.nom AS atelier_nom " +
                     "FROM abonnement_paiement ap " +
                     "JOIN abonnement_atelier ab ON ab.id = ap.abonnement_id " +
                     "LEFT JOIN ateliers at ON at.id = ab.atelier_id " +
-                    "ORDER BY ap.id DESC"
+                    "WHERE UPPER(ap.statut) = ? " +
+                    "ORDER BY ap.id DESC",
+                    normalizedStatus
+            );
+        } catch (DataAccessException ex) {
+            log.warn("Liste des paiements admin échouée avec jointure ateliers, application d'un fallback sans jointure", ex);
+            if (normalizedStatus == null || normalizedStatus.isBlank()) {
+                return jdbcTemplate.queryForList(
+                    "SELECT ap.id, ap.reference, ap.provider, ap.mode_paiement, ap.plan_code, ap.transaction_ref, ap.owner_note, ap.preuve_url, ap.review_note, ap.montant, ap.devise, ap.statut, ap.paid_at, ap.created_at, ap.reviewed_at, ab.atelier_id " +
+                        "FROM abonnement_paiement ap " +
+                        "JOIN abonnement_atelier ab ON ab.id = ap.abonnement_id " +
+                        "ORDER BY ap.id DESC"
+                );
+            }
+            return jdbcTemplate.queryForList(
+                "SELECT ap.id, ap.reference, ap.provider, ap.mode_paiement, ap.plan_code, ap.transaction_ref, ap.owner_note, ap.preuve_url, ap.review_note, ap.montant, ap.devise, ap.statut, ap.paid_at, ap.created_at, ap.reviewed_at, ab.atelier_id " +
+                    "FROM abonnement_paiement ap " +
+                    "JOIN abonnement_atelier ab ON ab.id = ap.abonnement_id " +
+                    "WHERE UPPER(ap.statut) = ? " +
+                    "ORDER BY ap.id DESC",
+                    normalizedStatus
             );
         }
-        return jdbcTemplate.queryForList(
-            "SELECT ap.id, ap.reference, ap.provider, ap.mode_paiement, ap.plan_code, ap.transaction_ref, ap.owner_note, ap.preuve_url, ap.review_note, ap.montant, ap.devise, ap.statut, ap.paid_at, ap.created_at, ap.reviewed_at, ab.atelier_id, at.nom AS atelier_nom " +
-                "FROM abonnement_paiement ap " +
-                "JOIN abonnement_atelier ab ON ab.id = ap.abonnement_id " +
-                "LEFT JOIN ateliers at ON at.id = ab.atelier_id " +
-                "WHERE UPPER(ap.statut) = ? " +
-                "ORDER BY ap.id DESC",
-                normalizedStatus
-        );
     }
 
     public Map<String, String> manualPaymentNumbers() {
@@ -195,24 +219,30 @@ public class SubscriptionPaymentService {
             Map<String, Object> row = existingPending.get(0);
             Long existingId = ((Number) row.get("id")).longValue();
             try {
-            jdbcTemplate.update(
-                "UPDATE abonnement_paiement SET transaction_ref = ?, owner_note = ?, preuve_url = ?, mode_paiement = ?, provider = ? WHERE id = ?",
-                (transactionRef == null || transactionRef.isBlank()) ? null : transactionRef.trim(),
-                (ownerNote == null || ownerNote.isBlank()) ? null : ownerNote.trim(),
-                preuveUrl,
-                normalizedMode,
-                normalizedMode,
-                existingId
-            );
+                jdbcTemplate.update(
+                    "UPDATE abonnement_paiement SET transaction_ref = ?, owner_note = ?, preuve_url = ?, mode_paiement = ?, provider = ? WHERE id = ?",
+                    (transactionRef == null || transactionRef.isBlank()) ? null : transactionRef.trim(),
+                    (ownerNote == null || ownerNote.isBlank()) ? null : ownerNote.trim(),
+                    preuveUrl,
+                    normalizedMode,
+                    normalizedMode,
+                    existingId
+                );
             } catch (Exception ex) {
-            // If optional columns don't exist in a legacy schema, keep the existing row as-is.
+                // If optional columns don't exist in a legacy schema, keep the existing row as-is.
             }
+
+            notifySuperAdmins(
+                "ABONNEMENT",
+                "Nouvelle preuve de paiement reçue pour l'atelier '" + user.getAtelier().getNom() + "'. Validation en attente."
+            );
+
             return Map.of(
                 "paymentId", existingId,
-                    "reference", row.get("reference"),
-                    "status", row.get("statut"),
+                "reference", row.get("reference"),
+                "status", row.get("statut"),
                 "message", "Demande déjà en attente, preuve mise à jour.",
-                    "manualPaymentNumbers", manualPaymentNumbers()
+                "manualPaymentNumbers", manualPaymentNumbers()
             );
         }
 
@@ -235,13 +265,44 @@ public class SubscriptionPaymentService {
             devise
         );
 
-        return Map.of(
+        Map<String, Object> result = Map.of(
                 "paymentId", paymentIdN.longValue(),
                 "reference", reference,
                 "status", "PENDING",
                 "manualPaymentNumbers", manualPaymentNumbers(),
                 "message", "Demande envoyée au SuperAdmin pour validation."
         );
+
+        notifySuperAdmins(
+            "ABONNEMENT",
+            "Nouvelle demande de validation de paiement d'abonnement pour l'atelier '" + user.getAtelier().getNom() + "'."
+        );
+
+        return result;
+    }
+
+    private void notifySuperAdmins(String type, String message) {
+        List<Utilisateur> superadmins = utilisateurRepository.findByRole(Role.SUPERADMIN);
+        if (superadmins == null || superadmins.isEmpty()) {
+            return;
+        }
+
+        for (Utilisateur superadmin : superadmins) {
+            if (superadmin == null) continue;
+            boolean exists = notificationRepository
+                    .findByRecipientIdAndIsReadFalseOrderByDateCreationDesc(superadmin.getId())
+                    .stream()
+                    .anyMatch(n -> type.equalsIgnoreCase(n.getType()) && message.equals(n.getMessage()));
+            if (exists) continue;
+
+            Notification notification = Notification.builder()
+                    .recipient(superadmin)
+                    .type(type)
+                    .message(message)
+                    .isRead(false)
+                    .build();
+            notificationRepository.save(notification);
+        }
     }
 
     @Transactional

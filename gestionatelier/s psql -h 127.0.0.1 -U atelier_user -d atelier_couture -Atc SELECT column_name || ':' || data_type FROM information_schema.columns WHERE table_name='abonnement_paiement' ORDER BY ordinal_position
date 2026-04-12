@@ -1,0 +1,26 @@
+                                           Table "public.abonnement_paiement"
+     Column      |            Type             | Collation | Nullable |                     Default                     
+-----------------+-----------------------------+-----------+----------+-------------------------------------------------
+ id              | bigint                      |           | not null | nextval('abonnement_paiement_id_seq'::regclass)
+ abonnement_id   | bigint                      |           | not null | 
+ reference       | character varying(100)      |           | not null | 
+ provider        | character varying(40)       |           |          | 
+ mode_paiement   | character varying(40)       |           |          | 
+ plan_code       | character varying(50)       |           |          | 
+ transaction_ref | character varying(120)      |           |          | 
+ owner_note      | text                        |           |          | 
+ preuve_url      | character varying(255)      |           |          | 
+ review_note     | text                        |           |          | 
+ montant         | numeric(12,2)               |           | not null | 0
+ devise          | character varying(10)       |           | not null | 'XOF'::character varying
+ statut          | character varying(30)       |           | not null | 'PENDING'::character varying
+ paid_at         | timestamp without time zone |           |          | 
+ created_at      | timestamp without time zone |           |          | 
+ reviewed_by     | character varying(36)       |           |          | 
+ reviewed_at     | timestamp without time zone |           |          | 
+Indexes:
+    "abonnement_paiement_pkey" PRIMARY KEY, btree (id)
+    "abonnement_paiement_reference_key" UNIQUE CONSTRAINT, btree (reference)
+    "idx_abonnement_paiement_abonnement" btree (abonnement_id)
+    "idx_abonnement_paiement_statut" btree (statut)
+

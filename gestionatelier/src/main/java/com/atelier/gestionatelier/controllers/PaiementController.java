@@ -141,6 +141,34 @@ public class PaiementController {
         }
     }
 
+    @GetMapping("/recouvrement-mensuel")
+    public ResponseEntity<?> getRecouvrementMensuel(
+            @RequestParam UUID atelierId,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year) {
+        try {
+            Utilisateur currentUser = getCurrentUser();
+
+            if (!hasPermissionForPaiement(currentUser, atelierId)) {
+                return ResponseEntity.badRequest().body("Permission refusée pour cet atelier");
+            }
+
+            java.time.LocalDate today = java.time.LocalDate.now();
+            int selectedMonth = month != null ? month : today.getMonthValue();
+            int selectedYear = year != null ? year : today.getYear();
+
+            com.atelier.gestionatelier.dto.RecouvrementMensuelDto response = new com.atelier.gestionatelier.dto.RecouvrementMensuelDto();
+            response.setMois(selectedMonth);
+            response.setAnnee(selectedYear);
+            response.setTotalRecouvrement(paiementService.getRecouvrementMensuel(atelierId, selectedYear, selectedMonth));
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Erreur: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/clients/recherche")
     public ResponseEntity<?> rechercherPaiementsClients(
             @RequestParam UUID atelierId,

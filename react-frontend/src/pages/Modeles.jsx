@@ -25,6 +25,7 @@ const Modeles = () => {
     });
     const [photoPreview, setPhotoPreview] = useState(null);
     const [videoPreview, setVideoPreview] = useState(null);
+    const [savingModele, setSavingModele] = useState(false);
     const fileInputRef = useRef(null);
     const videoInputRef = useRef(null);
     const uploadRectangleRef = useRef(null);
@@ -272,6 +273,7 @@ const Modeles = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (savingModele) return;
 
         const { nom, categorie, prix, description } = formData;
 
@@ -290,6 +292,7 @@ const Modeles = () => {
         }
 
         try {
+            setSavingModele(true);
             const formDataToSend = new FormData();
             const modeleData = {
                 nom: nom.trim(),
@@ -340,6 +343,8 @@ const Modeles = () => {
         } catch (error) {
             console.error('Erreur sauvegarde:', error);
             Swal.fire('Erreur', error.response?.data?.message || 'Erreur lors de la sauvegarde', 'error');
+        } finally {
+            setSavingModele(false);
         }
     };
 
@@ -798,11 +803,18 @@ const Modeles = () => {
                                 </div>
 
                                 <div className="modal-footer">
-                                    <button type="button" className="btn btn-secondary" onClick={closeModal}>
+                                    <button type="button" className="btn btn-secondary" onClick={closeModal} disabled={savingModele}>
                                         Annuler
                                     </button>
-                                    <button type="submit" className="btn btn-primary">
-                                        <i className="bx bx-save me-1"></i>Enregistrer
+                                    <button type="submit" className="btn btn-primary" disabled={savingModele}>
+                                        {savingModele ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                Enregistrement...
+                                            </>
+                                        ) : (
+                                            <><i className="bx bx-save me-1"></i>Enregistrer</>
+                                        )}
                                     </button>
                                 </div>
                             </form>

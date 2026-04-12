@@ -25,6 +25,7 @@ const Parametres = () => {
     const [selectedPlanCode, setSelectedPlanCode] = useState('MENSUEL');
     const [initialPlanCodeForEdit, setInitialPlanCodeForEdit] = useState(null);
     const [initialSubscriptionIdForEdit, setInitialSubscriptionIdForEdit] = useState(null);
+    const [atelierSaving, setAtelierSaving] = useState(false);
     const [planCrudLoading, setPlanCrudLoading] = useState(false);
     const [planSavingCode, setPlanSavingCode] = useState(null);
     const [planMessage, setPlanMessage] = useState('');
@@ -264,6 +265,8 @@ const Parametres = () => {
         e.preventDefault();
         if (!currentUser) return;
 
+        if (atelierSaving) return;
+        setAtelierSaving(true);
         try {
             if (isEditing) {
                 if (currentUser.role === 'PROPRIETAIRE' && currentUser.atelierId !== formData.id) {
@@ -314,6 +317,8 @@ const Parametres = () => {
         } catch (error) {
             console.error('Erreur sauvegarde atelier:', error);
             Swal.fire('Erreur', "Impossible de sauvegarder l'atelier", 'error');
+        } finally {
+            setAtelierSaving(false);
         }
     };
 
@@ -744,8 +749,14 @@ const Parametres = () => {
                                     )}
                                 </div>
                                 <div className="modal-footer">
-                                    <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
-                                    <button type="submit" className="btn btn-primary">{isEditing ? 'Enregistrer' : 'Ajouter'}</button>
+                                    <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)} disabled={atelierSaving}>Annuler</button>
+                                    <button type="submit" className="btn btn-primary" disabled={atelierSaving}>
+                                        {atelierSaving ? (
+                                            <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Enregistrement...</>
+                                        ) : (
+                                            isEditing ? 'Enregistrer' : 'Ajouter'
+                                        )}
+                                    </button>
                                 </div>
                             </form>
                         </div>

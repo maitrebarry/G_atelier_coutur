@@ -9,6 +9,7 @@ const ListePermissions = ({ embedded = false }) => {
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [savingPermission, setSavingPermission] = useState(false);
   const [formData, setFormData] = useState({
     id: '',
     code: '',
@@ -67,6 +68,8 @@ const ListePermissions = ({ embedded = false }) => {
         return;
     }
 
+    if (savingPermission) return;
+    setSavingPermission(true);
     try {
       if (isEditing) {
         await api.put(`/admin/permissions/${formData.id}`, {
@@ -86,6 +89,8 @@ const ListePermissions = ({ embedded = false }) => {
     } catch (error) {
       console.error("Erreur sauvegarde permission:", error);
       Swal.fire('Erreur', error.response?.data?.message || 'Impossible de sauvegarder la permission', 'error');
+    } finally {
+      setSavingPermission(false);
     }
   };
 
@@ -239,8 +244,14 @@ const ListePermissions = ({ embedded = false }) => {
                             </div>
                         </div>
                         <div className="modal-footer">
-                            <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Annuler</button>
-                            <button type="submit" className="btn btn-primary">{isEditing ? 'Enregistrer' : 'Ajouter'}</button>
+                            <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)} disabled={savingPermission}>Annuler</button>
+                            <button type="submit" className="btn btn-primary" disabled={savingPermission}>
+                                {savingPermission ? (
+                                    <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Enregistrement...</>
+                                ) : (
+                                    isEditing ? 'Enregistrer' : 'Ajouter'
+                                )}
+                            </button>
                         </div>
                     </form>
                 </div>

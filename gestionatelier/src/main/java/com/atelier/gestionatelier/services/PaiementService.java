@@ -475,6 +475,17 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
         return statistiques;
     }
 
+    public Double getRecouvrementMensuel(UUID atelierId, int year, int month) {
+        List<Paiement> paiements = paiementRepository.findByAtelierId(atelierId);
+        return paiements.stream()
+                .filter(p -> p.getTypePaiement() == Paiement.TypePaiement.CLIENT)
+                .filter(p -> p.getDatePaiement() != null)
+                .filter(p -> p.getDatePaiement().getYear() == year)
+                .filter(p -> p.getDatePaiement().getMonthValue() == month)
+                .mapToDouble(Paiement::getMontant)
+                .sum();
+    }
+
     private String getStatutPaiementClient(UUID clientId, UUID atelierId) {
         try {
             PaiementClientResponseDto dto = getPaiementsClient(clientId, atelierId);
