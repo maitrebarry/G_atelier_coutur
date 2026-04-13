@@ -5,6 +5,7 @@ package com.atelier.gestionatelier.services;
 import com.atelier.gestionatelier.dto.ClientDTO;
 import com.atelier.gestionatelier.dto.ClientAvecMesuresDTO;
 import com.atelier.gestionatelier.dto.ClientRechercheRendezVousDTO;
+import com.atelier.gestionatelier.dto.CreateRendezVousDTO;
 import com.atelier.gestionatelier.dto.MesureItemDTO;
 import com.atelier.gestionatelier.entities.Atelier;
 import com.atelier.gestionatelier.entities.Client;
@@ -43,6 +44,7 @@ public class ClientService {
     private final AtelierRepository atelierRepository;
     private final FileStorageService fileStorageService;
     private final ModeleRepository modeleRepository; // NOUVEAU
+    private final RendezVousService rendezVousService;
 
     public Client enregistrerClientAvecMesures(ClientDTO dto) {
         System.out.println("=== ENREGISTREMENT CLIENT AVEC MESURES ===");
@@ -92,6 +94,21 @@ public class ClientService {
         }
 
         Client clientFinal = clientRepository.save(clientSauvegarde);
+
+        if (clientFinal.getAtelier() != null && clientFinal.getMesures() != null && !clientFinal.getMesures().isEmpty()) {
+            try {
+                CreateRendezVousDTO rdvDTO = new CreateRendezVousDTO();
+                rdvDTO.setDateRDV(LocalDateTime.now().plusWeeks(1).withHour(10).withMinute(0).withSecond(0).withNano(0));
+                rdvDTO.setTypeRendezVous("LIVRAISON DE L'HABIT");
+                rdvDTO.setNotes("Rendez-vous automatique pour la récupération de l'habit déjà cousu.");
+                rdvDTO.setClientId(clientFinal.getId());
+                rdvDTO.setAtelierId(clientFinal.getAtelier().getId());
+                rendezVousService.creerRendezVousAuto(rdvDTO);
+            } catch (Exception e) {
+                System.err.println("⚠️ Impossible de créer le rendez-vous automatique : " + e.getMessage());
+            }
+        }
+
         System.out.println("=== FIN ENREGISTREMENT ===");
         return clientFinal;
     }

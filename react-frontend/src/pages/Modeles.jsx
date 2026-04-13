@@ -47,7 +47,8 @@ const Modeles = () => {
     const loadModeles = useCallback(async (atelierId) => {
         try {
             const response = await api.get(`/modeles/atelier/${atelierId}`);
-            setModeles(response.data);
+            const data = response.data || [];
+            setModeles(data);
         } catch (error) {
             console.error('Erreur chargement modèles:', error);
             Swal.fire('Erreur', 'Erreur lors du chargement des modèles', 'error');
@@ -122,7 +123,8 @@ const Modeles = () => {
             const response = await api.get(`/modeles/atelier/${currentAtelierId}/search`, {
                 params: { q: term }
             });
-            setModeles(response.data);
+            const data = response.data || [];
+            setModeles(data);
         } catch (error) {
             console.error('Erreur recherche:', error);
             Swal.fire('Erreur', 'Erreur lors de la recherche', 'error');
@@ -137,7 +139,8 @@ const Modeles = () => {
 
         try {
             const response = await api.get(`/modeles/atelier/${currentAtelierId}/categorie/${category}`);
-            setModeles(response.data);
+            const data = response.data || [];
+            setModeles(data);
         } catch (error) {
             console.error('Erreur filtrage:', error);
             Swal.fire('Erreur', 'Erreur lors du filtrage', 'error');

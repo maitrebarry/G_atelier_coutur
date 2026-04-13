@@ -12,6 +12,7 @@ public class PaiementClientResponseDto {
     private String clientTelephone;
     private String modeleNom;
     private Double prixTotal;
+    private Integer nombreModeles;
     private Double montantPaye;
     private Double resteAPayer;
     private String statutPaiement; // EN_ATTENTE, PARTIEL, PAYE

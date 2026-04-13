@@ -7,6 +7,8 @@ const Header = ({ onToggleSidebar }) => {
   const [userData, setUserData] = useState({ name: 'Chargement...', role: 'Connecté', avatar: '/assets/images/default-user.jpg' });
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [notifications, setNotifications] = useState([]);
+  const [selectedRdv, setSelectedRdv] = useState(null);
+  const [showReminderModal, setShowReminderModal] = useState(false);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -208,6 +210,16 @@ const Header = ({ onToggleSidebar }) => {
     const type = String(notif?.type || '').toUpperCase();
     if (type === 'ABONNEMENT') {
       navigate('/abonnement');
+      return;
+    }
+    if (type === 'RENDEZ_VOUS' && notif.relatedEntityId) {
+      try {
+        const response = await api.get(`/rendezvous/${notif.relatedEntityId}`);
+        setSelectedRdv(response.data);
+        setShowReminderModal(true);
+      } catch (error) {
+        console.error('Erreur chargement du rappel de rendez-vous', error);
+      }
     }
   };
 
@@ -216,6 +228,36 @@ const Header = ({ onToggleSidebar }) => {
     if (type === 'RENDEZ_VOUS') return 'Rappel Rendez-vous';
     if (type === 'ABONNEMENT') return 'Alerte abonnement';
     return 'Notification';
+  };
+
+  const formatRdvType = (type) => {
+    if (!type) return 'Rendez-vous';
+    const normalized = String(type).trim().toUpperCase();
+    if (normalized === 'PRISE DE MESURES') return "LIVRAISON DE L'HABIT";
+    return type;
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) return '';
+    try {
+      const date = new Date(value);
+      return date.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }) + ' à ' + date.toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return value;
+    }
+  };
+
+  const closeReminderModal = () => {
+    setShowReminderModal(false);
+    setSelectedRdv(null);
   };
 
   const handleLogout = (e) => {
@@ -414,6 +456,74 @@ const Header = ({ onToggleSidebar }) => {
           </div>
         </div>
       </div>
+
+      {/* Reminder Modal */}
+      <div className={`modal fade${showReminderModal ? ' show' : ''}`} tabIndex="-1" aria-labelledby="reminderModalLabel" aria-hidden={!showReminderModal} style={{ display: showReminderModal ? 'block' : 'none' }}>
+        <div className="modal-dialog modal-dialog-centered modal-lg">
+          <div className="modal-content">
+            <div className="modal-header bg-warning text-dark">
+              <h5 className="modal-title" id="reminderModalLabel">
+                <i className="bx bx-bell me-2"></i>Rappel de rendez-vous
+              </h5>
+              <button type="button" className="btn-close" aria-label="Fermer" onClick={closeReminderModal}></button>
+            </div>
+            <div className="modal-body">
+              {selectedRdv ? (
+                <>
+                  <div className="mb-3">
+                    <strong>Client :</strong> {selectedRdv.client?.prenom} {selectedRdv.client?.nom}
+                  </div>
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <div className="border rounded p-3">
+                        <h6 className="mb-2">Coordonnées</h6>
+                        <p className="mb-1"><strong>Téléphone :</strong> {selectedRdv.client?.contact || 'N/A'}</p>
+                        <p className="mb-1"><strong>Email :</strong> {selectedRdv.client?.email || 'N/A'}</p>
+                        <p className="mb-0"><strong>Adresse :</strong> {selectedRdv.client?.adresse || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <div className="border rounded p-3">
+                        <h6 className="mb-2">Détails du rendez-vous</h6>
+                        <p className="mb-1"><strong>Date :</strong> {formatDateTime(selectedRdv.dateRDV)}</p>
+                        <p className="mb-1"><strong>Type :</strong> {formatRdvType(selectedRdv.typeRendezVous)}</p>
+                        <p className="mb-1"><strong>Statut :</strong> {selectedRdv.statut || 'N/A'}</p>
+                        <p className="mb-0"><strong>Atelier :</strong> {selectedRdv.atelier?.nom || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  {selectedRdv.notes && (
+                    <div className="mt-3 border rounded p-3 bg-light">
+                      <h6>Notes</h6>
+                      <p className="mb-0">{selectedRdv.notes}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div>Chargement des détails du rendez-vous...</div>
+              )}
+            </div>
+            <div className="modal-footer">
+              {selectedRdv?.client?.id && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setShowReminderModal(false);
+                    navigate(`/clients?clientId=${selectedRdv.client.id}`);
+                  }}
+                >
+                  Voir les mesures du client
+                </button>
+              )}
+              <button type="button" className="btn btn-secondary" onClick={closeReminderModal}>
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {showReminderModal && <div className="modal-backdrop fade show"></div>}
     </>
   );
 };

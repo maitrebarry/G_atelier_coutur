@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface RendezVousRepository extends JpaRepository<RendezVous, UUID> {
@@ -20,6 +21,8 @@ public interface RendezVousRepository extends JpaRepository<RendezVous, UUID> {
 
     // Rendez-vous d'un client spécifique
     List<RendezVous> findByClientIdOrderByDateRDVDesc(UUID clientId);
+
+    Optional<RendezVous> findTopByClientIdOrderByCreatedAtDesc(UUID clientId);
 
     // Rendez-vous par statut
     List<RendezVous> findByAtelierIdAndStatutOrderByDateRDVAsc(UUID atelierId, String statut);
@@ -35,6 +38,10 @@ public interface RendezVousRepository extends JpaRepository<RendezVous, UUID> {
 
     // Rendez-vous dans une période
     List<RendezVous> findByAtelierIdAndDateRDVBetween(UUID atelierId, LocalDateTime start, LocalDateTime end);
+
+    // Pour les notifications : rendez-vous confirmés ou planifiés dans une fenêtre donnée
+    @Query("SELECT r FROM RendezVous r WHERE r.statut IN ('PLANIFIE', 'CONFIRME') AND r.dateRDV BETWEEN :start AND :end")
+    List<RendezVous> findRendezVousDansFenetre(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     // Pour les notifications : rendez-vous confirmés dans les 24h
     @Query("SELECT r FROM RendezVous r WHERE r.statut = 'CONFIRME' AND r.dateRDV BETWEEN :start AND :end")

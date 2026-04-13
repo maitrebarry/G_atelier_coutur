@@ -692,10 +692,6 @@ document.addEventListener("DOMContentLoaded", async function () {
       }
     }
 
-    if (!habitPhotoInput || !habitPhotoInput.files || habitPhotoInput.files.length === 0) {
-      errors.push("Veuillez ajouter la photo de l'habit à coudre.");
-    }
-
     return errors;
   }
 
@@ -803,16 +799,8 @@ document.addEventListener("DOMContentLoaded", async function () {
       formData.append("photo", photoInput.files[0]);
     }
 
-    // Ajouter la photo de l'habit (obligatoire)
     if (habitPhotoInput?.files?.length > 0) {
       formData.append("habitPhoto", habitPhotoInput.files[0]);
-    } else {
-      Swal.fire({
-        icon: "error",
-        title: "Photo habit obligatoire",
-        text: "Veuillez ajouter la photo de l'habit à coudre.",
-      });
-      return;
     }
 
     // Log des données envoyées

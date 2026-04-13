@@ -8,5 +8,7 @@ public class RecherchePaiementDto {
     private String searchTerm;
     private String statutPaiement; // EN_ATTENTE, PARTIEL, PAYE
     private String type; // CLIENT, TAILLEUR
+    private Integer month;
+    private Integer year;
     private UUID atelierId;
 }

@@ -643,6 +643,15 @@ const Home = () => {
 
   // --- Specific Dashboard Content ---
 
+  const getRdvTypeLabel = (type) => {
+    if (!type) return 'Rendez-vous';
+    const normalized = String(type).trim().toUpperCase();
+    if (normalized === 'PRISE DE MESURES') {
+      return "LIVRAISON DE L'HABIT";
+    }
+    return type;
+  };
+
   const renderProprietaireContent = () => {
     const data = dashboardData;
     
@@ -688,7 +697,7 @@ const Home = () => {
                     <div>
                       <h6 className="mb-1">{rdv.clientNom || 'Client'}</h6>
                       <small className="text-muted">
-                        {new Date(rdv.date).toLocaleDateString('fr-FR')} - {rdv.type || 'Rendez-vous'}
+                        {new Date(rdv.date).toLocaleDateString('fr-FR')} - {getRdvTypeLabel(rdv.type)}
                       </small>
                     </div>
                     <span className={`badge bg-${getRdvStatusColor(rdv.statut)}`}>{rdv.statut || 'PLANIFIE'}</span>

@@ -95,6 +95,63 @@ public class RendezVousService {
 
         return toRendezVousDTO(savedRendezVous);
     }
+
+    @Transactional
+    public RendezVousDTO creerRendezVousAuto(CreateRendezVousDTO dto) {
+        Client client = clientRepository.findById(dto.getClientId())
+                .orElseThrow(() -> new EntityNotFoundException("Client non trouvé avec ID: " + dto.getClientId()));
+
+        Atelier atelier = atelierRepository.findById(dto.getAtelierId())
+                .orElseThrow(() -> new EntityNotFoundException("Atelier non trouvé avec ID: " + dto.getAtelierId()));
+
+        LocalDateTime dateRendezVous = trouverProchainCreneauDisponible(dto.getDateRDV(), atelier.getId());
+
+        RendezVous rendezVous = new RendezVous();
+        rendezVous.setDateRDV(dateRendezVous);
+        rendezVous.setTypeRendezVous(dto.getTypeRendezVous());
+        rendezVous.setNotes(dto.getNotes());
+        rendezVous.setStatut("PLANIFIE");
+        rendezVous.setClient(client);
+        rendezVous.setAtelier(atelier);
+
+        RendezVous savedRendezVous = rendezVousRepository.save(rendezVous);
+
+        try {
+            notificationService.envoyerNotificationCreationRendezVous(savedRendezVous);
+        } catch (Exception e) {
+            System.err.println("Erreur notification email création RDV automatique: " + e.getMessage());
+        }
+
+        try {
+            notificationService.notifyEquipeRendezVousCreated(savedRendezVous);
+        } catch (Exception e) {
+            System.err.println("Erreur notification interne création RDV automatique: " + e.getMessage());
+        }
+
+        return toRendezVousDTO(savedRendezVous);
+    }
+
+    private LocalDateTime trouverProchainCreneauDisponible(LocalDateTime dateSouhaitee, UUID atelierId) {
+        LocalDateTime creneau = dateSouhaitee;
+        if (creneau == null) {
+            throw new IllegalArgumentException("La date du rendez-vous est obligatoire");
+        }
+
+        if (creneau.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("La date du rendez-vous doit être dans le futur");
+        }
+
+        for (int tentative = 0; tentative < 24; tentative++) {
+            long conflits = rendezVousRepository.countConflitsRendezVous(atelierId, creneau);
+            if (conflits == 0) {
+                return creneau;
+            }
+            creneau = creneau.plusMinutes(30);
+        }
+
+        throw new IllegalStateException("Aucun créneau disponible n'a été trouvé pour ce jour");
+    }
+
     private void validerDateRendezVous(LocalDateTime dateRDV, UUID atelierId) {
         if (dateRDV.isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("La date du rendez-vous doit être dans le futur");

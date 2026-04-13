@@ -20,6 +20,7 @@ public class ModeleListDTO {
     private String videoPath;
     private CategorieModele categorie;
     private Boolean estActif;
+    private java.time.LocalDateTime dateCreation;
 
     // Getter pour l'URL de la photo
     public String getPhotoUrl() {

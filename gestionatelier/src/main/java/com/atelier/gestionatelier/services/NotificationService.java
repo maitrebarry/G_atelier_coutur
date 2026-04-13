@@ -26,12 +26,36 @@ public class NotificationService {
      * Créer une notification interne
      */
     public Notification createNotification(String message, Utilisateur recipient, String type, UUID relatedEntityId) {
+        return createNotification(message, recipient, type, relatedEntityId, null);
+    }
+
+    public Notification createNotification(String message, Utilisateur recipient, String type, UUID relatedEntityId, String relatedEntityType) {
         Notification notification = new Notification();
         notification.setMessage(message);
         notification.setRecipient(recipient);
         notification.setType(type);
         notification.setRelatedEntityId(relatedEntityId);
+        notification.setRelatedEntityType(relatedEntityType);
         return notificationRepository.save(notification);
+    }
+
+    public void notifyEquipeRendezVousCreated(RendezVous rendezVous) {
+        Client client = rendezVous.getClient();
+        Atelier atelier = rendezVous.getAtelier();
+
+        String message = "Nouveau rendez-vous automatique pour " + client.getPrenom() + " " + client.getNom() +
+                " le " + rendezVous.getDateRDV().toLocalDate() + " à " + rendezVous.getDateRDV().toLocalTime() +
+                " (" + rendezVous.getTypeRendezVous() + ")";
+
+        List<Utilisateur> proprietaires = utilisateurRepository.findByAtelierIdAndRole(atelier.getId(), Role.PROPRIETAIRE);
+        for (Utilisateur proprietaire : proprietaires) {
+            createNotification(message, proprietaire, "RENDEZ_VOUS", rendezVous.getId(), "RENDEZVOUS");
+        }
+
+        List<Utilisateur> secretaires = utilisateurRepository.findByAtelierIdAndRole(atelier.getId(), Role.SECRETAIRE);
+        for (Utilisateur secretaire : secretaires) {
+            createNotification(message, secretaire, "RENDEZ_VOUS", rendezVous.getId(), "RENDEZVOUS");
+        }
     }
 
     /**
@@ -59,41 +83,23 @@ public class NotificationService {
     @Transactional
     public void checkUpcomingAppointments() {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startWindow = now.plusHours(47);
-        LocalDateTime endWindow = now.plusHours(49); // Fenêtre de 2h pour attraper les RDV proches de 48h
+        LocalDateTime startWindow = now.plusHours(71);
+        LocalDateTime endWindow = now.plusHours(73); // Fenêtre de 2h pour attraper les RDV proches de 72h
 
-        // On cherche les RDV confirmés qui sont dans environ 48h
-        List<RendezVous> upcomingRendezVous = rendezVousRepository.findRendezVousConfirmesDans24h(startWindow, endWindow);
+        // On cherche les RDV confirmés ou planifiés qui sont dans environ 72h
+        List<RendezVous> upcomingRendezVous = rendezVousRepository.findRendezVousDansFenetre(startWindow, endWindow);
 
         for (RendezVous rdv : upcomingRendezVous) {
-            // 1. Identifier le client
             Client client = rdv.getClient();
             Atelier atelier = rdv.getAtelier();
 
-            // 2. Trouver les affectations actives pour ce client
-            List<Affectation> activeAffectations = affectationRepository.findByClientIdAndStatutIn(
-                    client.getId(),
-                    Arrays.asList(Affectation.StatutAffectation.EN_ATTENTE, Affectation.StatutAffectation.EN_COURS)
-            );
+            String message = "Rappel : Rendez-vous avec " + client.getPrenom() + " " + client.getNom() +
+                    " prévu le " + rdv.getDateRDV().toLocalDate() + " à " + rdv.getDateRDV().toLocalTime();
 
-            String message = "Rappel : Rendez-vous avec " + client.getNom() + " " + client.getPrenom() + 
-                             " prévu le " + rdv.getDateRDV().toLocalDate() + " à " + rdv.getDateRDV().toLocalTime();
+            // Notifier le propriétaire et la secrétaire via notifications internes
+            notifierEquipeRendezVousProcheParNotification(rdv, message);
 
-            // 3. Notifier les tailleurs concernés
-            for (Affectation affectation : activeAffectations) {
-                Utilisateur tailleur = affectation.getTailleur();
-                if (tailleur != null) {
-                    createNotification(message, tailleur, "RENDEZ_VOUS", rdv.getId());
-                }
-            }
-
-            // 4. Notifier le propriétaire de l'atelier
-            List<Utilisateur> proprietaires = utilisateurRepository.findByAtelierIdAndRole(atelier.getId(), Role.PROPRIETAIRE);
-            for (Utilisateur proprietaire : proprietaires) {
-                createNotification(message, proprietaire, "RENDEZ_VOUS", rdv.getId());
-            }
-            
-            // 5. Envoyer aussi un email au propriétaire (fonctionnalité existante)
+            // Envoyer aussi un email au propriétaire (fonctionnalité existante)
             notifierProprietaireRendezVousProche(rdv);
         }
     }
@@ -162,6 +168,20 @@ public class NotificationService {
             } catch (Exception e) {
                 System.err.println("❌ Erreur envoi email annulation RDV: " + e.getMessage());
             }
+        }
+    }
+
+    public void notifierEquipeRendezVousProcheParNotification(RendezVous rendezVous, String message) {
+        Atelier atelier = rendezVous.getAtelier();
+
+        List<Utilisateur> proprietaires = utilisateurRepository.findByAtelierIdAndRole(atelier.getId(), Role.PROPRIETAIRE);
+        for (Utilisateur proprietaire : proprietaires) {
+            createNotification(message, proprietaire, "RENDEZ_VOUS", rendezVous.getId(), "RENDEZVOUS");
+        }
+
+        List<Utilisateur> secretaires = utilisateurRepository.findByAtelierIdAndRole(atelier.getId(), Role.SECRETAIRE);
+        for (Utilisateur secretaire : secretaires) {
+            createNotification(message, secretaire, "RENDEZ_VOUS", rendezVous.getId(), "RENDEZVOUS");
         }
     }
 

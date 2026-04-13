@@ -7,4 +7,6 @@ public class RecouvrementMensuelDto {
     private Integer mois;
     private Integer annee;
     private Double totalRecouvrement;
+    private Double totalModeles;
+    private Integer nombreModeles;
 }

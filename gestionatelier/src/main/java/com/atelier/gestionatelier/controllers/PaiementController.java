@@ -61,7 +61,9 @@ public class PaiementController {
     @GetMapping("/clients/{clientId}")
     public ResponseEntity<?> getPaiementsClient(
             @PathVariable UUID clientId,
-            @RequestParam UUID atelierId) {
+            @RequestParam UUID atelierId,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year) {
         try {
             Utilisateur currentUser = getCurrentUser();
 
@@ -69,7 +71,7 @@ public class PaiementController {
                 return ResponseEntity.badRequest().body("Permission refusée pour cet atelier");
             }
 
-            PaiementClientResponseDto response = paiementService.getPaiementsClient(clientId, atelierId);
+            PaiementClientResponseDto response = paiementService.getPaiementsClient(clientId, atelierId, month, year);
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
@@ -106,7 +108,9 @@ public class PaiementController {
     @GetMapping("/tailleurs/{tailleurId}")
     public ResponseEntity<?> getPaiementsTailleur(
             @PathVariable UUID tailleurId,
-            @RequestParam UUID atelierId) {
+            @RequestParam UUID atelierId,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year) {
         try {
             Utilisateur currentUser = getCurrentUser();
 
@@ -114,7 +118,7 @@ public class PaiementController {
                 return ResponseEntity.badRequest().body("Permission refusée pour cet atelier");
             }
 
-            PaiementTailleurResponseDto response = paiementService.getPaiementsTailleur(tailleurId, atelierId);
+            PaiementTailleurResponseDto response = paiementService.getPaiementsTailleur(tailleurId, atelierId, month, year);
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
@@ -145,7 +149,8 @@ public class PaiementController {
     public ResponseEntity<?> getRecouvrementMensuel(
             @RequestParam UUID atelierId,
             @RequestParam(required = false) Integer month,
-            @RequestParam(required = false) Integer year) {
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String statutPaiement) {
         try {
             Utilisateur currentUser = getCurrentUser();
 
@@ -160,7 +165,9 @@ public class PaiementController {
             com.atelier.gestionatelier.dto.RecouvrementMensuelDto response = new com.atelier.gestionatelier.dto.RecouvrementMensuelDto();
             response.setMois(selectedMonth);
             response.setAnnee(selectedYear);
-            response.setTotalRecouvrement(paiementService.getRecouvrementMensuel(atelierId, selectedYear, selectedMonth));
+            response.setTotalRecouvrement(paiementService.getRecouvrementMensuel(atelierId, selectedYear, selectedMonth, statutPaiement));
+            response.setTotalModeles(paiementService.getTotalModelesMensuel(atelierId, selectedYear, selectedMonth, statutPaiement));
+            response.setNombreModeles(paiementService.getNombreModelesMensuel(atelierId, selectedYear, selectedMonth, statutPaiement));
 
             return ResponseEntity.ok(response);
 
@@ -173,7 +180,9 @@ public class PaiementController {
     public ResponseEntity<?> rechercherPaiementsClients(
             @RequestParam UUID atelierId,
             @RequestParam(required = false) String searchTerm,
-            @RequestParam(required = false) String statutPaiement) {
+            @RequestParam(required = false) String statutPaiement,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year) {
         try {
             Utilisateur currentUser = getCurrentUser();
 
@@ -185,6 +194,8 @@ public class PaiementController {
             criteres.setAtelierId(atelierId);
             criteres.setSearchTerm(searchTerm);
             criteres.setStatutPaiement(statutPaiement);
+            criteres.setMonth(month);
+            criteres.setYear(year);
             criteres.setType("CLIENT");
 
             List<PaiementClientResponseDto> resultats = paiementService.rechercherPaiementsClients(criteres);
@@ -199,7 +210,9 @@ public class PaiementController {
     public ResponseEntity<?> rechercherPaiementsTailleurs(
             @RequestParam UUID atelierId,
             @RequestParam(required = false) String searchTerm,
-            @RequestParam(required = false) String statutPaiement) {
+            @RequestParam(required = false) String statutPaiement,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year) {
         try {
             Utilisateur currentUser = getCurrentUser();
 
@@ -211,6 +224,8 @@ public class PaiementController {
             criteres.setAtelierId(atelierId);
             criteres.setSearchTerm(searchTerm);
             criteres.setStatutPaiement(statutPaiement);
+            criteres.setMonth(month);
+            criteres.setYear(year);
             criteres.setType("TAILLEUR");
 
             List<PaiementTailleurResponseDto> resultats = paiementService.rechercherPaiementsTailleurs(criteres);
@@ -226,7 +241,7 @@ public class PaiementController {
     private ResponseEntity<?> validerMontantPaiementClient(CreatePaiementClientDto dto) {
         try {
             // Récupérer les informations actuelles du client
-            PaiementClientResponseDto infoClient = paiementService.getPaiementsClient(dto.getClientId(), dto.getAtelierId());
+            PaiementClientResponseDto infoClient = paiementService.getPaiementsClient(dto.getClientId(), dto.getAtelierId(), null, null);
 
             // Vérifier que le montant ne dépasse pas le reste à payer
             if (dto.getMontant() > infoClient.getResteAPayer()) {
@@ -251,7 +266,7 @@ public class PaiementController {
     private ResponseEntity<?> validerMontantPaiementTailleur(CreatePaiementTailleurDto dto) {
         try {
             // Récupérer les informations actuelles du tailleur
-            PaiementTailleurResponseDto infoTailleur = paiementService.getPaiementsTailleur(dto.getTailleurId(), dto.getAtelierId());
+            PaiementTailleurResponseDto infoTailleur = paiementService.getPaiementsTailleur(dto.getTailleurId(), dto.getAtelierId(), null, null);
 
             // Vérifier que le montant ne dépasse pas le reste à payer
             if (dto.getMontant() > infoTailleur.getResteAPayer()) {

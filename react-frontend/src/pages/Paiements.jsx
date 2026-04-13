@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import Swal from 'sweetalert2';
@@ -11,7 +11,7 @@ const Paiements = () => {
     const [selectedTailleur, setSelectedTailleur] = useState(null);
     const [loading, setLoading] = useState(false);
     const [loadingRecouvrement, setLoadingRecouvrement] = useState(false);
-    const [recouvrementMensuel, setRecouvrementMensuel] = useState(0);
+    const [recouvrementMensuel, setRecouvrementMensuel] = useState(null);
     const [recouvrementMonth, setRecouvrementMonth] = useState(new Date().getMonth() + 1);
     const [recouvrementYear, setRecouvrementYear] = useState(new Date().getFullYear());
     
@@ -32,27 +32,7 @@ const Paiements = () => {
     const [sharingReceipt, setSharingReceipt] = useState(false);
     const [loadingReceiptId, setLoadingReceiptId] = useState(null);
 
-    useEffect(() => {
-        loadData();
-    }, [activeTab, filters]); // Reload when tab or filters change
-
-    useEffect(() => {
-        loadRecouvrementMensuel();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [recouvrementMonth, recouvrementYear]);
-
-    // Reset selection when tab changes
-    useEffect(() => {
-        setSelectedClient(null);
-        setSelectedTailleur(null);
-        setPaymentForm(prev => ({
-            ...prev,
-            montant: '',
-            reference: `REF-${activeTab === 'clients' ? 'CLI' : 'TAI'}-${Date.now().toString().slice(-6)}`
-        }));
-    }, [activeTab]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
@@ -68,7 +48,9 @@ const Paiements = () => {
                 : `/paiements/tailleurs/recherche?atelierId=${atelierId}`;
 
             if (filters.search) url += `&searchTerm=${encodeURIComponent(filters.search)}`;
-            if (filters.statut) url += `&statutPaiement=${filters.statut}`;
+            if (filters.statut) url += `&statutPaiement=${encodeURIComponent(filters.statut)}`;
+            if (recouvrementMonth) url += `&month=${recouvrementMonth}`;
+            if (recouvrementYear) url += `&year=${recouvrementYear}`;
 
             const response = await api.get(url);
             
@@ -87,13 +69,33 @@ const Paiements = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeTab, filters, recouvrementMonth, recouvrementYear]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]); // Reload when tab, filters or month/year change
+
+    useEffect(() => {
+        loadRecouvrementMensuel();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [recouvrementMonth, recouvrementYear, filters.statut]);
+
+    // Reset selection when tab changes
+    useEffect(() => {
+        setSelectedClient(null);
+        setSelectedTailleur(null);
+        setPaymentForm(prev => ({
+            ...prev,
+            montant: '',
+            reference: `REF-${activeTab === 'clients' ? 'CLI' : 'TAI'}-${Date.now().toString().slice(-6)}`
+        }));
+    }, [activeTab]);
 
     const handleSelectClient = async (clientId) => {
         try {
             const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
             const atelierId = userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
-            const response = await api.get(`/paiements/clients/${clientId}?atelierId=${atelierId}`);
+            const response = await api.get(`/paiements/clients/${clientId}?atelierId=${atelierId}&month=${recouvrementMonth}&year=${recouvrementYear}`);
             setSelectedClient(response.data);
             // Reset form for new selection
             setPaymentForm(prev => ({
@@ -110,7 +112,7 @@ const Paiements = () => {
         try {
             const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
             const atelierId = userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
-            const response = await api.get(`/paiements/tailleurs/${tailleurId}?atelierId=${atelierId}`);
+            const response = await api.get(`/paiements/tailleurs/${tailleurId}?atelierId=${atelierId}&month=${recouvrementMonth}&year=${recouvrementYear}`);
             setSelectedTailleur(response.data);
             // Reset form for new selection
             setPaymentForm(prev => ({
@@ -179,17 +181,21 @@ const Paiements = () => {
     const loadRecouvrementMensuel = async () => {
         const atelierId = getCurrentAtelierId();
         if (!atelierId) {
-            setRecouvrementMensuel(0);
+            setRecouvrementMensuel(null);
             return;
         }
 
         setLoadingRecouvrement(true);
         try {
-            const response = await api.get(`/paiements/recouvrement-mensuel?atelierId=${atelierId}&month=${recouvrementMonth}&year=${recouvrementYear}`);
-            setRecouvrementMensuel(response.data?.totalRecouvrement || 0);
+            let url = `/paiements/recouvrement-mensuel?atelierId=${atelierId}&month=${recouvrementMonth}&year=${recouvrementYear}`;
+            if (filters.statut) {
+                url += `&statutPaiement=${encodeURIComponent(filters.statut)}`;
+            }
+            const response = await api.get(url);
+            setRecouvrementMensuel(response.data || null);
         } catch (error) {
             console.error('Erreur chargement recouvrement mensuel:', error);
-            setRecouvrementMensuel(0);
+            setRecouvrementMensuel(null);
         } finally {
             setLoadingRecouvrement(false);
         }
@@ -198,6 +204,15 @@ const Paiements = () => {
     const buildReceiptFileName = (recu) => {
         const baseReference = String(recu?.reference || 'recu').replace(/[^a-zA-Z0-9_-]/g, '-');
         return `recu-${baseReference}.pdf`;
+    };
+
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'PAYE': return <span className="badge bg-success">Payé</span>;
+            case 'PARTIEL': return <span className="badge bg-warning text-dark">Avance</span>;
+            case 'EN_ATTENTE': return <span className="badge bg-danger">Non payé</span>;
+            default: return <span className="badge bg-secondary">{status}</span>;
+        }
     };
 
     const downloadBlob = (blob, fileName) => {
@@ -316,19 +331,6 @@ const Paiements = () => {
         }
     };
 
-    const getStatusBadge = (status) => {
-        switch (status) {
-            case 'PAYE': return <span className="badge bg-success">Payé</span>;
-            case 'PARTIEL': return <span className="badge bg-warning text-dark">Partiel</span>;
-            case 'EN_ATTENTE': return <span className="badge bg-danger">En attente</span>;
-            default: return <span className="badge bg-secondary">{status}</span>;
-        }
-    };
-
-    const getInitials = (nom, prenom) => {
-        return `${(prenom || '').charAt(0)}${(nom || '').charAt(0)}`.toUpperCase();
-    };
-
     return (
         <>
             {/* Breadcrumb */}
@@ -377,8 +379,8 @@ const Paiements = () => {
                                         onChange={(e) => setFilters(prev => ({ ...prev, statut: e.target.value }))}
                                     >
                                         <option value="">Tous les statuts</option>
-                                        <option value="EN_ATTENTE">En attente</option>
-                                        <option value="PARTIEL">Partiel</option>
+                                        <option value="EN_ATTENTE">Non payé</option>
+                                            <option value="PARTIEL">Avance</option>
                                         <option value="PAYE">Payé</option>
                                     </select>
                                 </div>
@@ -418,15 +420,28 @@ const Paiements = () => {
                             </div>
                             <div className="row mt-3">
                                 <div className="col-12">
-                                    <div className="alert alert-info d-flex align-items-center justify-content-between mb-0">
-                                        <div>
-                                            <div className="small text-uppercase text-muted">Recouvrement mensuel</div>
-                                            <div className="h5 mb-0">
-                                                {loadingRecouvrement ? 'Chargement...' : `${recouvrementMensuel?.toLocaleString('fr-FR')} FCFA`}
+                                    <div className="card mb-3">
+                                        <div className="card-body py-3 px-4">
+                                            <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+                                                <div>
+                                                    <div className="text-uppercase text-muted small mb-1">Synthèse du mois</div>
+                                                    <div className="h6 mb-0">{`${new Date(recouvrementYear, recouvrementMonth - 1).toLocaleString('fr-FR', { month: 'long' })} ${recouvrementYear}`}</div>
+                                                </div>
+                                                <div className="d-flex flex-wrap gap-2">
+                                                    <div className="bg-light border rounded p-3 text-center" style={{ minWidth: '160px' }}>
+                                                        <div className="text-uppercase text-muted small">TOTAL AVANCE</div>
+                                                        <div className="h5 mb-0">{loadingRecouvrement ? '…' : `${recouvrementMensuel?.totalRecouvrement?.toLocaleString('fr-FR') || 0} FCFA`}</div>
+                                                    </div>
+                                                    <div className="bg-light border rounded p-3 text-center" style={{ minWidth: '120px' }}>
+                                                        <div className="text-uppercase text-muted small">Nombre model</div>
+                                                        <div className="h5 mb-0">{loadingRecouvrement ? '…' : `${recouvrementMensuel?.nombreModeles || 0}`}</div>
+                                                    </div>
+                                                    <div className="bg-light border rounded p-3 text-center" style={{ minWidth: '160px' }}>
+                                                        <div className="text-uppercase text-muted small">Montant total des models</div>
+                                                        <div className="h5 mb-0">{loadingRecouvrement ? '…' : `${recouvrementMensuel?.totalModeles?.toLocaleString('fr-FR') || 0} FCFA`}</div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="small text-muted">
-                                            {`${new Date(recouvrementYear, recouvrementMonth - 1).toLocaleString('fr-FR', { month: 'long' })} ${recouvrementYear}`}
                                         </div>
                                     </div>
                                 </div>
@@ -469,11 +484,17 @@ const Paiements = () => {
                                             <div className="card-body">
                                                 <div className="d-flex align-items-center mb-3">
                                                     <div className={`rounded-circle d-flex align-items-center justify-content-center text-white me-3 ${isClient ? 'bg-primary' : 'bg-warning'}`} style={{width: '40px', height: '40px'}}>
-                                                        {getInitials(nom, prenom)}
+                                                        {`${(prenom || '').charAt(0)}${(nom || '').charAt(0)}`.toUpperCase()}
                                                     </div>
                                                     <div className="flex-grow-1">
                                                         <h6 className="mb-0">{prenom} {nom}</h6>
-                                                        <small className="text-muted">{isClient ? (item.modeleNom || 'Modèle personnalisé') : `${item.modelesCousus || 0} modèles`}</small>
+                                                        <small className="text-muted">
+                                                            {isClient ? (
+                                                                item.nombreModeles > 1
+                                                                    ? `${item.nombreModeles} modèles`
+                                                                    : item.modeleNom || '1 modèle'
+                                                            ) : `${item.modelesCousus || 0} modèles`}
+                                                        </small>
                                                     </div>
                                                     {getStatusBadge(item.statutPaiement)}
                                                 </div>
@@ -532,6 +553,12 @@ const Paiements = () => {
                                                         <span>Total</span>
                                                         <strong>{(isClient ? entity.prixTotal : entity.totalDu)?.toLocaleString()} F</strong>
                                                     </div>
+                                                    {isClient && (
+                                                        <div className="list-group-item d-flex justify-content-between">
+                                                            <span>Nombre de modèles</span>
+                                                            <strong>{entity.nombreModeles || 0}</strong>
+                                                        </div>
+                                                    )}
                                                     <div className="list-group-item d-flex justify-content-between">
                                                         <span>Déjà payé</span>
                                                         <strong className="text-success">{entity.montantPaye?.toLocaleString()} F</strong>
@@ -697,6 +724,14 @@ const Paiements = () => {
                                 <div className="info-row">
                                     <span className="info-label">Client / Tailleur</span>
                                     <span className="info-value">{recuData.clientNom ? `${recuData.clientPrenom} ${recuData.clientNom}` : `${recuData.tailleurPrenom} ${recuData.tailleurNom}`}</span>
+                                </div>
+                                <div className="info-row">
+                                    <span className="info-label">Total dû</span>
+                                    <span className="info-value">{(recuData.totalDu ?? 0).toLocaleString()} FCFA</span>
+                                </div>
+                                <div className="info-row">
+                                    <span className="info-label">Reste à payer</span>
+                                    <span className="info-value">{(recuData.resteAPayer ?? 0).toLocaleString()} FCFA</span>
                                 </div>
 
                                 <div className="amount-box">

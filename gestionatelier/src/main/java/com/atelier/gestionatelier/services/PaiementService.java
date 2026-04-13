@@ -176,7 +176,7 @@ public class PaiementService {
 //        return response;
 //    }
 
-    public PaiementClientResponseDto getPaiementsClient(UUID clientId, UUID atelierId) {
+    public PaiementClientResponseDto getPaiementsClient(UUID clientId, UUID atelierId, Integer month, Integer year) {
         log.info("👤 Récupération historique paiements CLIENT - Client: {}, Atelier: {}", clientId, atelierId);
 
         // Récupérer le client avec ses mesures et vérification d'atelier
@@ -188,11 +188,21 @@ public class PaiementService {
         log.info("✅ Client récupéré: {} {}", client.getPrenom(), client.getNom());
 
         List<Mesure> mesures = client.getMesures() == null ? Collections.emptyList() : client.getMesures();
-        log.info("📏 {} mesure(s) trouvée(s) pour le client {}", mesures.size(), clientId);
+        if (month != null && year != null) {
+            mesures = mesures.stream()
+                    .filter(mesure -> mesure.getDateMesure() != null && mesure.getDateMesure().getMonthValue() == month && mesure.getDateMesure().getYear() == year)
+                    .collect(Collectors.toList());
+        }
+        log.info("📏 {} mesure(s) trouvée(s) pour le client {} dans la période {}/{}", mesures.size(), clientId, month, year);
 
         // Récupérer les paiements du client
         List<Paiement> paiements = paiementRepository.findPaiementsByClientAndAtelier(clientId, atelierId);
-        log.info("💰 {} paiements trouvés pour le client {}", paiements.size(), clientId);
+        if (month != null && year != null) {
+            paiements = paiements.stream()
+                    .filter(p -> p.getDatePaiement() != null && p.getDatePaiement().getMonthValue() == month && p.getDatePaiement().getYear() == year)
+                    .collect(Collectors.toList());
+        }
+        log.info("💰 {} paiements trouvés pour le client {} dans la période {}/{}", paiements.size(), clientId, month, year);
 
         // Récupérer toutes les affectations de l'atelier et filtrer par client
         List<Affectation> affectations = affectationRepository.findByAtelierIdWithRelations(atelierId)
@@ -206,9 +216,9 @@ public class PaiementService {
                 .mapToDouble(Paiement::getMontant)
                 .sum();
 
-        // Utiliser tous les modèles enregistrés pour le client, avec ou sans affectation.
+        // Utiliser les modèles sélectionnés par période pour le client.
         Double prixTotalModeles = mesures.stream()
-            .mapToDouble(mesure -> mesure.getPrix() != null ? mesure.getPrix() : 0.0)
+                .mapToDouble(mesure -> mesure.getPrix() != null ? mesure.getPrix() : 0.0)
                 .sum();
 
         Double resteAPayer = prixTotalModeles - totalPaiements;
@@ -218,17 +228,17 @@ public class PaiementService {
         log.info("📊 Statut paiement client {}: {} (Total modèles: {} FCFA, Payé: {} FCFA, Reste: {} FCFA)",
                 clientId, statutPaiement, prixTotalModeles, totalPaiements, resteAPayer);
 
-        // CORRECTION: Déterminer le nom du modèle principal
+        // Déterminer le nom du modèle principal
         String modeleNomPrincipal = "Aucun modèle";
         Mesure mesurePrincipale = mesures.stream()
-            .sorted(Comparator.comparing(Mesure::getDateMesure,
-                Comparator.nullsLast(Comparator.naturalOrder())).reversed())
-            .findFirst()
-            .orElse(null);
+                .sorted(Comparator.comparing(Mesure::getDateMesure,
+                        Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .findFirst()
+                .orElse(null);
         if (mesurePrincipale != null) {
             modeleNomPrincipal = mesurePrincipale.getModeleNom() != null && !mesurePrincipale.getModeleNom().trim().isEmpty()
-                ? mesurePrincipale.getModeleNom()
-                : (mesurePrincipale.getTypeVetement() != null ? mesurePrincipale.getTypeVetement() + " personnalisé" : "Modèle personnalisé");
+                    ? mesurePrincipale.getModeleNom()
+                    : (mesurePrincipale.getTypeVetement() != null ? mesurePrincipale.getTypeVetement() + " personnalisé" : "Modèle personnalisé");
         }
 
         // Construire la réponse
@@ -237,8 +247,9 @@ public class PaiementService {
         response.setClientNom(client.getNom());
         response.setClientPrenom(client.getPrenom());
         response.setClientTelephone(client.getContact());
-        response.setModeleNom(modeleNomPrincipal); // CORRECTION: Ajouter le nom du modèle
+        response.setModeleNom(modeleNomPrincipal);
         response.setPrixTotal(prixTotalModeles);
+        response.setNombreModeles(mesures.size());
         response.setMontantPaye(totalPaiements);
         response.setResteAPayer(resteAPayer);
         response.setStatutPaiement(statutPaiement);
@@ -289,16 +300,26 @@ public class PaiementService {
         return paiementRepository.save(paiement);
     }
 
-    public PaiementTailleurResponseDto getPaiementsTailleur(UUID tailleurId, UUID atelierId) {
+    public PaiementTailleurResponseDto getPaiementsTailleur(UUID tailleurId, UUID atelierId, Integer month, Integer year) {
         // Récupérer le tailleur avec vérification d'atelier
         Utilisateur tailleur = utilisateurRepository.findTailleurByIdAndAtelier(tailleurId, atelierId)
                 .orElseThrow(() -> new RuntimeException("Tailleur non trouvé dans cet atelier"));
 
         // Récupérer les paiements du tailleur
         List<Paiement> paiements = paiementRepository.findPaiementsByTailleurAndAtelier(tailleurId, atelierId);
+        if (month != null && year != null) {
+            paiements = paiements.stream()
+                    .filter(p -> p.getDatePaiement() != null && p.getDatePaiement().getMonthValue() == month && p.getDatePaiement().getYear() == year)
+                    .collect(Collectors.toList());
+        }
 
         // Récupérer les affectations du tailleur
         List<Affectation> affectations = affectationRepository.findByTailleurIdAndAtelierIdWithRelations(tailleurId, atelierId);
+        if (month != null && year != null) {
+            affectations = affectations.stream()
+                    .filter(a -> a.getDateEcheance() != null && a.getDateEcheance().getMonthValue() == month && a.getDateEcheance().getYear() == year)
+                    .collect(Collectors.toList());
+        }
 
         // Calculer les totaux
         Double totalPaiements = paiements.stream()
@@ -475,9 +496,23 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
         return statistiques;
     }
 
-    public Double getRecouvrementMensuel(UUID atelierId, int year, int month) {
-        List<Paiement> paiements = paiementRepository.findByAtelierId(atelierId);
-        return paiements.stream()
+    public Double getRecouvrementMensuel(UUID atelierId, int year, int month, String statutPaiement) {
+        if (statutPaiement == null || statutPaiement.isBlank()) {
+            List<Paiement> paiements = paiementRepository.findByAtelierId(atelierId);
+            return paiements.stream()
+                    .filter(p -> p.getTypePaiement() == Paiement.TypePaiement.CLIENT)
+                    .filter(p -> p.getDatePaiement() != null)
+                    .filter(p -> p.getDatePaiement().getYear() == year)
+                    .filter(p -> p.getDatePaiement().getMonthValue() == month)
+                    .mapToDouble(Paiement::getMontant)
+                    .sum();
+        }
+
+        List<Client> clients = clientRepository.findByAtelierIdWithMesures(atelierId);
+        return clients.stream()
+                .map(client -> getPaiementsClient(client.getId(), atelierId, null, null))
+                .filter(dto -> statutPaiement.equals(dto.getStatutPaiement()))
+                .flatMap(dto -> paiementRepository.findPaiementsByClientAndAtelier(dto.getClientId(), atelierId).stream())
                 .filter(p -> p.getTypePaiement() == Paiement.TypePaiement.CLIENT)
                 .filter(p -> p.getDatePaiement() != null)
                 .filter(p -> p.getDatePaiement().getYear() == year)
@@ -486,9 +521,32 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
                 .sum();
     }
 
+    public Double getTotalModelesMensuel(UUID atelierId, int year, int month, String statutPaiement) {
+        List<Client> clients = clientRepository.findByAtelierIdWithMesures(atelierId);
+        return clients.stream()
+                .filter(client -> statutPaiement == null || statutPaiement.isBlank() || statutPaiement.equals(getStatutPaiementClient(client.getId(), atelierId)))
+                .flatMap(client -> client.getMesures() == null ? java.util.stream.Stream.empty() : client.getMesures().stream())
+                .filter(mesure -> mesure.getDateMesure() != null)
+                .filter(mesure -> mesure.getDateMesure().getYear() == year)
+                .filter(mesure -> mesure.getDateMesure().getMonthValue() == month)
+                .mapToDouble(mesure -> mesure.getPrix() != null ? mesure.getPrix() : 0.0)
+                .sum();
+    }
+
+    public Integer getNombreModelesMensuel(UUID atelierId, int year, int month, String statutPaiement) {
+        List<Client> clients = clientRepository.findByAtelierIdWithMesures(atelierId);
+        return (int) clients.stream()
+                .filter(client -> statutPaiement == null || statutPaiement.isBlank() || statutPaiement.equals(getStatutPaiementClient(client.getId(), atelierId)))
+                .flatMap(client -> client.getMesures() == null ? java.util.stream.Stream.empty() : client.getMesures().stream())
+                .filter(mesure -> mesure.getDateMesure() != null)
+                .filter(mesure -> mesure.getDateMesure().getYear() == year)
+                .filter(mesure -> mesure.getDateMesure().getMonthValue() == month)
+                .count();
+    }
+
     private String getStatutPaiementClient(UUID clientId, UUID atelierId) {
         try {
-            PaiementClientResponseDto dto = getPaiementsClient(clientId, atelierId);
+            PaiementClientResponseDto dto = getPaiementsClient(clientId, atelierId, null, null);
             return dto.getStatutPaiement();
         } catch (Exception e) {
             return "EN_ATTENTE";
@@ -497,7 +555,7 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
 
     private String getStatutPaiementTailleur(UUID tailleurId, UUID atelierId) {
         try {
-            PaiementTailleurResponseDto dto = getPaiementsTailleur(tailleurId, atelierId);
+            PaiementTailleurResponseDto dto = getPaiementsTailleur(tailleurId, atelierId, null, null);
             return dto.getStatutPaiement();
         } catch (Exception e) {
             return "EN_ATTENTE";
@@ -508,25 +566,41 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
 
     public List<PaiementClientResponseDto> rechercherPaiementsClients(RecherchePaiementDto criteres) {
         // Rechercher les clients ayant au moins une mesure enregistrée,
-        // indépendamment d'une éventuelle affectation.
+        // et éventuellement filtrer sur le mois/année sélectionné.
         List<Client> clients = clientRepository.findByAtelierIdWithMesures(criteres.getAtelierId());
 
         return clients.stream()
-                .map(client -> getPaiementsClient(client.getId(), criteres.getAtelierId()))
+                .filter(client -> filtreParMoisAnneeClient(client, criteres.getMonth(), criteres.getYear()))
+                .map(client -> getPaiementsClient(client.getId(), criteres.getAtelierId(), criteres.getMonth(), criteres.getYear()))
                 .filter(dto -> filtreParStatut(dto, criteres.getStatutPaiement()))
                 .filter(dto -> filtreParRecherche(dto, criteres.getSearchTerm()))
                 .collect(Collectors.toList());
     }
 
     public List<PaiementTailleurResponseDto> rechercherPaiementsTailleurs(RecherchePaiementDto criteres) {
-        // Implémentation de la recherche des tailleurs avec filtres
         List<Utilisateur> tailleurs = utilisateurRepository.findTailleursActifsByAtelier(criteres.getAtelierId());
 
         return tailleurs.stream()
-                .map(tailleur -> getPaiementsTailleur(tailleur.getId(), criteres.getAtelierId()))
+                .filter(tailleur -> filtreParMoisAnneeTailleur(tailleur, criteres.getAtelierId(), criteres.getMonth(), criteres.getYear()))
+                .map(tailleur -> getPaiementsTailleur(tailleur.getId(), criteres.getAtelierId(), criteres.getMonth(), criteres.getYear()))
                 .filter(dto -> filtreParStatut(dto, criteres.getStatutPaiement()))
                 .filter(dto -> filtreParRechercheTailleur(dto, criteres.getSearchTerm()))
                 .collect(Collectors.toList());
+    }
+
+    private boolean filtreParMoisAnneeClient(Client client, Integer month, Integer year) {
+        if (month == null || year == null) return true;
+        return client.getMesures() != null && client.getMesures().stream()
+                .filter(mesure -> mesure.getDateMesure() != null)
+                .anyMatch(mesure -> mesure.getDateMesure().getMonthValue() == month && mesure.getDateMesure().getYear() == year);
+    }
+
+    private boolean filtreParMoisAnneeTailleur(Utilisateur tailleur, UUID atelierId, Integer month, Integer year) {
+        if (month == null || year == null) return true;
+        List<Paiement> paiements = paiementRepository.findPaiementsByTailleurAndAtelier(tailleur.getId(), atelierId);
+        return paiements.stream()
+                .filter(p -> p.getDatePaiement() != null)
+                .anyMatch(p -> p.getDatePaiement().getMonthValue() == month && p.getDatePaiement().getYear() == year);
     }
 
     private boolean filtreParStatut(PaiementClientResponseDto dto, String statut) {
@@ -620,12 +694,35 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
             recu.setClientPrenom(client.getPrenom());
             recu.setClientContact(client.getContact());
             recu.setStatut("Reçu client");
+
+            Client clientWithMesures = clientRepository.findByIdAndAtelierIdWithMesures(client.getId(), paiement.getAtelier().getId())
+                    .orElse(client);
+            double totalDu = clientWithMesures.getMesures() == null ? 0.0 : clientWithMesures.getMesures().stream()
+                    .mapToDouble(m -> m.getPrix() != null ? m.getPrix() : 0.0)
+                    .sum();
+            double totalPaiements = paiementRepository.findPaiementsByClientAndAtelier(client.getId(), paiement.getAtelier().getId())
+                    .stream()
+                    .mapToDouble(Paiement::getMontant)
+                    .sum();
+            recu.setTotalDu(totalDu);
+            recu.setResteAPayer(totalDu - totalPaiements);
         } else if (paiement.getTypePaiement() == Paiement.TypePaiement.TAILLEUR && paiement.getTailleur() != null) {
             Utilisateur tailleur = paiement.getTailleur();
             recu.setTailleurNom(tailleur.getNom());
             recu.setTailleurPrenom(tailleur.getPrenom());
             recu.setTailleurContact(tailleur.getEmail()); // ou téléphone si disponible
             recu.setStatut("Reçu tailleur");
+
+            List<Affectation> affectations = affectationRepository.findByTailleurIdAndAtelierIdWithRelations(tailleur.getId(), paiement.getAtelier().getId());
+            double totalDu = affectations.stream()
+                    .mapToDouble(a -> a.getPrixTailleur() != null ? a.getPrixTailleur() : 0.0)
+                    .sum();
+            double totalPaiements = paiementRepository.findPaiementsByTailleurAndAtelier(tailleur.getId(), paiement.getAtelier().getId())
+                    .stream()
+                    .mapToDouble(Paiement::getMontant)
+                    .sum();
+            recu.setTotalDu(totalDu);
+            recu.setResteAPayer(totalDu - totalPaiements);
         }
 
         // Générer un QR code simple avec les informations principales
@@ -701,6 +798,16 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
                         valueFont
                 );
             }
+
+            addKeyValueTable(
+                    document,
+                    new String[][] {
+                            {"Total dû", String.format("%.0f FCFA", recu.getTotalDu() != null ? recu.getTotalDu() : 0.0)},
+                            {"Reste à payer", String.format("%.0f FCFA", recu.getResteAPayer() != null ? recu.getResteAPayer() : 0.0)}
+                    },
+                    labelFont,
+                    valueFont
+            );
 
             addAmountBox(document, String.format("%.0f FCFA", recu.getMontant()), amountFont, amountCaptionFont);
             addDivider(document, subtitleFont, 8f, 6f);

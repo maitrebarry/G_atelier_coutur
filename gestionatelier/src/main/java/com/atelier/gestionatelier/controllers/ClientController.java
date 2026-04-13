@@ -6,8 +6,10 @@ import com.atelier.gestionatelier.dto.ModeleDTO;
 import com.atelier.gestionatelier.dto.ModeleListDTO;
 import com.atelier.gestionatelier.entities.Client;
 import com.atelier.gestionatelier.entities.Modele;
+import com.atelier.gestionatelier.entities.RendezVous;
 import com.atelier.gestionatelier.entities.Utilisateur;
 import com.atelier.gestionatelier.repositories.ModeleRepository;
+import com.atelier.gestionatelier.repositories.RendezVousRepository;
 import com.atelier.gestionatelier.security.Role;
 import com.atelier.gestionatelier.services.ClientService;
 import com.atelier.gestionatelier.services.FileStorageService;
@@ -22,6 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController
@@ -33,6 +36,7 @@ public class ClientController {
     private final UtilisateurService utilisateurService;
     private final ModeleService modeleService;
     private final ModeleRepository modeleRepository;
+    private final RendezVousRepository rendezVousRepository;
 
 
     @PostMapping("/ajouter")
@@ -115,6 +119,21 @@ public class ClientController {
             response.put("status", "success");
             response.put("message", "Client '" + clientSauvegarde.getNom() + "' enregistré avec succès !");
             response.put("clientId", clientSauvegarde.getId());
+
+            LocalDateTime dateRdvAttendue = LocalDateTime.now().plusWeeks(1).withHour(10).withMinute(0).withSecond(0).withNano(0);
+            Optional<RendezVous> rendezVousAuto = rendezVousRepository.findTopByClientIdOrderByCreatedAtDesc(clientSauvegarde.getId())
+                    .filter(rdv -> rdv.getCreatedAt() != null && rdv.getCreatedAt().isAfter(LocalDateTime.now().minusMinutes(2)))
+                    .filter(rdv -> "LIVRAISON DE L'HABIT".equalsIgnoreCase(rdv.getTypeRendezVous()));
+
+            if (rendezVousAuto.isPresent()) {
+                RendezVous rdv = rendezVousAuto.get();
+                response.put("rendezVousAuto", true);
+                response.put("rendezVousAutoType", rdv.getTypeRendezVous());
+                response.put("rendezVousAutoDate", rdv.getDateRDV());
+                response.put("rendezVousAutoDecale", !dateRdvAttendue.equals(rdv.getDateRDV()));
+            } else {
+                response.put("rendezVousAuto", false);
+            }
 
             System.out.println("=== FIN AJOUT CLIENT - SUCCÈS ===");
             return ResponseEntity.ok(response);
@@ -450,8 +469,6 @@ public class ClientController {
             return "Le nom est obligatoire";
         if (dto.getPrenom() == null || dto.getPrenom().isBlank())
             return "Le prénom est obligatoire";
-        if (dto.getAdresse() == null || dto.getAdresse().isBlank())
-            return "L'adresse est obligatoire";
         if (dto.getSexe() == null || dto.getSexe().isBlank())
             return "Le sexe est obligatoire";
         if (dto.getContact() == null || !dto.getContact().matches("\\d{8}"))
@@ -483,9 +500,6 @@ public class ClientController {
                 } catch (NumberFormatException e) {
                     return "Le prix doit être un nombre valide pour chaque modèle";
                 }
-                if (item.getHabitPhotoIndex() < 0) {
-                    return "Chaque modèle doit avoir une photo de l'habit";
-                }
             }
             return null;
         }
@@ -502,11 +516,6 @@ public class ClientController {
         } catch (NumberFormatException e) {
             return "Le prix doit être un nombre valide";
         }
-
-        boolean hasHabitPhotoUpload = dto.getHabitPhoto() != null && !dto.getHabitPhoto().isEmpty();
-        boolean hasExistingHabitPhoto = dto.getExisting_habit_photo() != null && !dto.getExisting_habit_photo().isBlank();
-        if (!hasHabitPhotoUpload && !hasExistingHabitPhoto)
-            return "La photo de l'habit est obligatoire";
 
         // Validation mesures numériques facultatives
         String[] mesures = {

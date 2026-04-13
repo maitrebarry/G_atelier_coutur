@@ -98,7 +98,8 @@ public class ModeleMapper {
                 modele.getPhotoPath(),
                 modele.getVideoPath(),
                 modele.getCategorie(),
-                modele.getEstActif()
+                modele.getEstActif(),
+                modele.getDateCreation()
         );
     }
 }

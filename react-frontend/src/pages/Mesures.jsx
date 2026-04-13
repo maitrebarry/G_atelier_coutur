@@ -88,6 +88,7 @@ const Mesures = () => {
   const [previewModelData, setPreviewModelData] = useState(null);
   const [showClientPicker, setShowClientPicker] = useState(false);
   const [existingClients, setExistingClients] = useState([]);
+  const [monthlyModelCounts, setMonthlyModelCounts] = useState([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
   const [prefilledClientInfo, setPrefilledClientInfo] = useState(null);
@@ -157,12 +158,41 @@ const Mesures = () => {
     setClientSearch('');
   };
 
+  const computeMonthlyModelCounts = (clients) => {
+    const counts = (clients || []).reduce((acc, client) => {
+      if (!Array.isArray(client.mesures)) return acc;
+      client.mesures.forEach((mesure) => {
+        const dateString = mesure?.dateMesure || mesure?.dateCreation;
+        if (!dateString) return;
+        const date = new Date(dateString);
+        if (Number.isNaN(date.getTime())) return;
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        acc[monthKey] = (acc[monthKey] || 0) + 1;
+      });
+      return acc;
+    }, {});
+
+    return Object.entries(counts)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([monthKey, count]) => {
+        const [year, month] = monthKey.split('-').map(Number);
+        const monthName = new Date(year, month - 1).toLocaleString('fr-FR', { month: 'long' });
+        return {
+          monthKey,
+          label: `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`,
+          count,
+        };
+      });
+  };
+
   const fetchExistingClients = async () => {
     if (clientsLoading) return;
     setClientsLoading(true);
     try {
       const res = await api.get('/clients');
-      setExistingClients(res.data || []);
+      const clients = res.data || [];
+      setExistingClients(clients);
+      setMonthlyModelCounts(computeMonthlyModelCounts(clients));
     } catch (error) {
       console.error('Erreur chargement clients existants:', error);
       Swal.fire('Erreur', 'Impossible de charger les clients existants', 'error');
@@ -635,15 +665,6 @@ const Mesures = () => {
       return;
     }
 
-    if (!habitPhotoFile) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Photo requise',
-        text: 'Veuillez ajouter une photo de l\'habit pour ce modèle.',
-      });
-      return;
-    }
-
     const requiredMeasurements = formData.sexe === 'Femme'
       ? formData.femme_type === 'jupe'
         ? ['jupe_epaule', 'jupe_manche', 'jupe_poitrine', 'jupe_taille', 'jupe_longueur', 'jupe_longueur_jupe', 'jupe_ceinture', 'jupe_fesse']
@@ -728,15 +749,6 @@ const Mesures = () => {
       return;
     }
 
-    if (modelsToAdd.length === 0) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Aucun modèle ajouté',
-        text: 'Veuillez ajouter au moins un modèle avant d\'enregistrer le client.',
-      });
-      return;
-    }
-
     setLoading(true);
     try {
       const data = new FormData();
@@ -772,16 +784,36 @@ const Mesures = () => {
       photoFiles.forEach(file => data.append('photos', file));
       habitFiles.forEach(file => data.append('habitPhotos', file));
 
-      await api.post('/clients/ajouter', data, {
+      const response = await api.post('/clients/ajouter', data, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
 
+      const rendezVousAuto = response?.data?.rendezVousAuto;
+      const rendezVousAutoDate = response?.data?.rendezVousAutoDate;
+      const rendezVousAutoType = response?.data?.rendezVousAutoType;
+      const rendezVousAutoDecale = response?.data?.rendezVousAutoDecale;
+
+      let successHtml = 'Client et modèles enregistrés avec succès';
+      if (rendezVousAuto && rendezVousAutoDate) {
+        const formattedDate = new Date(rendezVousAutoDate).toLocaleString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        successHtml += `<br><br><strong>Rendez-vous automatique :</strong> ${rendezVousAutoType || 'LIVRAISON DE L\'HABIT'}<br><strong>Date :</strong> ${formattedDate}`;
+        if (rendezVousAutoDecale) {
+          successHtml += '<br><span class="text-warning">Le créneau initial de 10:00 étant occupé, le rendez-vous a été décalé automatiquement.</span>';
+        }
+      }
+
       Swal.fire({
         icon: 'success',
         title: 'Succès',
-        text: 'Client et modèles enregistrés avec succès',
+        html: successHtml,
         timer: 2500,
         showConfirmButton: false
       });
@@ -849,6 +881,26 @@ const Mesures = () => {
                 <i className="bx bx-user-plus me-1"></i> Sélectionner un client existant
               </button>
             </div>
+
+            {monthlyModelCounts.length > 0 && (
+              <div className="row mb-3">
+                <div className="col-12">
+                  <div className="card border-secondary bg-light">
+                    <div className="card-body py-2 px-3">
+                      <div className="d-flex flex-wrap align-items-center gap-2">
+                        <strong className="text-secondary">Modèles reçus par mois :</strong>
+                        {monthlyModelCounts.map(item => (
+                          <span key={item.monthKey} className="badge bg-white border text-dark py-2 px-3">
+                            <div className="fw-semibold">{item.label}</div>
+                            <small>{item.count} modèle{item.count > 1 ? 's' : ''}</small>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {prefilledClientInfo && (
               <div className="alert alert-info d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
@@ -1186,7 +1238,7 @@ const Mesures = () => {
                         />
                       </div>
                       <div className="col-md-6 mb-3">
-                        <label className="form-label">Photo de l'habit (caméra directe) <span className="text-danger">*</span></label>
+                        <label className="form-label">Photo de l'habit (caméra directe) <small className="text-muted">(optionnelle)</small></label>
                         <div className="d-flex flex-wrap gap-2">
                           <button type="button" className="btn btn-outline-primary btn-sm" onClick={openHabitPhotoCamera}>
                             <i className="fas fa-camera me-1"></i> Prendre photo directe
@@ -1296,6 +1348,24 @@ const Mesures = () => {
                     </button>
                   </div>
                 </div>
+
+                {monthlyModelCounts.length > 0 && (
+                  <div className="row mb-3">
+                    <div className="col-12">
+                      <div className="bg-light border rounded p-3">
+                        <div className="fw-semibold mb-2">Synthèse des modèles reçus</div>
+                        <div className="d-flex flex-wrap gap-2">
+                          {monthlyModelCounts.map(item => (
+                            <div key={item.monthKey} className="badge bg-white border text-dark py-2 px-3">
+                              <div>{item.label}</div>
+                              <small>{item.count} modèle{item.count > 1 ? 's' : ''}</small>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {clientsLoading ? (
                   <div className="text-center py-4">

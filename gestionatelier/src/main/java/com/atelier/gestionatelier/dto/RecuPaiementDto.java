@@ -28,6 +28,10 @@ public class RecuPaiementDto {
     private String atelierAdresse;
     private String atelierTelephone;
 
+    // Montants
+    private Double totalDu;
+    private Double resteAPayer;
+
     // Statut
     private String statut;
 

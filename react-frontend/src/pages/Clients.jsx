@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api, { getUserData } from '../api/api';
 import { buildMediaUrl } from '../config/api';
 import Swal from 'sweetalert2';
@@ -19,6 +19,7 @@ const Clients = () => {
   
   const fileInputRef = useRef(null);
   const habitFileInputRef = useRef(null);
+  const [searchParams] = useSearchParams();
   const currentUser = getUserData();
   const isTailleur = currentUser?.role === 'TAILLEUR';
 
@@ -107,6 +108,13 @@ const Clients = () => {
   useEffect(() => {
     fetchClients();
   }, []);
+
+  useEffect(() => {
+    const clientId = searchParams.get('clientId');
+    if (clientId) {
+      handleDetailClick(clientId);
+    }
+  }, [searchParams]);
 
   const fetchClients = async () => {
     setLoading(true);
