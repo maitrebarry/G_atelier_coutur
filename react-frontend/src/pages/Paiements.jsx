@@ -201,6 +201,17 @@ const Paiements = () => {
         }
     };
 
+    const handleSortiesInfoClick = () => {
+        const nombreSorties = recouvrementMensuel?.nombreSorties || 0;
+        const libelleMois = `${new Date(recouvrementYear, recouvrementMonth - 1).toLocaleString('fr-FR', { month: 'long' })} ${recouvrementYear}`;
+        Swal.fire({
+            icon: 'info',
+            title: 'Habits livrés',
+            text: `${nombreSorties} habit${nombreSorties > 1 ? 's' : ''} livré${nombreSorties > 1 ? 's' : ''} dans le mois de ${libelleMois}.`,
+            confirmButtonText: 'Fermer'
+        });
+    };
+
     const buildReceiptFileName = (recu) => {
         const baseReference = String(recu?.reference || 'recu').replace(/[^a-zA-Z0-9_-]/g, '-');
         return `recu-${baseReference}.pdf`;
@@ -436,6 +447,16 @@ const Paiements = () => {
                                                         <div className="text-uppercase text-muted small">Nombre model</div>
                                                         <div className="h5 mb-0">{loadingRecouvrement ? '…' : `${recouvrementMensuel?.nombreModeles || 0}`}</div>
                                                     </div>
+                                                    <button
+                                                        type="button"
+                                                        className="bg-light border rounded p-3 text-center btn btn-link text-decoration-none"
+                                                        style={{ minWidth: '140px' }}
+                                                        onClick={handleSortiesInfoClick}
+                                                        title="Cliquer pour voir le nombre d'habits livrés dans le mois"
+                                                    >
+                                                        <div className="text-uppercase text-muted small">Sortie</div>
+                                                        <div className="h5 mb-0 text-dark">{loadingRecouvrement ? '…' : `${recouvrementMensuel?.nombreSorties || 0}`}</div>
+                                                    </button>
                                                     <div className="bg-light border rounded p-3 text-center" style={{ minWidth: '160px' }}>
                                                         <div className="text-uppercase text-muted small">Montant total des models</div>
                                                         <div className="h5 mb-0">{loadingRecouvrement ? '…' : `${recouvrementMensuel?.totalModeles?.toLocaleString('fr-FR') || 0} FCFA`}</div>

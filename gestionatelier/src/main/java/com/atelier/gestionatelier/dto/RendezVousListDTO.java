@@ -20,6 +20,12 @@ public class RendezVousListDTO {
     // Informations de l'atelier
     private String atelierNom;
 
+    private UUID mesureId;
+    private String mesureLibelle;
+    private String mesureStatutProduction;
+    private Boolean mesurePretPourLivraison;
+    private Integer mesuresRestantesALivrer;
+
     // Méthode utilitaire pour le nom complet
     public String getClientNomComplet() {
         return clientNomComplet;

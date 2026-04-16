@@ -48,6 +48,7 @@ public class PaiementService {
     private final AffectationRepository affectationRepository;
     private final MesureRepository mesureRepository;
     private final AtelierRepository atelierRepository;
+    private final RendezVousRepository rendezVousRepository;
 
     // ==================== MÉTHODES POUR LES PAIEMENTS CLIENTS ====================
 
@@ -543,6 +544,24 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
                 .filter(mesure -> mesure.getDateMesure().getMonthValue() == month)
                 .count();
     }
+
+            public Integer getNombreSortiesMensuel(UUID atelierId, int year, int month, String statutPaiement) {
+            return (int) rendezVousRepository.findByAtelierIdOrderByDateRDVDesc(atelierId).stream()
+                .filter(rendezVous -> rendezVous.getDateRDV() != null)
+                .filter(rendezVous -> rendezVous.getDateRDV().getYear() == year)
+                .filter(rendezVous -> rendezVous.getDateRDV().getMonthValue() == month)
+                .filter(rendezVous -> "TERMINE".equalsIgnoreCase(rendezVous.getStatut()))
+                .filter(rendezVous -> rendezVous.getTypeRendezVous() != null
+                    && rendezVous.getTypeRendezVous().toUpperCase().contains("LIVRAISON"))
+                .filter(rendezVous -> statutPaiement == null || statutPaiement.isBlank()
+                    || (rendezVous.getClient() != null
+                    && statutPaiement.equals(getStatutPaiementClient(rendezVous.getClient().getId(), atelierId))))
+                .map(RendezVous::getMesure)
+                .filter(java.util.Objects::nonNull)
+                .map(Mesure::getId)
+                .distinct()
+                .count();
+            }
 
     private String getStatutPaiementClient(UUID clientId, UUID atelierId) {
         try {

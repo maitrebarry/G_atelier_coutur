@@ -9,4 +9,5 @@ public class RecouvrementMensuelDto {
     private Double totalRecouvrement;
     private Double totalModeles;
     private Integer nombreModeles;
+    private Integer nombreSorties;
 }

@@ -16,16 +16,32 @@ public interface RendezVousRepository extends JpaRepository<RendezVous, UUID> {
     List<RendezVous> findByAtelierIdOrderByDateRDVDesc(UUID atelierId);
 
     // Rendez-vous à venir (date >= aujourd'hui)
-    @Query("SELECT r FROM RendezVous r WHERE r.atelier.id = :atelierId AND r.dateRDV >= :aujourdhui ORDER BY r.dateRDV ASC")
+        @Query("SELECT r FROM RendezVous r " +
+            "LEFT JOIN FETCH r.client " +
+            "LEFT JOIN FETCH r.atelier " +
+            "LEFT JOIN FETCH r.mesure " +
+            "WHERE r.atelier.id = :atelierId AND r.dateRDV >= :aujourdhui ORDER BY r.dateRDV ASC")
     List<RendezVous> findRendezVousAVenir(@Param("atelierId") UUID atelierId, @Param("aujourdhui") LocalDateTime aujourdhui);
 
     // Rendez-vous d'un client spécifique
     List<RendezVous> findByClientIdOrderByDateRDVDesc(UUID clientId);
 
-    Optional<RendezVous> findTopByClientIdOrderByCreatedAtDesc(UUID clientId);
+        Optional<RendezVous> findTopByClientIdOrderByCreatedAtDesc(UUID clientId);
+
+        @Query("SELECT r FROM RendezVous r " +
+            "LEFT JOIN FETCH r.client " +
+            "LEFT JOIN FETCH r.atelier " +
+            "LEFT JOIN FETCH r.mesure " +
+            "WHERE r.id = :id")
+        Optional<RendezVous> findByIdWithRelations(@Param("id") UUID id);
 
     // Rendez-vous par statut
-    List<RendezVous> findByAtelierIdAndStatutOrderByDateRDVAsc(UUID atelierId, String statut);
+        @Query("SELECT r FROM RendezVous r " +
+            "LEFT JOIN FETCH r.client " +
+            "LEFT JOIN FETCH r.atelier " +
+            "LEFT JOIN FETCH r.mesure " +
+            "WHERE r.atelier.id = :atelierId AND r.statut = :statut ORDER BY r.dateRDV ASC")
+        List<RendezVous> findByAtelierIdAndStatutOrderByDateRDVAsc(@Param("atelierId") UUID atelierId, @Param("statut") String statut);
 
     // Rendez-vous aujourd'hui pour un atelier
     // implementation uses date range to avoid JPQL type mismatch errors
@@ -33,11 +49,22 @@ public interface RendezVousRepository extends JpaRepository<RendezVous, UUID> {
         java.time.LocalDate today = java.time.LocalDate.now();
         java.time.LocalDateTime start = today.atStartOfDay();
         java.time.LocalDateTime end = start.plusDays(1);
-        return findByAtelierIdAndDateRDVBetween(atelierId, start, end);
+        return findByAtelierIdAndDateRDVBetweenWithRelations(atelierId, start, end);
     }
 
     // Rendez-vous dans une période
-    List<RendezVous> findByAtelierIdAndDateRDVBetween(UUID atelierId, LocalDateTime start, LocalDateTime end);
+    @Query("SELECT r FROM RendezVous r " +
+            "LEFT JOIN FETCH r.client " +
+            "LEFT JOIN FETCH r.atelier " +
+            "LEFT JOIN FETCH r.mesure " +
+            "WHERE r.atelier.id = :atelierId AND r.dateRDV BETWEEN :start AND :end ORDER BY r.dateRDV ASC")
+    List<RendezVous> findByAtelierIdAndDateRDVBetweenWithRelations(@Param("atelierId") UUID atelierId,
+                                                                   @Param("start") LocalDateTime start,
+                                                                   @Param("end") LocalDateTime end);
+
+    default List<RendezVous> findByAtelierIdAndDateRDVBetween(UUID atelierId, LocalDateTime start, LocalDateTime end) {
+        return findByAtelierIdAndDateRDVBetweenWithRelations(atelierId, start, end);
+    }
 
     // Pour les notifications : rendez-vous confirmés ou planifiés dans une fenêtre donnée
     @Query("SELECT r FROM RendezVous r WHERE r.statut IN ('PLANIFIE', 'CONFIRME') AND r.dateRDV BETWEEN :start AND :end")
@@ -54,6 +81,11 @@ public interface RendezVousRepository extends JpaRepository<RendezVous, UUID> {
     // Vérifier les conflits de rendez-vous
     @Query("SELECT COUNT(r) FROM RendezVous r WHERE r.atelier.id = :atelierId AND r.dateRDV = :dateRDV AND r.statut IN ('PLANIFIE', 'CONFIRME')")
     long countConflitsRendezVous(@Param("atelierId") UUID atelierId, @Param("dateRDV") LocalDateTime dateRDV);
+
+    @Query("SELECT COUNT(r) FROM RendezVous r WHERE r.atelier.id = :atelierId AND r.dateRDV = :dateRDV AND r.id <> :rendezVousId AND r.statut IN ('PLANIFIE', 'CONFIRME')")
+    long countConflitsRendezVousExcludingId(@Param("atelierId") UUID atelierId,
+                                            @Param("dateRDV") LocalDateTime dateRDV,
+                                            @Param("rendezVousId") UUID rendezVousId);
 
     // Trouver les anciens rendez-vous pour le nettoyage
     List<RendezVous> findByDateRDVBefore(LocalDateTime date);

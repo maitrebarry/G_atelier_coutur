@@ -6,15 +6,20 @@ import com.atelier.gestionatelier.dto.ClientDTO;
 import com.atelier.gestionatelier.dto.ClientAvecMesuresDTO;
 import com.atelier.gestionatelier.dto.ClientRechercheRendezVousDTO;
 import com.atelier.gestionatelier.dto.CreateRendezVousDTO;
+import com.atelier.gestionatelier.entities.Affectation;
 import com.atelier.gestionatelier.dto.MesureItemDTO;
+import com.atelier.gestionatelier.dto.SyntheseMensuelleDTO;
 import com.atelier.gestionatelier.entities.Atelier;
 import com.atelier.gestionatelier.entities.Client;
 import com.atelier.gestionatelier.entities.Mesure;
 import com.atelier.gestionatelier.entities.Modele;
+import com.atelier.gestionatelier.entities.RendezVous;
+import com.atelier.gestionatelier.repositories.AffectationRepository;
 import com.atelier.gestionatelier.repositories.AtelierRepository;
 import com.atelier.gestionatelier.repositories.ClientRepository;
 import com.atelier.gestionatelier.repositories.MesureRepository;
 import com.atelier.gestionatelier.repositories.ModeleRepository;
+import com.atelier.gestionatelier.repositories.RendezVousRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -27,9 +32,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.time.LocalDateTime;
@@ -45,6 +54,8 @@ public class ClientService {
     private final FileStorageService fileStorageService;
     private final ModeleRepository modeleRepository; // NOUVEAU
     private final RendezVousService rendezVousService;
+    private final AffectationRepository affectationRepository;
+    private final RendezVousRepository rendezVousRepository;
 
     public Client enregistrerClientAvecMesures(ClientDTO dto) {
         System.out.println("=== ENREGISTREMENT CLIENT AVEC MESURES ===");
@@ -140,8 +151,8 @@ public class ClientService {
         mesure.setTypeVetement(item.getTypeVetement() != null ? item.getTypeVetement().trim().toLowerCase() : null);
 
         Double prix = parsePrix(item.getPrix());
-        if (prix == null || prix <= 0) {
-            throw new IllegalArgumentException("Chaque modèle doit avoir un prix valide supérieur à 0");
+        if (prix != null && prix <= 0) {
+            throw new IllegalArgumentException("Le prix doit être supérieur à 0 lorsqu'il est renseigné");
         }
         mesure.setPrix(prix);
 
@@ -218,8 +229,8 @@ public class ClientService {
 
         if (mesure.getPrix() == null) {
             Double prix = dto.getPrixAsDouble();
-            if (prix == null || prix <= 0) {
-                throw new IllegalArgumentException("Le prix du modèle est obligatoire et doit être supérieur à 0");
+            if (prix != null && prix <= 0) {
+                throw new IllegalArgumentException("Le prix du modèle doit être supérieur à 0");
             }
             mesure.setPrix(prix);
         }
@@ -384,6 +395,78 @@ public class ClientService {
         return clientRepository.findById(id);
     }
 
+    public List<SyntheseMensuelleDTO> getSyntheseMensuelle(UUID atelierId) {
+        Map<String, SyntheseMensuelleDTO> syntheseParMois = new LinkedHashMap<>();
+
+        List<Client> clients = clientRepository.findByAtelierIdWithMesures(atelierId);
+        for (Client client : clients) {
+            if (client.getMesures() == null) {
+                continue;
+            }
+
+            for (Mesure mesure : client.getMesures()) {
+                LocalDateTime dateMesure = mesure.getDateMesure();
+                if (dateMesure == null) {
+                    continue;
+                }
+                SyntheseMensuelleDTO synthese = syntheseParMois.computeIfAbsent(
+                        buildMonthKey(dateMesure),
+                        key -> createSyntheseMensuelle(key, dateMesure)
+                );
+                synthese.setEntrees(synthese.getEntrees() + 1);
+            }
+        }
+
+        List<RendezVous> rendezVousLivres = rendezVousRepository.findByAtelierIdOrderByDateRDVDesc(atelierId).stream()
+                .filter(rendezVous -> rendezVous.getDateRDV() != null)
+                .filter(rendezVous -> "TERMINE".equalsIgnoreCase(rendezVous.getStatut()))
+                .filter(rendezVous -> rendezVous.getTypeRendezVous() != null
+                        && rendezVous.getTypeRendezVous().toUpperCase(Locale.ROOT).contains("LIVRAISON"))
+            .filter(rendezVous -> rendezVous.getMesure() != null)
+                .collect(Collectors.toList());
+
+        Map<String, Long> sortiesParMois = rendezVousLivres.stream()
+            .collect(Collectors.groupingBy(
+                rendezVous -> buildMonthKey(rendezVous.getDateRDV()),
+                LinkedHashMap::new,
+                Collectors.mapping(rendezVous -> rendezVous.getMesure().getId(), Collectors.collectingAndThen(Collectors.toSet(), mesures -> (long) mesures.size()))
+            ));
+
+        for (Map.Entry<String, Long> entry : sortiesParMois.entrySet()) {
+            LocalDateTime dateLivraison = rendezVousLivres.stream()
+                .filter(rendezVous -> buildMonthKey(rendezVous.getDateRDV()).equals(entry.getKey()))
+                .map(RendezVous::getDateRDV)
+                .findFirst()
+                .orElse(null);
+            if (dateLivraison == null) {
+                continue;
+            }
+            SyntheseMensuelleDTO synthese = syntheseParMois.computeIfAbsent(
+                entry.getKey(),
+                key -> createSyntheseMensuelle(key, dateLivraison)
+            );
+            synthese.setSorties(entry.getValue().intValue());
+        }
+
+        return syntheseParMois.values().stream()
+                .sorted((left, right) -> right.getMonthKey().compareTo(left.getMonthKey()))
+                .collect(Collectors.toList());
+    }
+
+    private String buildMonthKey(LocalDateTime date) {
+        return String.format("%d-%02d", date.getYear(), date.getMonthValue());
+    }
+
+    private SyntheseMensuelleDTO createSyntheseMensuelle(String monthKey, LocalDateTime date) {
+        SyntheseMensuelleDTO dto = new SyntheseMensuelleDTO();
+        dto.setMonthKey(monthKey);
+        String monthName = date.getMonth().getDisplayName(TextStyle.FULL, Locale.FRANCE);
+        dto.setLabel(monthName.substring(0, 1).toUpperCase(Locale.FRANCE) + monthName.substring(1) + " " + date.getYear());
+        dto.setEntrees(0);
+        dto.setSorties(0);
+        return dto;
+    }
+
 
     public Client modifierClient(UUID id, ClientDTO dto) {
         System.out.println("=== DÉBUT MODIFICATION CLIENT DANS SERVICE ===");
@@ -452,11 +535,11 @@ public class ClientService {
         }
         // === NOUVEAU : Mettre à jour le prix ===
         Double nouveauPrix = dto.getPrixAsDouble();
-        if (nouveauPrix == null || nouveauPrix <= 0) {
-            throw new IllegalArgumentException("Le prix du modèle est obligatoire et doit être supérieur à 0");
+        if (nouveauPrix != null && nouveauPrix <= 0) {
+            throw new IllegalArgumentException("Le prix du modèle doit être supérieur à 0");
         }
         mesure.setPrix(nouveauPrix);
-        System.out.println("Prix mis à jour: " + nouveauPrix + " FCFA");
+        System.out.println("Prix mis à jour: " + (nouveauPrix != null ? nouveauPrix + " FCFA" : "non renseigné"));
         // 5. Déterminer le type de vêtement
         String type = null;
         if (dto.getFemme_type() != null) {
@@ -714,25 +797,50 @@ public class ClientService {
         dto.setPhoto(client.getPhoto());
         dto.setDateCreation(client.getDateCreation());
 
+        java.util.Set<UUID> mesuresDejaLivrees = rendezVousRepository.findByClientIdOrderByDateRDVDesc(client.getId())
+            .stream()
+            .filter(rendezVous -> "TERMINE".equalsIgnoreCase(rendezVous.getStatut()))
+            .filter(rendezVous -> rendezVous.getTypeRendezVous() != null
+                && rendezVous.getTypeRendezVous().toUpperCase(Locale.ROOT).contains("LIVRAISON"))
+            .map(RendezVous::getMesure)
+            .filter(java.util.Objects::nonNull)
+            .map(Mesure::getId)
+            .collect(Collectors.toSet());
+
+        Map<UUID, Affectation> affectationsParMesure = affectationRepository.findByClientIdOrderByDateCreationDesc(client.getId())
+            .stream()
+            .filter(affectation -> affectation.getMesure() != null)
+            .collect(Collectors.toMap(
+                affectation -> affectation.getMesure().getId(),
+                affectation -> affectation,
+                (existing, replacement) -> existing,
+                LinkedHashMap::new
+            ));
+
         // Convertir les mesures
         List<ClientAvecMesuresDTO.MesureDTO> mesureDTOs = client.getMesures().stream()
-                .map(this::toMesureDTO)
+            .map(mesure -> toMesureDTO(mesure, affectationsParMesure.get(mesure.getId()), mesuresDejaLivrees.contains(mesure.getId())))
                 .collect(Collectors.toList());
         dto.setMesures(mesureDTOs);
 
         return dto;
     }
 
-    private ClientAvecMesuresDTO.MesureDTO toMesureDTO(Mesure mesure) {
+        private ClientAvecMesuresDTO.MesureDTO toMesureDTO(Mesure mesure, Affectation affectation, boolean dejaLivree) {
         ClientAvecMesuresDTO.MesureDTO dto = new ClientAvecMesuresDTO.MesureDTO();
         dto.setId(mesure.getId());
         dto.setDateMesure(mesure.getDateMesure());
         dto.setTypeVetement(mesure.getTypeVetement());
+        dto.setModeleNom(mesure.getModeleNom());
         dto.setPrix(mesure.getPrix());
         dto.setDescription(mesure.getDescription());
         dto.setSexe(mesure.getSexe());
         dto.setPhotoPath(mesure.getPhotoPath());
         dto.setHabitPhotoPath(mesure.getHabitPhotoPath());
+        dto.setStatutProduction(getStatutProduction(affectation));
+        dto.setPretPourLivraison(isPretPourLivraison(affectation));
+        dto.setDejaLivree(dejaLivree);
+        dto.setLibelle(buildMesureLibelle(mesure));
 
         // Mesures communes
         dto.setEpaule(mesure.getEpaule());
@@ -757,6 +865,33 @@ public class ClientService {
         dto.setCorps(mesure.getCorps());
 
         return dto;
+    }
+
+    private String getStatutProduction(Affectation affectation) {
+        if (affectation == null || affectation.getStatut() == null) {
+            return "NON_AFFECTE";
+        }
+        return affectation.getStatut().name();
+    }
+
+    private boolean isPretPourLivraison(Affectation affectation) {
+        if (affectation == null || affectation.getStatut() == null) {
+            return false;
+        }
+        return affectation.getStatut() == Affectation.StatutAffectation.TERMINE
+                || affectation.getStatut() == Affectation.StatutAffectation.VALIDE;
+    }
+
+    private String buildMesureLibelle(Mesure mesure) {
+        String base = mesure.getModeleNom() != null && !mesure.getModeleNom().isBlank()
+                ? mesure.getModeleNom()
+                : (mesure.getTypeVetement() != null && !mesure.getTypeVetement().isBlank() ? mesure.getTypeVetement() : "Vêtement");
+
+        if (mesure.getDescription() != null && !mesure.getDescription().isBlank()) {
+            return base + " - " + mesure.getDescription();
+        }
+
+        return base;
     }
 
     }

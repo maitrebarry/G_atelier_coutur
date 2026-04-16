@@ -168,6 +168,7 @@ public class PaiementController {
             response.setTotalRecouvrement(paiementService.getRecouvrementMensuel(atelierId, selectedYear, selectedMonth, statutPaiement));
             response.setTotalModeles(paiementService.getTotalModelesMensuel(atelierId, selectedYear, selectedMonth, statutPaiement));
             response.setNombreModeles(paiementService.getNombreModelesMensuel(atelierId, selectedYear, selectedMonth, statutPaiement));
+            response.setNombreSorties(paiementService.getNombreSortiesMensuel(atelierId, selectedYear, selectedMonth, statutPaiement));
 
             return ResponseEntity.ok(response);
 

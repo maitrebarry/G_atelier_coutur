@@ -70,15 +70,13 @@ const Mesures = () => {
   const [filteredModels, setFilteredModels] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showModels, setShowModels] = useState(false);
+  const [activeTab, setActiveTab] = useState('client'); // 'client', 'photo', 'measurements', 'model'
   
-  // Form State - Initialized with all fields to avoid uncontrolled input warnings
   const [formData, setFormData] = useState(createInitialFormData);
-
   const [photoFile, setPhotoFile] = useState(null);
-  const [previewImage, setPreviewImage] = useState('assets/images/model4.jpg'); // Default female
+  const [previewImage, setPreviewImage] = useState('assets/images/model4.jpg');
   const [selectedModel, setSelectedModel] = useState(null);
   
-  // Modal States
   const [modelsToAdd, setModelsToAdd] = useState([]);
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
@@ -94,8 +92,8 @@ const Mesures = () => {
   const [prefilledClientInfo, setPrefilledClientInfo] = useState(null);
   const [hasPrefilledPreview, setHasPrefilledPreview] = useState(false);
 
-  // Refs
   const fileInputRef = useRef(null);
+
   const clearHabitPhoto = () => {
     setHabitPhotoFile(null);
     setHabitPreview(prev => {
@@ -117,6 +115,7 @@ const Mesures = () => {
     setPrefilledClientInfo(null);
     setHasPrefilledPreview(false);
     setPreviewImage('assets/images/model4.jpg');
+    setActiveTab('client');
   };
 
   const resetCurrentModelSection = () => {
@@ -181,18 +180,35 @@ const Mesures = () => {
           monthKey,
           label: `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${year}`,
           count,
+          sorties: 0,
         };
       });
+  };
+
+  const normalizeMonthlySummary = (items) => {
+    return (items || []).map((item) => ({
+      monthKey: item.monthKey,
+      label: item.label,
+      count: item.entrees ?? item.count ?? 0,
+      sorties: item.sorties ?? 0,
+    }));
   };
 
   const fetchExistingClients = async () => {
     if (clientsLoading) return;
     setClientsLoading(true);
     try {
-      const res = await api.get('/clients');
-      const clients = res.data || [];
+      const [clientsRes, syntheseRes] = await Promise.all([
+        api.get('/clients'),
+        api.get('/clients/synthese-mensuelle').catch(() => ({ data: [] }))
+      ]);
+      const clients = clientsRes.data || [];
       setExistingClients(clients);
-      setMonthlyModelCounts(computeMonthlyModelCounts(clients));
+      if (Array.isArray(syntheseRes.data) && syntheseRes.data.length > 0) {
+        setMonthlyModelCounts(normalizeMonthlySummary(syntheseRes.data));
+      } else {
+        setMonthlyModelCounts(computeMonthlyModelCounts(clients));
+      }
     } catch (error) {
       console.error('Erreur chargement clients existants:', error);
       Swal.fire('Erreur', 'Impossible de charger les clients existants', 'error');
@@ -388,7 +404,6 @@ const Mesures = () => {
   }, []);
 
   useEffect(() => {
-    // Filter models when category or models list changes
     if (categoryFilter === 'all') {
       setFilteredModels(models);
     } else {
@@ -397,7 +412,6 @@ const Mesures = () => {
   }, [categoryFilter, models]);
 
   useEffect(() => {
-    // Update avatar when gender preview changes, ONLY if no custom photo is uploaded, no model selected, and no prefilled preview
     if (!photoFile && !selectedModel && !hasPrefilledPreview) {
       updateAvatar(formData.genderPreview);
     }
@@ -475,9 +489,8 @@ const Mesures = () => {
     setFormData(prev => ({
       ...prev,
       sexe: value,
-      // Reset femme type if switching to Homme
       femme_type: value === 'Homme' ? '' : prev.femme_type,
-      genderPreview: value // Also update preview gender
+      genderPreview: value
     }));
   };
 
@@ -492,7 +505,6 @@ const Mesures = () => {
       reader.readAsDataURL(file);
       setHasPrefilledPreview(false);
       
-      // Reset selected model when manually uploading
       setSelectedModel(null);
       setFormData(prev => ({
         ...prev,
@@ -615,7 +627,7 @@ const Mesures = () => {
       
       setPreviewImage(getImageUrl(previewModelData.photoPath));
       setHasPrefilledPreview(false);
-      setPhotoFile(null); // Clear manual file
+      setPhotoFile(null);
       setShowModelPreviewModal(false);
       
       Swal.fire({
@@ -656,15 +668,6 @@ const Mesures = () => {
       return;
     }
 
-    if (!price || isNaN(price) || parseFloat(price) <= 0) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Prix invalide',
-        text: 'Veuillez saisir un prix valide pour le modèle.',
-      });
-      return;
-    }
-
     const requiredMeasurements = formData.sexe === 'Femme'
       ? formData.femme_type === 'jupe'
         ? ['jupe_epaule', 'jupe_manche', 'jupe_poitrine', 'jupe_taille', 'jupe_longueur', 'jupe_longueur_jupe', 'jupe_ceinture', 'jupe_fesse']
@@ -686,7 +689,7 @@ const Mesures = () => {
       modeleNom: formData.modeleNom || (selectedModel ? selectedModel.nom : ''),
       sexe: formData.sexe,
       typeVetement: formData.sexe === 'Femme' ? formData.femme_type : 'homme',
-      prix: price,
+      prix: price ? String(price) : '',
       description,
       robe_epaule: formData.robe_epaule,
       robe_manche: formData.robe_manche,
@@ -726,8 +729,8 @@ const Mesures = () => {
     setModelsToAdd(prev => [...prev, item]);
     Swal.fire({
       icon: 'success',
-      title: 'Modèle ajouté',
-      text: `Le modèle a été ajouté au client`,
+      title: 'Vêtement ajouté',
+      text: 'Le vêtement a été ajouté au client.',
       timer: 1800,
       showConfirmButton: false,
       toast: true,
@@ -745,6 +748,15 @@ const Mesures = () => {
         icon: 'error',
         title: 'Erreur de validation',
         html: errors.join('<br>'),
+      });
+      return;
+    }
+
+    if (modelsToAdd.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Vêtement requis',
+        text: 'Au moins un vêtement doit être ajouté au client avant l\'enregistrement.',
       });
       return;
     }
@@ -795,7 +807,7 @@ const Mesures = () => {
       const rendezVousAutoType = response?.data?.rendezVousAutoType;
       const rendezVousAutoDecale = response?.data?.rendezVousAutoDecale;
 
-      let successHtml = 'Client et modèles enregistrés avec succès';
+      let successHtml = 'Client et vêtements enregistrés avec succès';
       if (rendezVousAuto && rendezVousAutoDate) {
         const formattedDate = new Date(rendezVousAutoDate).toLocaleString('fr-FR', {
           day: '2-digit',
@@ -849,88 +861,290 @@ const Mesures = () => {
     </div>
   );
 
+  // Vérifier si l'onglet peut être activé
+  const canActivateTab = (tabName) => {
+    if (tabName === 'client') return true;
+    if (tabName === 'photo') {
+      return formData.sexe && formData.nom && formData.prenom && formData.contact;
+    }
+    if (tabName === 'measurements') {
+      return formData.sexe && formData.nom && formData.prenom && formData.contact;
+    }
+    if (tabName === 'model') {
+      return formData.sexe && formData.nom && formData.prenom && formData.contact;
+    }
+    return true;
+  };
+
   return (
     <>
       <div className="page-header">
-          <div className="container-fluid">
-            <div className="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-              <div className="breadcrumb-title pe-3">Mesure</div>
-              <div className="ps-3">
-                <nav aria-label="breadcrumb">
-                  <ol className="breadcrumb mb-0 p-0">
-                    <li className="breadcrumb-item"><Link to="/"><i className="bx bx-home-alt"></i></Link></li>
-                    <li className="breadcrumb-item active" aria-current="page">Prise de mesure</li>
-                  </ol>
-                </nav>
-              </div>
+        <div className="container-fluid">
+          <div className="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
+            <div className="breadcrumb-title pe-3">Mesure</div>
+            <div className="ps-3">
+              <nav aria-label="breadcrumb">
+                <ol className="breadcrumb mb-0 p-0">
+                  <li className="breadcrumb-item"><Link to="/"><i className="bx bx-home-alt"></i></Link></li>
+                  <li className="breadcrumb-item active" aria-current="page">Prise de mesure</li>
+                </ol>
+              </nav>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="card">
-          <div className="instructions p-3 bg-light border-bottom">
-            <h5><i className="fas fa-info-circle me-2"></i>Instructions</h5>
-            <p className="mb-0">Remplissez tous les champs marqués d'un astérisque (<span className="text-danger">*</span>) qui sont obligatoires. Les mesures doivent être en centimètres. Cliquez sur l'image pour ajouter une photo du modèle.</p>
-          </div>
-          <div className="card-body">
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
-              <div className="text-muted">
-                Sélectionnez un client existant pour pré-remplir les informations ou créez-en un nouveau.
+      <div className="card">
+        <div className="instructions p-3 bg-light border-bottom">
+          <h5><i className="fas fa-info-circle me-2"></i>Instructions</h5>
+          <p className="mb-0">Remplissez toutes les étapes dans l'ordre. Les champs marqués d'un astérisque (<span className="text-danger">*</span>) sont obligatoires.</p>
+        </div>
+
+        {/* Onglets Bootstrap */}
+       <style jsx>{`
+  .nav-tabs-elegant {
+    border-bottom: 1px solid #e0e0e0;
+    background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+    border-radius: 10px 10px 0 0;
+    padding: 0 10px;
+  }
+  
+  .nav-tabs-elegant .nav-link {
+    border: none;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 12px 24px;
+    transition: all 0.3s ease;
+    position: relative;
+    background: transparent;
+    margin: 0 5px;
+  }
+  
+  .nav-tabs-elegant .nav-link:hover {
+    color: #007bff;
+    background: rgba(0, 123, 255, 0.05);
+    border-radius: 8px 8px 0 0;
+  }
+  
+  .nav-tabs-elegant .nav-link.active {
+    color: #007bff;
+    background: white;
+  }
+  
+  .nav-tabs-elegant .nav-link.active::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #007bff, #00c6ff);
+    border-radius: 3px;
+    animation: slideWidth 0.3s ease;
+  }
+  
+  @keyframes slideWidth {
+    from {
+      width: 0;
+      left: 50%;
+    }
+    to {
+      width: 100%;
+      left: 0;
+    }
+  }
+  
+  .nav-tabs-elegant .nav-link i {
+    margin-right: 8px;
+    font-size: 1.1rem;
+    transition: transform 0.2s ease;
+  }
+  
+  .nav-tabs-elegant .nav-link:hover i {
+    transform: translateY(-2px);
+  }
+  
+  .nav-tabs-elegant .nav-link.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    color: #adb5bd;
+  }
+  
+  .nav-tabs-elegant .nav-link.disabled:hover {
+    background: transparent;
+    transform: none;
+  }
+  
+  @media (max-width: 768px) {
+    .nav-tabs-elegant .nav-link {
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+  }
+`}</style>
+
+<ul className="nav nav-tabs nav-tabs-elegant nav-justified" role="tablist">
+  <li className="nav-item" role="presentation">
+    <button 
+      className={`nav-link ${activeTab === 'client' ? 'active' : ''} ${!canActivateTab('client') ? 'disabled' : ''}`}
+      onClick={() => canActivateTab('client') && setActiveTab('client')}
+      type="button"
+      role="tab"
+    >
+      <i className="fas fa-user me-2"></i>
+      Étape 1 : Client
+    </button>
+  </li>
+  <li className="nav-item" role="presentation">
+    <button 
+      className={`nav-link ${activeTab === 'photo' ? 'active' : ''} ${!canActivateTab('photo') ? 'disabled' : ''}`}
+      onClick={() => canActivateTab('photo') && setActiveTab('photo')}
+      type="button"
+      role="tab"
+    >
+      <i className="fas fa-camera me-2"></i>
+      Étape 2 : Photo & Modèle
+    </button>
+  </li>
+  <li className="nav-item" role="presentation">
+    <button 
+      className={`nav-link ${activeTab === 'measurements' ? 'active' : ''} ${!canActivateTab('measurements') ? 'disabled' : ''}`}
+      onClick={() => canActivateTab('measurements') && setActiveTab('measurements')}
+      type="button"
+      role="tab"
+    >
+      <i className="fas fa-ruler-combined me-2"></i>
+      Étape 3 : Mesures
+    </button>
+  </li>
+  <li className="nav-item" role="presentation">
+    <button 
+      className={`nav-link ${activeTab === 'model' ? 'active' : ''} ${!canActivateTab('model') ? 'disabled' : ''}`}
+      onClick={() => canActivateTab('model') && setActiveTab('model')}
+      type="button"
+      role="tab"
+    >
+      <i className="fas fa-tshirt me-2"></i>
+      Étape 4 : Confirmation
+    </button>
+  </li>
+</ul>
+
+        <div className="card-body">
+          <form onSubmit={handleSubmit}>
+            <div className="tab-content pt-4">
+            {/* Onglet 1 : Informations Client */}
+            <div className={`tab-pane fade ${activeTab === 'client' ? 'show active' : ''}`}>
+              <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
+                <div className="text-muted">
+                  Sélectionnez un client existant pour pré-remplir les informations ou créez-en un nouveau.
+                </div>
+                <button type="button" className="btn btn-outline-primary" onClick={openClientPickerModal}>
+                  <i className="bx bx-user-plus me-1"></i> Sélectionner un client existant
+                </button>
               </div>
-              <button type="button" className="btn btn-outline-primary" onClick={openClientPickerModal}>
-                <i className="bx bx-user-plus me-1"></i> Sélectionner un client existant
-              </button>
-            </div>
 
-            {monthlyModelCounts.length > 0 && (
-              <div className="row mb-3">
-                <div className="col-12">
-                  <div className="card border-secondary bg-light">
-                    <div className="card-body py-2 px-3">
-                      <div className="d-flex flex-wrap align-items-center gap-2">
-                        <strong className="text-secondary">Modèles reçus par mois :</strong>
-                        {monthlyModelCounts.map(item => (
-                          <span key={item.monthKey} className="badge bg-white border text-dark py-2 px-3">
-                            <div className="fw-semibold">{item.label}</div>
-                            <small>{item.count} modèle{item.count > 1 ? 's' : ''}</small>
-                          </span>
-                        ))}
+              {monthlyModelCounts.length > 0 && (
+                <div className="row mb-3">
+                  <div className="col-12">
+                    <div className="card border-secondary bg-light">
+                      <div className="card-body py-2 px-3">
+                        <div className="d-flex flex-wrap align-items-center gap-2">
+                          <strong className="text-secondary">Synthèse du mois :</strong>
+                          {monthlyModelCounts.map(item => (
+                            <span key={item.monthKey} className="badge bg-white border text-dark py-2 px-3">
+                              <div className="fw-semibold">{item.label}</div>
+                              <small>Entrée: {item.count} habit{item.count > 1 ? 's' : ''}</small>
+                              <br />
+                              <small>Sortie: {item.sorties || 0} habit{(item.sorties || 0) > 1 ? 's' : ''}</small>
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {prefilledClientInfo && (
-              <div className="alert alert-info d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-                <div>
-                  <strong>Client sélectionné :</strong> {prefilledClientInfo.nomComplet || '—'}
-                  {prefilledClientInfo.contact && (
-                    <span className="ms-2">• {prefilledClientInfo.contact}</span>
-                  )}
-                  {prefilledClientInfo.lastMesureDate && formatMesureDate(prefilledClientInfo.lastMesureDate) && (
-                    <span className="ms-2 text-muted">
-                      Dernière mesure le {formatMesureDate(prefilledClientInfo.lastMesureDate)}
-                      {prefilledClientInfo.lastMesureType && ` · ${prefilledClientInfo.lastMesureType}`}
-                    </span>
-                  )}
+              {prefilledClientInfo && (
+                <div className="alert alert-info d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                  <div>
+                    <strong>Client sélectionné :</strong> {prefilledClientInfo.nomComplet || '—'}
+                    {prefilledClientInfo.contact && (
+                      <span className="ms-2">• {prefilledClientInfo.contact}</span>
+                    )}
+                    {prefilledClientInfo.lastMesureDate && formatMesureDate(prefilledClientInfo.lastMesureDate) && (
+                      <span className="ms-2 text-muted">
+                        Dernière mesure le {formatMesureDate(prefilledClientInfo.lastMesureDate)}
+                        {prefilledClientInfo.lastMesureType && ` · ${prefilledClientInfo.lastMesureType}`}
+                      </span>
+                    )}
+                  </div>
+                  <div className="d-flex gap-2">
+                    <button type="button" className="btn btn-sm btn-outline-dark" onClick={clearPrefilledClient}>
+                      Effacer la sélection
+                    </button>
+                    <button type="button" className="btn btn-sm btn-outline-secondary" onClick={resetFormState}>
+                      Tout réinitialiser
+                    </button>
+                  </div>
                 </div>
-                <div className="d-flex gap-2">
-                  <button type="button" className="btn btn-sm btn-outline-dark" onClick={clearPrefilledClient}>
-                    Effacer la sélection
-                  </button>
-                  <button type="button" className="btn btn-sm btn-outline-secondary" onClick={resetFormState}>
-                    Tout réinitialiser
-                  </button>
+              )}
+
+              <div className="form-section">
+                <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-user me-2"></i> Informations Générales</h5>
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Nom <span className="text-danger">*</span></label>
+                    <input type="text" className="form-control" name="nom" value={formData.nom} onChange={handleInputChange} />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Prénom <span className="text-danger">*</span></label>
+                    <input type="text" className="form-control" name="prenom" value={formData.prenom} onChange={handleInputChange} />
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Contact <span className="text-danger">*</span></label>
+                    <input type="tel" className="form-control" name="contact" value={formData.contact} onChange={handleInputChange} placeholder="Ex: 76XXXXXXX" />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Adresse ou Localité</label>
+                    <input type="text" className="form-control" name="adresse" value={formData.adresse} onChange={handleInputChange} />
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Email <small className="text-muted">(optionnel)</small></label>
+                    <input type="email" className="form-control" name="email" value={formData.email} onChange={handleInputChange} />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Sexe <span className="text-danger">*</span></label>
+                    <select className="form-select" name="sexe" value={formData.sexe} onChange={handleGenderChange}>
+                      <option value="">-- Sélectionner --</option>
+                      <option value="Femme">Femme</option>
+                      <option value="Homme">Homme</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-            )}
 
-            <form onSubmit={handleSubmit}>
+              <div className="mt-4 text-end">
+                <button 
+                  type="button" 
+                  className="btn btn-primary"
+                  onClick={() => canActivateTab('photo') && setActiveTab('photo')}
+                  disabled={!canActivateTab('photo')}
+                >
+                  Étape suivante : Photo & Modèle <i className="fas fa-arrow-right ms-2"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Onglet 2 : Photo du client et sélection modèle */}
+            <div className={`tab-pane fade ${activeTab === 'photo' ? 'show active' : ''}`}>
               <div className="row">
-                {/* Left Column: Photo & Models */}
-                <div className="col-md-4">
+                <div className="col-md-6">
                   <div className="d-flex flex-column align-items-center text-center">
                     <div className="image-preview-container mb-3 position-relative" style={{ cursor: 'pointer' }}>
                       <img 
@@ -957,67 +1171,6 @@ const Mesures = () => {
                       <button type="button" className="btn btn-outline-primary btn-sm" onClick={openModelPhotoCamera}>
                         <i className="fas fa-camera me-1"></i> Prendre photo du modèle
                       </button>
-                    </div>
-
-                    <div className="divider mb-3 w-100 text-center border-bottom">
-                      <span className="bg-white px-2 text-muted" style={{ position: 'relative', top: '10px' }}>OU</span>
-                    </div>
-
-                    {/* Existing Models Section */}
-                    <div className="existing-models-section w-100">
-                      <button 
-                        className="btn btn-light w-100 d-flex justify-content-between align-items-center mb-3" 
-                        type="button" 
-                        onClick={() => setShowModels(!showModels)}
-                      >
-                        <h6 className="mb-0">Choisir un modèle existant</h6>
-                        <i className={`bx ${showModels ? 'bx-chevron-up' : 'bx-chevron-down'}`}></i>
-                      </button>
-
-                      {showModels && (
-                        <div className="card card-body p-2">
-                          <div className="mb-3">
-                            <label className="form-label small">Catégorie:</label>
-                            <select 
-                              className="form-select form-select-sm" 
-                              value={categoryFilter}
-                              onChange={(e) => setCategoryFilter(e.target.value)}
-                            >
-                              <option value="all">Toutes les catégories</option>
-                              <option value="ROBE">Robe</option>
-                              <option value="JUPE">Jupe</option>
-                              <option value="HOMME">Vêtement Homme</option>
-                              <option value="ENFANT">Vêtement Enfant</option>
-                              <option value="AUTRE">Autre</option>
-                            </select>
-                          </div>
-
-                          <div className="models-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
-                            {filteredModels.length === 0 ? (
-                              <div className="text-center py-3 col-span-2">Aucun modèle trouvé</div>
-                            ) : (
-                              filteredModels.map(model => (
-                                <div 
-                                  key={model.id} 
-                                  className={`model-card border rounded p-2 ${selectedModel?.id === model.id ? 'border-primary bg-light' : ''}`}
-                                  onClick={() => handleModelClick(model)}
-                                  style={{ cursor: 'pointer' }}
-                                >
-                                  <img 
-                                    src={getImageUrl(model.photoPath)}
-                                    className="img-fluid mb-2 rounded"
-                                    style={{ height: '80px', width: '100%', objectFit: 'cover' }}
-                                    onError={(e) => { e.target.src = 'assets/images/default-model.png'; }}
-                                    alt={model.nom}
-                                  />
-                                  <div className="small text-truncate fw-bold">{model.nom}</div>
-                                  {model.prix && <div className="small text-success">{model.prix} FCFA</div>}
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      )}
                     </div>
 
                     <div className="mt-3">
@@ -1049,279 +1202,348 @@ const Mesures = () => {
                   </div>
                 </div>
 
-                {/* Right Column: Form Fields */}
-                <div className="col-md-8">
-                  {/* General Info */}
-                  <div className="form-section mb-4">
-                    <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-user me-2"></i> Informations Générales</h5>
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label">Nom <span className="text-danger">*</span></label>
-                        <input type="text" className="form-control" name="nom" value={formData.nom} onChange={handleInputChange} />
-                      </div>
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label">Prénom <span className="text-danger">*</span></label>
-                        <input type="text" className="form-control" name="prenom" value={formData.prenom} onChange={handleInputChange} />
-                      </div>
-                    </div>
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label">Contact <span className="text-danger">*</span></label>
-                        <input type="tel" className="form-control" name="contact" value={formData.contact} onChange={handleInputChange} placeholder="Ex: 76XXXXXXX" />
-                      </div>
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label">Adresse ou Localité</label>
-                        <input type="text" className="form-control" name="adresse" value={formData.adresse} onChange={handleInputChange} />
-                      </div>
-                    </div>
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label">Email <small className="text-muted">(optionnel)</small></label>
-                        <input type="email" className="form-control" name="email" value={formData.email} onChange={handleInputChange} />
-                      </div>
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label">Sexe <span className="text-danger">*</span></label>
-                        <select className="form-select" name="sexe" value={formData.sexe} onChange={handleGenderChange}>
-                          <option value="">-- Sélectionner --</option>
-                          <option value="Femme">Femme</option>
-                          <option value="Homme">Homme</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
+                <div className="col-md-6">
+                  <div className="existing-models-section">
+                    <button 
+                      className="btn btn-light w-100 d-flex justify-content-between align-items-center mb-3" 
+                      type="button" 
+                      onClick={() => setShowModels(!showModels)}
+                    >
+                      <h6 className="mb-0">Choisir un modèle existant</h6>
+                      <i className={`bx ${showModels ? 'bx-chevron-up' : 'bx-chevron-down'}`}></i>
+                    </button>
 
-                  {/* Femme Options */}
-                  {formData.sexe === 'Femme' && (
-                    <div className="form-section mb-4">
-                      <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-tshirt me-2"></i> Type de vêtement <span className="text-danger">*</span></h5>
-                      <div className="row">
-                        <div className="col-md-6 mb-3">
-                          <div 
-                            className={`card p-3 cursor-pointer ${formData.femme_type === 'robe' ? 'border-primary bg-light' : ''}`}
-                            onClick={() => setFormData({...formData, femme_type: 'robe'})}
-                            style={{ cursor: 'pointer' }}
+                    {showModels && (
+                      <div className="card card-body p-2">
+                        <div className="mb-3">
+                          <label className="form-label small">Catégorie:</label>
+                          <select 
+                            className="form-select form-select-sm" 
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value)}
                           >
-                            <h6><i className="fas fa-vest me-2"></i> Option Robe</h6>
-                            <p className="small text-muted">Sélectionnez cette option pour les mesures de robe</p>
-                            <div className="form-check">
-                              <input 
-                                className="form-check-input" 
-                                type="radio" 
-                                name="femme_type" 
-                                checked={formData.femme_type === 'robe'} 
-                                onChange={() => setFormData({...formData, femme_type: 'robe'})}
-                              />
-                              <label className="form-check-label">Choisir cette option</label>
-                            </div>
-                          </div>
+                            <option value="all">Toutes les catégories</option>
+                            <option value="ROBE">Robe</option>
+                            <option value="JUPE">Jupe</option>
+                            <option value="HOMME">Vêtement Homme</option>
+                            <option value="ENFANT">Vêtement Enfant</option>
+                            <option value="AUTRE">Autre</option>
+                          </select>
                         </div>
-                        <div className="col-md-6 mb-3">
-                          <div 
-                            className={`card p-3 cursor-pointer ${formData.femme_type === 'jupe' ? 'border-primary bg-light' : ''}`}
-                            onClick={() => setFormData({...formData, femme_type: 'jupe'})}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <h6><i className="fas fa-skating me-2"></i> Option Jupe</h6>
-                            <p className="small text-muted">Sélectionnez cette option pour les mesures de jupe</p>
-                            <div className="form-check">
-                              <input 
-                                className="form-check-input" 
-                                type="radio" 
-                                name="femme_type" 
-                                checked={formData.femme_type === 'jupe'} 
-                                onChange={() => setFormData({...formData, femme_type: 'jupe'})}
-                              />
-                              <label className="form-check-label">Choisir cette option</label>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Mesures Robe */}
-                  {formData.sexe === 'Femme' && formData.femme_type === 'robe' && (
-                    <div className="form-section mb-4">
-                      <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-ruler-combined me-2"></i> Mesures pour Robe</h5>
-                      <div className="row">
-                        {renderMeasureInput('E', 'Épaule', 'robe_epaule', true)}
-                        {renderMeasureInput('M', 'Manche', 'robe_manche', true)}
-                      </div>
-                      <div className="row">
-                        {renderMeasureInput('P', 'Poitrine', 'robe_poitrine', true)}
-                        {renderMeasureInput('T', 'Taille', 'robe_taille', true)}
-                      </div>
-                      <div className="row">
-                        {renderMeasureInput('LR', 'Longueur robe', 'robe_longueur', true)}
-                        {renderMeasureInput('F', 'Fesse', 'robe_fesse', true)}
-                      </div>
-                      <div className="row">
-                        {renderMeasureInput('Tm', 'Tour de manche', 'robe_tour_manche')}
-                        {renderMeasureInput('Lp', 'Longueur de poitrine', 'robe_longueur_poitrine')}
-                      </div>
-                      <div className="row">
-                        {renderMeasureInput('Lt', 'Longueur de taille', 'robe_longueur_taille')}
-                        {renderMeasureInput('Lf', 'Longueur de fesse', 'robe_longueur_fesse')}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Mesures Jupe */}
-                  {formData.sexe === 'Femme' && formData.femme_type === 'jupe' && (
-                    <div className="form-section mb-4">
-                      <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-ruler-combined me-2"></i> Mesures pour Jupe</h5>
-                      <div className="row">
-                        {renderMeasureInput('E', 'Épaule', 'jupe_epaule', true)}
-                        {renderMeasureInput('M', 'Manche', 'jupe_manche', true)}
-                      </div>
-                      <div className="row">
-                        {renderMeasureInput('P', 'Poitrine', 'jupe_poitrine', true)}
-                        {renderMeasureInput('T', 'Taille', 'jupe_taille', true)}
-                      </div>
-                      <div className="row">
-                        {renderMeasureInput('L', 'Longueur', 'jupe_longueur', true)}
-                        {renderMeasureInput('LJ', 'Longueur jupe', 'jupe_longueur_jupe', true)}
-                      </div>
-                      <div className="row">
-                        {renderMeasureInput('C', 'Ceinture', 'jupe_ceinture', true)}
-                        {renderMeasureInput('F', 'Fesse', 'jupe_fesse', true)}
-                      </div>
-                      <div className="row">
-                        {renderMeasureInput('TM', 'Tour de manche', 'jupe_tour_manche')}
-                        {renderMeasureInput('LP', 'Longueur de poitrine', 'jupe_longueur_poitrine')}
-                      </div>
-                      <div className="row">
-                        {renderMeasureInput('Lt', 'Longueur de taille', 'jupe_longueur_taille')}
-                        {renderMeasureInput('Lf', 'Longueur de fesse', 'jupe_longueur_fesse')}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Mesures Homme */}
-                  {formData.sexe === 'Homme' && (
-                    <div className="form-section mb-4">
-                      <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-ruler-combined me-2"></i> Mesures pour Homme</h5>
-                      <div className="row">
-                        {renderMeasureInput('E', 'Épaule', 'homme_epaule', true)}
-                        {renderMeasureInput('M', 'Manche', 'homme_manche', true)}
-                      </div>
-                      <div className="row">
-                        {renderMeasureInput('L', 'Longueur', 'homme_longueur', true)}
-                        {renderMeasureInput('Lp', 'Longueur pantalon', 'homme_longueur_pantalon', true)}
-                      </div>
-                      <div className="row">
-                        {renderMeasureInput('C', 'Ceinture', 'homme_ceinture', true)}
-                        {renderMeasureInput('Q', 'Cuisse', 'homme_cuisse', true)}
-                      </div>
-                      <div className="row">
-                        {renderMeasureInput('P', 'Poitrine', 'homme_poitrine')}
-                        {renderMeasureInput('Cd', 'Cou', 'homme_corps')}
-                      </div>
-                      <div className="row">
-                        {renderMeasureInput('Tm', 'Tour de manche', 'homme_tour_manche')}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="form-section mb-4">
-                    <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-tag me-2"></i> Détails du modèle</h5>
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label">Prix du modèle (FCFA) <span className="text-danger">*</span></label>
-                        <input
-                          type="number"
-                          className="form-control"
-                          value={price}
-                          onChange={(e) => setPrice(e.target.value)}
-                          placeholder="Entrez le prix en FCFA"
-                          min="0"
-                        />
-                      </div>
-                      <div className="col-md-6 mb-3">
-                        <label className="form-label">Photo de l'habit (caméra directe) <small className="text-muted">(optionnelle)</small></label>
-                        <div className="d-flex flex-wrap gap-2">
-                          <button type="button" className="btn btn-outline-primary btn-sm" onClick={openHabitPhotoCamera}>
-                            <i className="fas fa-camera me-1"></i> Prendre photo directe
-                          </button>
-                        </div>
-                        {/* <small className="text-muted d-block mt-2">L'upload manuel est désactivé. Utilisez uniquement la caméra.</small> */}
-                      </div>
-                    </div>
-                    <div className="row">
-                      <div className="col-md-12 mb-3">
-                        <label className="form-label">Description <small className="text-muted">(optionnel)</small></label>
-                        <textarea
-                          className="form-control"
-                          rows={3}
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          placeholder="Ajouter une description ou note pour ce modèle..."
-                        />
-                      </div>
-                    </div>
-                    {habitPreview && (
-                      <div className="row mb-3">
-                        <div className="col-md-12 text-center">
-                          <img
-                            src={habitPreview}
-                            alt="Aperçu de l'habit"
-                            className="img-fluid rounded border"
-                            style={{ maxHeight: '220px', objectFit: 'cover' }}
-                          />
+                        <div className="models-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+                          {filteredModels.length === 0 ? (
+                            <div className="text-center py-3 col-span-2">Aucun modèle trouvé</div>
+                          ) : (
+                            filteredModels.map(model => (
+                              <div 
+                                key={model.id} 
+                                className={`model-card border rounded p-2 ${selectedModel?.id === model.id ? 'border-primary bg-light' : ''}`}
+                                onClick={() => handleModelClick(model)}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                <img 
+                                  src={getImageUrl(model.photoPath)}
+                                  className="img-fluid mb-2 rounded"
+                                  style={{ height: '80px', width: '100%', objectFit: 'cover' }}
+                                  onError={(e) => { e.target.src = 'assets/images/default-model.png'; }}
+                                  alt={model.nom}
+                                />
+                                <div className="small text-truncate fw-bold">{model.nom}</div>
+                                {model.prix && <div className="small text-success">{model.prix} FCFA</div>}
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
                     )}
-                    <div className="row mb-3">
-                      <div className="col-md-12 text-end">
-                        <button type="button" className="btn btn-success" onClick={handleAddModelToClient}>
-                          <i className="fas fa-plus me-2"></i> Ajouter ce modèle
-                        </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 d-flex justify-content-between">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary"
+                  onClick={() => setActiveTab('client')}
+                >
+                  <i className="fas fa-arrow-left me-2"></i> Étape précédente
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-primary"
+                  onClick={() => canActivateTab('measurements') && setActiveTab('measurements')}
+                  disabled={!canActivateTab('measurements')}
+                >
+                  Étape suivante : Mesures <i className="fas fa-arrow-right ms-2"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Onglet 3 : Mesures détaillées */}
+            <div className={`tab-pane fade ${activeTab === 'measurements' ? 'show active' : ''}`}>
+              {/* Femme Options */}
+              {formData.sexe === 'Femme' && (
+                <div className="form-section mb-4">
+                  <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-tshirt me-2"></i> Type de vêtement <span className="text-danger">*</span></h5>
+                  <div className="row">
+                    <div className="col-md-6 mb-3">
+                      <div 
+                        className={`card p-3 cursor-pointer ${formData.femme_type === 'robe' ? 'border-primary bg-light' : ''}`}
+                        onClick={() => setFormData({...formData, femme_type: 'robe'})}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <h6><i className="fas fa-vest me-2"></i> Option Robe</h6>
+                        <p className="small text-muted">Sélectionnez cette option pour les mesures de robe</p>
+                        <div className="form-check">
+                          <input 
+                            className="form-check-input" 
+                            type="radio" 
+                            name="femme_type" 
+                            checked={formData.femme_type === 'robe'} 
+                            onChange={() => setFormData({...formData, femme_type: 'robe'})}
+                          />
+                          <label className="form-check-label">Choisir cette option</label>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <div 
+                        className={`card p-3 cursor-pointer ${formData.femme_type === 'jupe' ? 'border-primary bg-light' : ''}`}
+                        onClick={() => setFormData({...formData, femme_type: 'jupe'})}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <h6><i className="fas fa-skating me-2"></i> Option Jupe</h6>
+                        <p className="small text-muted">Sélectionnez cette option pour les mesures de jupe</p>
+                        <div className="form-check">
+                          <input 
+                            className="form-check-input" 
+                            type="radio" 
+                            name="femme_type" 
+                            checked={formData.femme_type === 'jupe'} 
+                            onChange={() => setFormData({...formData, femme_type: 'jupe'})}
+                          />
+                          <label className="form-check-label">Choisir cette option</label>
+                        </div>
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
 
-                  {modelsToAdd.length > 0 && (
-                    <div className="card mb-4">
-                      <div className="card-body">
-                        <h5 className="mb-3">Modèles ajoutés ({modelsToAdd.length})</h5>
-                        <div className="list-group">
-                          {modelsToAdd.map((item, index) => (
-                            <div key={index} className="list-group-item d-flex justify-content-between align-items-start gap-3">
-                              <div>
-                                <div className="fw-semibold">{item.modeleNom || `Modèle ${index + 1}`}</div>
-                                <div className="small text-muted">
-                                  {item.typeVetement ? `${item.typeVetement.toUpperCase()} •` : ''} {item.sexe}
-                                </div>
-                                <div className="small text-success">{item.prix} FCFA</div>
-                              </div>
-                              <div className="d-flex align-items-center gap-2">
-                                <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeModelItem(index)}>
-                                  Supprimer
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="mt-3 text-end">
-                          <strong>Total:</strong> {modelsToAdd.reduce((sum, item) => sum + Number(item.prix || 0), 0)} FCFA
-                        </div>
-                      </div>
-                    </div>
-                  )}
+              {/* Mesures Robe */}
+              {formData.sexe === 'Femme' && formData.femme_type === 'robe' && (
+                <div className="form-section mb-4">
+                  <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-ruler-combined me-2"></i> Mesures pour Robe</h5>
+                  <div className="row">
+                    {renderMeasureInput('E', 'Épaule', 'robe_epaule', true)}
+                    {renderMeasureInput('M', 'Manche', 'robe_manche', true)}
+                  </div>
+                  <div className="row">
+                    {renderMeasureInput('P', 'Poitrine', 'robe_poitrine', true)}
+                    {renderMeasureInput('T', 'Taille', 'robe_taille', true)}
+                  </div>
+                  <div className="row">
+                    {renderMeasureInput('LR', 'Longueur robe', 'robe_longueur', true)}
+                    {renderMeasureInput('F', 'Fesse', 'robe_fesse', true)}
+                  </div>
+                  <div className="row">
+                    {renderMeasureInput('Tm', 'Tour de manche', 'robe_tour_manche')}
+                    {renderMeasureInput('Lp', 'Longueur de poitrine', 'robe_longueur_poitrine')}
+                  </div>
+                  <div className="row">
+                    {renderMeasureInput('Lt', 'Longueur de taille', 'robe_longueur_taille')}
+                    {renderMeasureInput('Lf', 'Longueur de fesse', 'robe_longueur_fesse')}
+                  </div>
+                </div>
+              )}
 
-                  <div className="row mt-4">
-                    <div className="col-md-12 text-end">
-                      <button type="submit" className="btn btn-primary px-4" disabled={loading}>
-                        {loading ? <i className="fas fa-spinner fa-spin me-2"></i> : <i className="fas fa-save me-2"></i>}
-                        Enregistrer
+              {/* Mesures Jupe */}
+              {formData.sexe === 'Femme' && formData.femme_type === 'jupe' && (
+                <div className="form-section mb-4">
+                  <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-ruler-combined me-2"></i> Mesures pour Jupe</h5>
+                  <div className="row">
+                    {renderMeasureInput('E', 'Épaule', 'jupe_epaule', true)}
+                    {renderMeasureInput('M', 'Manche', 'jupe_manche', true)}
+                  </div>
+                  <div className="row">
+                    {renderMeasureInput('P', 'Poitrine', 'jupe_poitrine', true)}
+                    {renderMeasureInput('T', 'Taille', 'jupe_taille', true)}
+                  </div>
+                  <div className="row">
+                    {renderMeasureInput('L', 'Longueur', 'jupe_longueur', true)}
+                    {renderMeasureInput('LJ', 'Longueur jupe', 'jupe_longueur_jupe', true)}
+                  </div>
+                  <div className="row">
+                    {renderMeasureInput('C', 'Ceinture', 'jupe_ceinture', true)}
+                    {renderMeasureInput('F', 'Fesse', 'jupe_fesse', true)}
+                  </div>
+                  <div className="row">
+                    {renderMeasureInput('TM', 'Tour de manche', 'jupe_tour_manche')}
+                    {renderMeasureInput('LP', 'Longueur de poitrine', 'jupe_longueur_poitrine')}
+                  </div>
+                  <div className="row">
+                    {renderMeasureInput('Lt', 'Longueur de taille', 'jupe_longueur_taille')}
+                    {renderMeasureInput('Lf', 'Longueur de fesse', 'jupe_longueur_fesse')}
+                  </div>
+                </div>
+              )}
+
+              {/* Mesures Homme */}
+              {formData.sexe === 'Homme' && (
+                <div className="form-section mb-4">
+                  <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-ruler-combined me-2"></i> Mesures pour Homme</h5>
+                  <div className="row">
+                    {renderMeasureInput('E', 'Épaule', 'homme_epaule', true)}
+                    {renderMeasureInput('M', 'Manche', 'homme_manche', true)}
+                  </div>
+                  <div className="row">
+                    {renderMeasureInput('L', 'Longueur', 'homme_longueur', true)}
+                    {renderMeasureInput('Lp', 'Longueur pantalon', 'homme_longueur_pantalon', true)}
+                  </div>
+                  <div className="row">
+                    {renderMeasureInput('C', 'Ceinture', 'homme_ceinture', true)}
+                    {renderMeasureInput('Q', 'Cuisse', 'homme_cuisse', true)}
+                  </div>
+                  <div className="row">
+                    {renderMeasureInput('P', 'Poitrine', 'homme_poitrine')}
+                    {renderMeasureInput('Cd', 'Cou', 'homme_corps')}
+                  </div>
+                  <div className="row">
+                    {renderMeasureInput('Tm', 'Tour de manche', 'homme_tour_manche')}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 d-flex justify-content-between">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary"
+                  onClick={() => setActiveTab('photo')}
+                >
+                  <i className="fas fa-arrow-left me-2"></i> Étape précédente
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-primary"
+                  onClick={() => canActivateTab('model') && setActiveTab('model')}
+                  disabled={!canActivateTab('model')}
+                >
+                  Étape suivante : Confirmation <i className="fas fa-arrow-right ms-2"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Onglet 4 : Détails du modèle et confirmation */}
+            <div className={`tab-pane fade ${activeTab === 'model' ? 'show active' : ''}`}>
+              <div className="form-section mb-4">
+                <h5 className="border-bottom pb-2 mb-3"><i className="fas fa-tag me-2"></i> Détails du modèle</h5>
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Prix du modèle (FCFA) <small className="text-muted">(optionnel)</small></label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      placeholder="Entrez le prix en FCFA si disponible"
+                      min="0"
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Photo de l'habit (caméra directe) <small className="text-muted">(optionnelle)</small></label>
+                    <div className="d-flex flex-wrap gap-2">
+                      <button type="button" className="btn btn-outline-primary btn-sm" onClick={openHabitPhotoCamera}>
+                        <i className="fas fa-camera me-1"></i> Prendre photo directe
                       </button>
                     </div>
                   </div>
                 </div>
+                <div className="row">
+                  <div className="col-md-12 mb-3">
+                    <label className="form-label">Description <small className="text-muted">(optionnel)</small></label>
+                    <textarea
+                      className="form-control"
+                      rows={3}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Ajouter une description ou note pour ce modèle..."
+                    />
+                  </div>
+                </div>
+                {habitPreview && (
+                  <div className="row mb-3">
+                    <div className="col-md-12 text-center">
+                      <img
+                        src={habitPreview}
+                        alt="Aperçu de l'habit"
+                        className="img-fluid rounded border"
+                        style={{ maxHeight: '220px', objectFit: 'cover' }}
+                      />
+                    </div>
+                  </div>
+                )}
+                <div className="row mb-3">
+                  <div className="col-md-12 text-end">
+                    <button
+                      type="button"
+                      className="btn btn-primary px-4 py-2 fw-semibold shadow-sm"
+                      onClick={handleAddModelToClient}
+                    >
+                      <i className="fas fa-check-circle me-2"></i> Ajouter ce vêtement au client
+                    </button>
+                  </div>
+                </div>
               </div>
-            </form>
-          </div>
+
+              {modelsToAdd.length > 0 && (
+                <div className="card mb-4">
+                  <div className="card-body">
+                    <h5 className="mb-3">Vêtements ajoutés ({modelsToAdd.length})</h5>
+                    <div className="list-group">
+                      {modelsToAdd.map((item, index) => (
+                        <div key={index} className="list-group-item d-flex justify-content-between align-items-start gap-3">
+                          <div>
+                            <div className="fw-semibold">{item.modeleNom || `Modèle ${index + 1}`}</div>
+                            <div className="small text-muted">
+                              {item.typeVetement ? `${item.typeVetement.toUpperCase()} •` : ''} {item.sexe}
+                            </div>
+                            <div className="small text-success">{item.prix ? `${item.prix} FCFA` : 'Prix à définir'}</div>
+                          </div>
+                          <div className="d-flex align-items-center gap-2">
+                            <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeModelItem(index)}>
+                              Supprimer
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 text-end">
+                      <strong>Total:</strong> {modelsToAdd.reduce((sum, item) => sum + Number(item.prix || 0), 0)} FCFA
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 d-flex justify-content-between">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary"
+                  onClick={() => setActiveTab('measurements')}
+                >
+                  <i className="fas fa-arrow-left me-2"></i> Étape précédente
+                </button>
+                <button type="submit" className="btn btn-primary px-4" disabled={loading}>
+                  {loading ? <i className="fas fa-spinner fa-spin me-2"></i> : <i className="fas fa-save me-2"></i>}
+                  Enregistrer le client
+                </button>
+              </div>
+            </div>
+            </div>
+          </form>
         </div>
+      </div>
+
       {/* Existing Client Picker Modal */}
       {showClientPicker && (
         <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
@@ -1353,12 +1575,14 @@ const Mesures = () => {
                   <div className="row mb-3">
                     <div className="col-12">
                       <div className="bg-light border rounded p-3">
-                        <div className="fw-semibold mb-2">Synthèse des modèles reçus</div>
+                        <div className="fw-semibold mb-2">Synthèse du mois</div>
                         <div className="d-flex flex-wrap gap-2">
                           {monthlyModelCounts.map(item => (
                             <div key={item.monthKey} className="badge bg-white border text-dark py-2 px-3">
                               <div>{item.label}</div>
-                              <small>{item.count} modèle{item.count > 1 ? 's' : ''}</small>
+                              <small>Entrée: {item.count} habit{item.count > 1 ? 's' : ''}</small>
+                              <br />
+                              <small>Sortie: {item.sorties || 0} habit{(item.sorties || 0) > 1 ? 's' : ''}</small>
                             </div>
                           ))}
                         </div>
@@ -1419,7 +1643,6 @@ const Mesures = () => {
         </div>
       )}
 
-
       {/* Model Preview Modal */}
       {showModelPreviewModal && previewModelData && (
         <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
@@ -1430,7 +1653,6 @@ const Mesures = () => {
                 <button type="button" className="btn-close" onClick={() => setShowModelPreviewModal(false)}></button>
               </div>
               <div className="modal-body text-center">
-                {/* affiche la vidéo si le modèle en possède une, sinon la photo */}
                 {previewModelData.videoPath ? (
                   <video
                     src={getVideoUrl(previewModelData.videoPath)}
@@ -1438,7 +1660,6 @@ const Mesures = () => {
                     controls
                     style={{ maxHeight: '400px' }}
                     onError={(e) => {
-                      // en cas d'erreur vidéo, retomber sur l'image
                       const img = document.createElement('img');
                       img.src = getImageUrl(previewModelData.photoPath);
                       img.className = 'img-fluid rounded mb-3';

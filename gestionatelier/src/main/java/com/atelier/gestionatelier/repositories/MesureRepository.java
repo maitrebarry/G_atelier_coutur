@@ -13,6 +13,8 @@ import java.util.UUID;
 @Repository
 public interface MesureRepository extends JpaRepository<Mesure, UUID> {
 
+    List<Mesure> findByClientId(UUID clientId);
+
     // Trouver les mesures validées non affectées pour un atelier
     @Query("SELECT m FROM Mesure m WHERE m.affecte = false AND m.atelier.id = :atelierId")
     List<Mesure> findMesuresNonAffecteesByAtelier(@Param("atelierId") UUID atelierId);

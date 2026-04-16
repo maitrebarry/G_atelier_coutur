@@ -7,6 +7,7 @@ import Swal from 'sweetalert2';
 const Clients = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [tableSearchTerm, setTableSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState(null); // For detail modal
   const [editingClient, setEditingClient] = useState(null); // For edit modal
   const [editFormData, setEditFormData] = useState({});
@@ -67,7 +68,7 @@ const Clients = () => {
       ...prev,
       sexe: mesure.sexe || client.sexe || 'Femme',
       typeVetement: mesure.typeVetement || '',
-      prix: mesure.prix || 0,
+      prix: mesure.prix != null ? String(mesure.prix) : '',
       description: mesure.description || '',
       mesureId: mesure.id || null,
       selectedModelId: mesure.modeleReferenceId || null,
@@ -115,6 +116,24 @@ const Clients = () => {
       handleDetailClick(clientId);
     }
   }, [searchParams]);
+
+  const filteredClients = clients.filter((client) => {
+    const latestMesure = getSortedMesures(client)[0] || {};
+    const value = [
+      client.prenom,
+      client.nom,
+      client.contact,
+      client.adresse,
+      client.email,
+      latestMesure.sexe,
+      latestMesure.typeVetement
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    return value.includes(tableSearchTerm.toLowerCase());
+  });
 
   const fetchClients = async () => {
     setLoading(true);
@@ -233,7 +252,7 @@ const Clients = () => {
 
   const handleSaveEdit = async () => {
     // Validation
-    if (!editFormData.nom || !editFormData.prenom || !editFormData.contact || !editFormData.sexe || !editFormData.prix) {
+    if (!editFormData.nom || !editFormData.prenom || !editFormData.contact || !editFormData.sexe) {
       Swal.fire('Erreur', 'Veuillez remplir les champs obligatoires', 'error');
       return;
     }
@@ -346,10 +365,23 @@ const Clients = () => {
       {/* Table */}
       <div className="card">
         <div className="card-body">
+          <div className="row g-3 align-items-center mb-3">
+            <div className="col-md-6 col-lg-5">
+              <label className="form-label">Filtrer la liste</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Rechercher par nom, contact, email, sexe ou modèle..."
+                value={tableSearchTerm}
+                onChange={(e) => setTableSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
           <div className="table-responsive">
-            <table className="table table-striped table-bordered" style={{ width: '100%' }}>
-              <thead>
+            <table className="table table-striped table-bordered align-middle mb-0" style={{ width: '100%' }}>
+              <thead className="table-light">
                 <tr>
+                  <th style={{ width: '60px' }}>N</th>
                   <th>Prénom</th>
                   <th>Nom</th>
                   <th>Contact</th>
@@ -361,15 +393,16 @@ const Clients = () => {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="7" className="text-center">Chargement...</td></tr>
-                ) : clients.length === 0 ? (
-                  <tr><td colSpan="7" className="text-center">Aucun client trouvé</td></tr>
+                  <tr><td colSpan="8" className="text-center">Chargement...</td></tr>
+                ) : filteredClients.length === 0 ? (
+                  <tr><td colSpan="8" className="text-center">Aucun client trouvé</td></tr>
                 ) : (
-                  clients.map(client => {
+                  filteredClients.map((client, index) => {
                                       const sortedMesures = getSortedMesures(client);
                       const mesure = sortedMesures[0] || {};
                       return (
                           <tr key={client.id}>
+                              <td className="fw-semibold text-muted">{index + 1}</td>
                               <td>{client.prenom}</td>
                               <td>{client.nom}</td>
                               <td>{client.contact}</td>
@@ -634,7 +667,7 @@ const Clients = () => {
                                           <input type="email" className="form-control" name="email" value={editFormData.email} onChange={handleInputChange} />
                                       </div>
                                       <div className="col-md-6 mb-3">
-                                          <label className="form-label">Prix (FCFA) <span className="text-danger">*</span></label>
+                                          <label className="form-label">Prix (FCFA) <small className="text-muted">(à renseigner si disponible)</small></label>
                                           <input type="number" className="form-control" name="prix" value={editFormData.prix} onChange={handleInputChange} />
                                       </div>
                                         <div className="col-md-12 mb-3">

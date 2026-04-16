@@ -39,6 +39,10 @@ public class RendezVous {
     @JoinColumn(name = "id_atelier", nullable = false)
     private Atelier atelier;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_mesure")
+    private Mesure mesure;
+
     // Timestamps
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

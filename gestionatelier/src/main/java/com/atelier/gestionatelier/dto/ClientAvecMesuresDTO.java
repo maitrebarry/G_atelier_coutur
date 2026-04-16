@@ -24,9 +24,14 @@ public class ClientAvecMesuresDTO {
         private UUID id;
         private LocalDateTime dateMesure;
         private String typeVetement;
+        private String modeleNom;
         private Double prix;
         private String description;
         private String sexe;
+        private String statutProduction;
+        private Boolean pretPourLivraison;
+        private Boolean dejaLivree;
+        private String libelle;
 
         // Mesures communes
         private Double epaule;

@@ -59,4 +59,10 @@ public interface AffectationRepository extends JpaRepository<Affectation, UUID> 
     // Trouver les affectations actives d'un client
     @Query("SELECT a FROM Affectation a WHERE a.client.id = :clientId AND a.statut IN (:statuts)")
     List<Affectation> findByClientIdAndStatutIn(@Param("clientId") UUID clientId, @Param("statuts") List<Affectation.StatutAffectation> statuts);
+
+        @Query("SELECT a FROM Affectation a " +
+                        "LEFT JOIN FETCH a.mesure " +
+                        "WHERE a.client.id = :clientId " +
+                        "ORDER BY a.dateCreation DESC")
+        List<Affectation> findByClientIdOrderByDateCreationDesc(@Param("clientId") UUID clientId);
 }

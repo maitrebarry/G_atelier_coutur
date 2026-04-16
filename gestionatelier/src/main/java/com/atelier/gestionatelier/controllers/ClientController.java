@@ -4,6 +4,7 @@ import com.atelier.gestionatelier.dto.ClientDTO;
 import com.atelier.gestionatelier.dto.MesureItemDTO;
 import com.atelier.gestionatelier.dto.ModeleDTO;
 import com.atelier.gestionatelier.dto.ModeleListDTO;
+import com.atelier.gestionatelier.dto.SyntheseMensuelleDTO;
 import com.atelier.gestionatelier.entities.Client;
 import com.atelier.gestionatelier.entities.Modele;
 import com.atelier.gestionatelier.entities.RendezVous;
@@ -189,6 +190,27 @@ public class ClientController {
 
         } catch (Exception e) {
             System.err.println("Erreur lors de la récupération des clients: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/synthese-mensuelle")
+    public ResponseEntity<List<SyntheseMensuelleDTO>> getSyntheseMensuelle(Authentication authentication) {
+        try {
+            if (authentication == null || authentication.getName() == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            Utilisateur currentUser = utilisateurService.findByEmail(authentication.getName());
+            UUID atelierId = currentUser.getAtelier() != null ? currentUser.getAtelier().getId() : null;
+
+            if (atelierId == null) {
+                return ResponseEntity.ok(Collections.emptyList());
+            }
+
+            return ResponseEntity.ok(clientService.getSyntheseMensuelle(atelierId));
+        } catch (Exception e) {
+            System.err.println("Erreur lors de la récupération de la synthèse mensuelle: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -484,37 +506,21 @@ public class ClientController {
             }
 
             if (items.isEmpty()) {
-                return "Au moins un modèle doit être ajouté";
-            }
-
-            for (int i = 0; i < items.size(); i++) {
-                MesureItemDTO item = items.get(i);
-                if (item.getPrix() == null || item.getPrix().isBlank()) {
-                    return "Le prix est obligatoire pour chaque modèle";
-                }
-                try {
-                    Double prix = Double.parseDouble(item.getPrix().trim());
-                    if (prix <= 0) {
-                        return "Le prix doit être supérieur à 0 pour chaque modèle";
-                    }
-                } catch (NumberFormatException e) {
-                    return "Le prix doit être un nombre valide pour chaque modèle";
-                }
+                return "Au moins un vêtement doit être ajouté au client";
             }
             return null;
         }
 
-        // === NOUVEAU : Validation du prix ===
-        if (dto.getPrix() == null || dto.getPrix().isBlank())
-            return "Le prix du modèle est obligatoire";
-
-        try {
-            Double prix = Double.parseDouble(dto.getPrix().trim());
-            if (prix <= 0) {
-                return "Le prix doit être supérieur à 0";
+        // Le prix est désormais optionnel à la création.
+        if (dto.getPrix() != null && !dto.getPrix().isBlank()) {
+            try {
+                Double prix = Double.parseDouble(dto.getPrix().trim());
+                if (prix <= 0) {
+                    return "Le prix doit être supérieur à 0";
+                }
+            } catch (NumberFormatException e) {
+                return "Le prix doit être un nombre valide";
             }
-        } catch (NumberFormatException e) {
-            return "Le prix doit être un nombre valide";
         }
 
         // Validation mesures numériques facultatives

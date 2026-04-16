@@ -5,6 +5,7 @@ import lombok.Data;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 public class UpdateRendezVousDTO {
@@ -19,4 +20,6 @@ public class UpdateRendezVousDTO {
     private String notes;
 
     private String statut; // Pour changer le statut directement
+
+    private UUID mesureId;
 }

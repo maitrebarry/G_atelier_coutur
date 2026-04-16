@@ -22,7 +22,7 @@ private UUID id;
     // Type de vêtement (robe, jupe, homme)
     private String typeVetement;
     //  Prix du modèle ===
-    @Column(name = "prix", nullable = false)
+    @Column(name = "prix")
     private Double prix;
     // Description libre ou note associée à la mesure
     @Column(name = "description")

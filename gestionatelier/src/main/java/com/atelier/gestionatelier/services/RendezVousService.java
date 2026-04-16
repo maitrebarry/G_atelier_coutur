@@ -4,9 +4,13 @@ import com.atelier.gestionatelier.dto.*;
 import com.atelier.gestionatelier.entities.RendezVous;
 import com.atelier.gestionatelier.entities.Client;
 import com.atelier.gestionatelier.entities.Atelier;
+import com.atelier.gestionatelier.entities.Affectation;
+import com.atelier.gestionatelier.entities.Mesure;
+import com.atelier.gestionatelier.repositories.AffectationRepository;
 import com.atelier.gestionatelier.repositories.RendezVousRepository;
 import com.atelier.gestionatelier.repositories.ClientRepository;
 import com.atelier.gestionatelier.repositories.AtelierRepository;
+import com.atelier.gestionatelier.repositories.MesureRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,6 +28,8 @@ public class RendezVousService {
     private final RendezVousRepository rendezVousRepository;
     private final ClientRepository clientRepository;
     private final AtelierRepository atelierRepository;
+    private final MesureRepository mesureRepository;
+    private final AffectationRepository affectationRepository;
     private final NotificationService notificationService;
 
 //    @Transactional
@@ -69,11 +75,6 @@ public class RendezVousService {
         // Validation de la date
         validerDateRendezVous(dto.getDateRDV(), atelier.getId());
 
-        // ✅ VÉRIFICATION PRÉALABLE : Le client a-t-il un email valide ?
-        if (client.getEmail() == null || !client.getEmail().contains("@")) {
-            throw new RuntimeException("Impossible de créer le rendez-vous : le client n'a pas d'email valide");
-        }
-
         RendezVous rendezVous = new RendezVous();
         rendezVous.setDateRDV(dto.getDateRDV());
         rendezVous.setTypeRendezVous(dto.getTypeRendezVous());
@@ -81,16 +82,15 @@ public class RendezVousService {
         rendezVous.setStatut("PLANIFIE");
         rendezVous.setClient(client);
         rendezVous.setAtelier(atelier);
+        rendezVous.setMesure(resolveMesureForRendezVous(client, dto.getMesureId()));
 
         RendezVous savedRendezVous = rendezVousRepository.save(rendezVous);
 
-        // ✅ NOTIFICATION : Bloquer si l'email échoue
+        // L'envoi d'email ne doit jamais empêcher la création du rendez-vous.
         try {
             notificationService.envoyerNotificationCreationRendezVous(savedRendezVous);
         } catch (Exception e) {
-            // ⚠️ SUPPRESSION du rendez-vous si l'email échoue
-            rendezVousRepository.delete(savedRendezVous);
-            throw new RuntimeException("Échec de l'envoi de la confirmation email. Le rendez-vous n'a pas été créé.", e);
+            System.err.println("Erreur notification email création RDV: " + e.getMessage());
         }
 
         return toRendezVousDTO(savedRendezVous);
@@ -113,6 +113,7 @@ public class RendezVousService {
         rendezVous.setStatut("PLANIFIE");
         rendezVous.setClient(client);
         rendezVous.setAtelier(atelier);
+        rendezVous.setMesure(resolveMesureForRendezVous(client, dto.getMesureId()));
 
         RendezVous savedRendezVous = rendezVousRepository.save(rendezVous);
 
@@ -166,13 +167,13 @@ public class RendezVousService {
 
     @Transactional
     public RendezVousDTO mettreAJourRendezVous(UUID id, UpdateRendezVousDTO dto) {
-        RendezVous rendezVous = rendezVousRepository.findById(id)
+        RendezVous rendezVous = rendezVousRepository.findByIdWithRelations(id)
                 .orElseThrow(() -> new EntityNotFoundException("Rendez-vous non trouvé avec ID: " + id));
 
         boolean dateModifiee = false;
 
         if (dto.getDateRDV() != null) {
-            validerDateRendezVous(dto.getDateRDV(), rendezVous.getAtelier().getId());
+            validerDateRendezVous(dto.getDateRDV(), rendezVous.getAtelier().getId(), rendezVous.getId());
             rendezVous.setDateRDV(dto.getDateRDV());
             dateModifiee = true;
         }
@@ -184,6 +185,8 @@ public class RendezVousService {
         if (dto.getNotes() != null) {
             rendezVous.setNotes(dto.getNotes());
         }
+
+        rendezVous.setMesure(resolveMesureForRendezVous(rendezVous.getClient(), dto.getMesureId()));
 
         if (dto.getStatut() != null) {
             rendezVous.setStatut(dto.getStatut());
@@ -205,7 +208,7 @@ public class RendezVousService {
 
     @Transactional
     public RendezVousDTO confirmerRendezVous(UUID id) {
-        RendezVous rendezVous = rendezVousRepository.findById(id)
+        RendezVous rendezVous = rendezVousRepository.findByIdWithRelations(id)
                 .orElseThrow(() -> new EntityNotFoundException("Rendez-vous non trouvé"));
 
         rendezVous.setStatut("CONFIRME");
@@ -216,7 +219,7 @@ public class RendezVousService {
 
     @Transactional
     public RendezVousDTO annulerRendezVous(UUID id) {
-        RendezVous rendezVous = rendezVousRepository.findById(id)
+        RendezVous rendezVous = rendezVousRepository.findByIdWithRelations(id)
                 .orElseThrow(() -> new EntityNotFoundException("Rendez-vous non trouvé"));
 
         rendezVous.setStatut("ANNULE");
@@ -234,7 +237,7 @@ public class RendezVousService {
 
     @Transactional
     public RendezVousDTO terminerRendezVous(UUID id) {
-        RendezVous rendezVous = rendezVousRepository.findById(id)
+        RendezVous rendezVous = rendezVousRepository.findByIdWithRelations(id)
                 .orElseThrow(() -> new EntityNotFoundException("Rendez-vous non trouvé"));
 
         rendezVous.setStatut("TERMINE");
@@ -245,7 +248,7 @@ public class RendezVousService {
 
     @Transactional
     public void supprimerRendezVous(UUID id) {
-        RendezVous rendezVous = rendezVousRepository.findById(id)
+        RendezVous rendezVous = rendezVousRepository.findByIdWithRelations(id)
                 .orElseThrow(() -> new EntityNotFoundException("Rendez-vous non trouvé"));
 
         String statut = rendezVous.getStatut();
@@ -256,12 +259,14 @@ public class RendezVousService {
         rendezVousRepository.delete(rendezVous);
     }
 
+    @Transactional(readOnly = true)
     public RendezVousDTO getRendezVousById(UUID id) {
-        RendezVous rendezVous = rendezVousRepository.findById(id)
+        RendezVous rendezVous = rendezVousRepository.findByIdWithRelations(id)
                 .orElseThrow(() -> new EntityNotFoundException("Rendez-vous non trouvé"));
         return toRendezVousDTO(rendezVous);
     }
 
+    @Transactional(readOnly = true)
     public List<RendezVousListDTO> getRendezVousAVenir(UUID atelierId) {
         LocalDateTime aujourdhui = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
         List<RendezVous> rendezVous = rendezVousRepository.findRendezVousAVenir(atelierId, aujourdhui);
@@ -270,6 +275,7 @@ public class RendezVousService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<RendezVousListDTO> getRendezVousAujourdhui(UUID atelierId) {
         List<RendezVous> rendezVous = rendezVousRepository.findRendezVousAujourdhui(atelierId);
         return rendezVous.stream()
@@ -277,6 +283,7 @@ public class RendezVousService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<RendezVousListDTO> getRendezVousByStatut(UUID atelierId, String statut) {
         List<RendezVous> rendezVous = rendezVousRepository.findByAtelierIdAndStatutOrderByDateRDVAsc(atelierId, statut);
         return rendezVous.stream()
@@ -336,6 +343,9 @@ public class RendezVousService {
         atelierInfo.setAdresse(rendezVous.getAtelier().getAdresse());
         dto.setAtelier(atelierInfo);
 
+        dto.setMesure(toMesureInfoDTO(rendezVous.getMesure()));
+        dto.setMesuresRestantesALivrer(countMesuresRestantesALivrer(rendezVous.getClient().getId()));
+
         return dto;
     }
 
@@ -349,6 +359,113 @@ public class RendezVousService {
         dto.setClientNomComplet(rendezVous.getClient().getPrenom() + " " + rendezVous.getClient().getNom());
         dto.setClientContact(rendezVous.getClient().getContact());
         dto.setAtelierNom(rendezVous.getAtelier().getNom());
+        dto.setMesuresRestantesALivrer(countMesuresRestantesALivrer(rendezVous.getClient().getId()));
+        if (rendezVous.getMesure() != null) {
+            dto.setMesureId(rendezVous.getMesure().getId());
+            dto.setMesureLibelle(buildMesureLibelle(rendezVous.getMesure()));
+            dto.setMesureStatutProduction(getStatutProduction(rendezVous.getClient().getId(), rendezVous.getMesure().getId()));
+            dto.setMesurePretPourLivraison(isPretPourLivraison(rendezVous.getClient().getId(), rendezVous.getMesure().getId()));
+        }
         return dto;
+    }
+
+    private Mesure resolveMesureForRendezVous(Client client, UUID mesureId) {
+        if (mesureId == null) {
+            return null;
+        }
+
+        return client.getMesures().stream()
+                .filter(mesure -> mesure.getId().equals(mesureId))
+                .findFirst()
+                .orElseGet(() -> mesureRepository.findById(mesureId)
+                        .filter(mesure -> mesure.getClient() != null && mesure.getClient().getId().equals(client.getId()))
+                        .orElseThrow(() -> new IllegalArgumentException("Le vêtement sélectionné n'appartient pas à ce client")));
+    }
+
+    private void validerDateRendezVous(LocalDateTime dateRDV, UUID atelierId, UUID rendezVousId) {
+        if (dateRDV.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("La date du rendez-vous doit être dans le futur");
+        }
+
+        long conflits = rendezVousId == null
+                ? rendezVousRepository.countConflitsRendezVous(atelierId, dateRDV)
+                : rendezVousRepository.countConflitsRendezVousExcludingId(atelierId, dateRDV, rendezVousId);
+        if (conflits > 0) {
+            throw new IllegalArgumentException("Un rendez-vous existe déjà à cette date et heure");
+        }
+    }
+
+    private RendezVousDTO.MesureInfoDTO toMesureInfoDTO(Mesure mesure) {
+        if (mesure == null) {
+            return null;
+        }
+
+        RendezVousDTO.MesureInfoDTO dto = new RendezVousDTO.MesureInfoDTO();
+        dto.setId(mesure.getId());
+        dto.setTypeVetement(mesure.getTypeVetement());
+        dto.setModeleNom(mesure.getModeleNom());
+        dto.setDescription(mesure.getDescription());
+        dto.setPrix(mesure.getPrix());
+        dto.setLibelle(buildMesureLibelle(mesure));
+        if (mesure.getClient() != null) {
+            dto.setStatutProduction(getStatutProduction(mesure.getClient().getId(), mesure.getId()));
+            dto.setPretPourLivraison(isPretPourLivraison(mesure.getClient().getId(), mesure.getId()));
+        }
+        return dto;
+    }
+
+    private String getStatutProduction(UUID clientId, UUID mesureId) {
+        Affectation affectation = findLatestAffectation(clientId, mesureId);
+        if (affectation == null || affectation.getStatut() == null) {
+            return "NON_AFFECTE";
+        }
+        return affectation.getStatut().name();
+    }
+
+    private boolean isPretPourLivraison(UUID clientId, UUID mesureId) {
+        Affectation affectation = findLatestAffectation(clientId, mesureId);
+        return affectation != null && affectation.getStatut() != null
+                && (affectation.getStatut() == Affectation.StatutAffectation.TERMINE
+                || affectation.getStatut() == Affectation.StatutAffectation.VALIDE);
+    }
+
+    private Affectation findLatestAffectation(UUID clientId, UUID mesureId) {
+        return affectationRepository.findByClientIdOrderByDateCreationDesc(clientId)
+                .stream()
+                .filter(affectation -> affectation.getMesure() != null && affectation.getMesure().getId().equals(mesureId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String buildMesureLibelle(Mesure mesure) {
+        String base = mesure.getModeleNom() != null && !mesure.getModeleNom().isBlank()
+                ? mesure.getModeleNom()
+                : (mesure.getTypeVetement() != null && !mesure.getTypeVetement().isBlank() ? mesure.getTypeVetement() : "Vêtement");
+
+        if (mesure.getDescription() != null && !mesure.getDescription().isBlank()) {
+            return base + " - " + mesure.getDescription();
+        }
+
+        return base;
+    }
+
+    private int countMesuresRestantesALivrer(UUID clientId) {
+        java.util.Set<UUID> toutesLesMesures = mesureRepository.findByClientId(clientId)
+                .stream()
+                .map(Mesure::getId)
+                .collect(Collectors.toSet());
+
+        java.util.Set<UUID> mesuresDejaLivrees = rendezVousRepository.findByClientIdOrderByDateRDVDesc(clientId)
+                .stream()
+                .filter(rendezVous -> "TERMINE".equalsIgnoreCase(rendezVous.getStatut()))
+                .filter(rendezVous -> rendezVous.getTypeRendezVous() != null
+                        && rendezVous.getTypeRendezVous().toUpperCase().contains("LIVRAISON"))
+                .map(RendezVous::getMesure)
+                .filter(java.util.Objects::nonNull)
+                .map(Mesure::getId)
+                .collect(Collectors.toSet());
+
+        toutesLesMesures.removeAll(mesuresDejaLivrees);
+        return toutesLesMesures.size();
     }
 }

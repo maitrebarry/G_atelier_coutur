@@ -22,6 +22,8 @@ public class CreateRendezVousDTO {
     @NotNull(message = "L'ID du client est obligatoire")
     private UUID clientId;
 
+    private UUID mesureId;
+
     @NotNull(message = "L'ID de l'atelier est obligatoire")
     private UUID atelierId;
 }

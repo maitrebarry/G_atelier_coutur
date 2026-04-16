@@ -21,6 +21,9 @@ public class RendezVousDTO {
     // Informations de l'atelier
     private AtelierInfoDTO atelier;
 
+    private MesureInfoDTO mesure;
+    private Integer mesuresRestantesALivrer;
+
     @Data
     public static class ClientInfoDTO {
         private UUID id;
@@ -37,5 +40,17 @@ public class RendezVousDTO {
         private UUID id;
         private String nom;
         private String adresse;
+    }
+
+    @Data
+    public static class MesureInfoDTO {
+        private UUID id;
+        private String typeVetement;
+        private String modeleNom;
+        private String description;
+        private Double prix;
+        private String statutProduction;
+        private Boolean pretPourLivraison;
+        private String libelle;
     }
 }
