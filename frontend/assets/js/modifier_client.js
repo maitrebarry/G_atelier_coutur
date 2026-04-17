@@ -1,60 +1,97 @@
 
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Initialisation du modal
   const editModal = new bootstrap.Modal(document.getElementById("editModal"));
+  const saveBtn = document.getElementById("saveEditBtn");
+  const selectMesure = document.getElementById("clientMesuresSelect");
+  const addModeleBtn = document.getElementById("addModeleBtn");
+  const deleteModeleBtn = document.getElementById("deleteModeleBtn");
+  const photoInput = document.getElementById("photoEditInput");
+  const habitPhotoInput = document.getElementById("habitPhotoEditInput");
+
   let currentClientId = null;
+  let currentClient = null;
+  let currentMesures = [];
+  let currentMesureId = null;
+  let creatingMode = false;
 
-  // Gestionnaire pour le bouton Enregistrer
-  document
-    .getElementById("saveEditBtn")
-    .addEventListener("click", saveClientChanges);
+  saveBtn.addEventListener("click", saveClientChanges);
+  addModeleBtn.addEventListener("click", startNewMeasureMode);
+  deleteModeleBtn.addEventListener("click", deleteCurrentMeasure);
+  selectMesure.addEventListener("change", () => selectMeasure(selectMesure.value));
 
-  // Fonction pour ouvrir le modal de modification
+  photoInput.addEventListener("change", previewMainPhoto);
+  habitPhotoInput.addEventListener("change", updateHabitPhotoInfoFromFile);
+
+  document.getElementById("editSexe").addEventListener("change", () => {
+    const sexe = document.getElementById("editSexe").value;
+    toggleMeasurementSections(sexe, null);
+    updateDefaultPreview(sexe);
+  });
+
+  document.querySelectorAll(".option-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      document.querySelectorAll(".option-card").forEach((item) => item.classList.remove("selected"));
+      card.classList.add("selected");
+      const radio = card.querySelector(".form-check-input");
+      radio.checked = true;
+      const option = card.getAttribute("data-option");
+      document.getElementById("mesuresRobeEdit").style.display = option === "robe" ? "block" : "none";
+      document.getElementById("mesuresJupeEdit").style.display = option === "jupe" ? "block" : "none";
+    });
+  });
+
+  document.querySelectorAll('input[name="genderPreviewEdit"]').forEach((radio) => {
+    radio.addEventListener("change", () => updateDefaultPreview(radio.value));
+  });
+
+  function getToken() {
+    return localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+  }
+
+  function getAuthHeaders() {
+    const token = getToken();
+    if (!token) {
+      throw new Error("Token non disponible. Veuillez vous reconnecter.");
+    }
+    return { Authorization: `Bearer ${token}` };
+  }
+
+  async function fetchJson(url, options = {}) {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const fallback = await response.text().catch(() => "");
+      throw new Error(errorData?.message || fallback || `Erreur HTTP ${response.status}`);
+    }
+    if (response.status === 204) {
+      return null;
+    }
+    return response.json();
+  }
+
   async function openEditModal(clientId) {
     try {
-      console.log("📝 Ouverture modal modification pour client:", clientId);
       currentClientId = clientId;
-      
-      const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+      currentClient = await fetchJson(`http://localhost:8081/api/clients/${clientId}`, {
+        headers: {
+          Accept: "application/json",
+          ...getAuthHeaders(),
+        },
+      });
 
-      if (!token) {
-        throw new Error("Token non disponible. Veuillez vous reconnecter.");
+      fillClientFields(currentClient);
+      currentMesures = Array.isArray(currentClient.mesures) ? currentClient.mesures : [];
+      renderMesuresList();
+
+      if (currentMesures.length > 0) {
+        selectMeasure(currentMesures[0].id);
+      } else {
+        startNewMeasureMode();
       }
 
-      const response = await fetch(
-        `http://localhost:8081/api/clients/${clientId}`,
-        {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Erreur HTTP ${response.status}: ${errorText}`);
-      }
-
-      const client = await response.json();
-      console.log("✅ Données client reçues:", client);
-
-      if (!client.mesures || client.mesures.length === 0) {
-        throw new Error("Aucune mesure trouvée pour ce client");
-      }
-
-      const mesure = client.mesures[0];
-      console.log("📏 Mesure trouvée:", mesure);
-
-      // Remplir le formulaire avec les données existantes
-      fillEditForm(client, mesure);
-
-      // Afficher le modal
       editModal.show();
-      
     } catch (error) {
-      console.error("❌ Erreur lors du chargement du client:", error);
       Swal.fire({
         icon: "error",
         title: "Erreur",
@@ -63,177 +100,208 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function fillEditForm(client, mesure) {
-    console.log("🔄 Remplissage du formulaire avec:", { client, mesure });
+  function fillClientFields(client) {
+    document.getElementById("editClientId").value = client.id || "";
+    document.getElementById("editNom").value = client.nom || "";
+    document.getElementById("editPrenom").value = client.prenom || "";
+    document.getElementById("editContact").value = client.contact || "";
+    document.getElementById("editAdresse").value = client.adresse || "";
+    document.getElementById("editEmail").value = client.email || "";
+  }
 
-    try {
-      // Remplir les champs généraux
-      document.getElementById("editNom").value = client.nom || "";
-      document.getElementById("editPrenom").value = client.prenom || "";
-      document.getElementById("editContact").value = client.contact || "";
-      document.getElementById("editAdresse").value = client.adresse || "";
-      document.getElementById("editEmail").value = client.email || "";
-      // ✅ CORRECTION : Assurer que le sexe est bien défini
-      const sexe = mesure.sexe || client.sexe || "Femme";
-      document.getElementById("editSexe").value = sexe;
-      // ✅ NOUVEAU : Remplir le prix
-      const prix = mesure.prix || 0;
-      document.getElementById("editPrix").value = prix;
-      console.log("💰 Prix défini:", prix + " FCFA");
-      // Gestion de la photo
-      const avatarEdit = document.getElementById("avatarEdit");
-      const existingPhotoInput = document.getElementById("existingPhoto");
+  function renderMesuresList() {
+    selectMesure.innerHTML = "";
 
-      // 1. Photo par défaut selon le sexe
-      let photoUrl = sexe.toLowerCase() === "homme" 
-        ? "assets/images/model3.jpg" 
-        : "assets/images/model4.jpg";
+    if (currentMesures.length === 0) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "Aucun modèle enregistré";
+      selectMesure.appendChild(option);
+      deleteModeleBtn.disabled = true;
+      return;
+    }
 
-      // 2. Si une photo existe dans les mesures, l'utiliser
-      if (mesure.photoPath) {
-        // Nettoyer le chemin
-        const cleanPath = mesure.photoPath
-          .replace(/^\/+/, "")
-          .replace("model_photo/", "");
+    currentMesures.forEach((mesure, index) => {
+      const option = document.createElement("option");
+      option.value = mesure.id;
+      option.textContent = buildMeasureLabel(mesure, index);
+      selectMesure.appendChild(option);
+    });
 
-        photoUrl = `http://localhost:8081/model_photo/${cleanPath}`;
+    deleteModeleBtn.disabled = false;
+  }
 
-        // Stocker le chemin original pour la soumission
-        if (existingPhotoInput) {
-          existingPhotoInput.value = cleanPath;
-        }
+  function buildMeasureLabel(mesure, index) {
+    const base = mesure.modeleNom || mesure.typeVetement || `Modèle ${index + 1}`;
+    const prix = mesure.prix ? ` - ${mesure.prix} FCFA` : "";
+    return `${base}${prix}`;
+  }
+
+  function selectMeasure(mesureId) {
+    const mesure = currentMesures.find((item) => item.id === mesureId);
+    if (!mesure) {
+      startNewMeasureMode();
+      return;
+    }
+
+    creatingMode = false;
+    currentMesureId = mesure.id;
+    document.getElementById("editSelectedMesureId").value = mesure.id;
+    selectMesure.value = mesure.id;
+    fillMeasureForm(mesure);
+    deleteModeleBtn.disabled = false;
+  }
+
+  function fillMeasureForm(mesure) {
+    const sexe = mesure.sexe || "Femme";
+    document.getElementById("editSexe").value = sexe;
+    document.getElementById("editPrix").value = mesure.prix ?? "";
+    document.getElementById("editModeleNom").value = mesure.modeleNom || "";
+    document.getElementById("editDescription").value = mesure.description || "";
+    document.getElementById("existingPhoto").value = normalizeStoragePath(mesure.photoPath);
+    document.getElementById("existingHabitPhoto").value = normalizeStoragePath(mesure.habitPhotoPath);
+    photoInput.value = "";
+    habitPhotoInput.value = "";
+
+    toggleMeasurementSections(sexe, mesure.typeVetement);
+    syncGenderPreview(sexe);
+    fillMeasurements(mesure);
+    setPreviewImage(mesure.photoPath, sexe);
+    updateHabitPhotoInfo(mesure.habitPhotoPath);
+  }
+
+  function startNewMeasureMode() {
+    creatingMode = true;
+    currentMesureId = null;
+    document.getElementById("editSelectedMesureId").value = "";
+    selectMesure.value = "";
+    deleteModeleBtn.disabled = currentMesures.length === 0;
+    resetMeasureFields();
+  }
+
+  function resetMeasureFields() {
+    document.getElementById("editModeleNom").value = "";
+    document.getElementById("editDescription").value = "";
+    document.getElementById("editPrix").value = "";
+    document.getElementById("existingPhoto").value = "";
+    document.getElementById("existingHabitPhoto").value = "";
+    photoInput.value = "";
+    habitPhotoInput.value = "";
+
+    [
+      "robe_epaule_edit", "robe_manche_edit", "robe_poitrine_edit", "robe_taille_edit", "robe_longueur_edit", "robe_fesse_edit",
+      "robe_tour_manche_edit", "robe_longueur_poitrine_edit", "robe_longueur_taille_edit", "robe_longueur_fesse_edit",
+      "jupe_epaule_edit", "jupe_manche_edit", "jupe_poitrine_edit", "jupe_taille_edit", "jupe_longueur_edit", "jupe_longueur_jupe_edit",
+      "jupe_ceinture_edit", "jupe_fesse_edit", "jupe_tour_manche_edit", "jupe_longueur_poitrine_edit", "jupe_longueur_taille_edit", "jupe_longueur_fesse_edit",
+      "homme_epaule_edit", "homme_manche_edit", "homme_longueur_edit", "homme_longueur_pantalon_edit", "homme_ceinture_edit", "homme_cuisse_edit",
+      "homme_poitrine_edit", "homme_corps_edit", "homme_tour_manche_edit"
+    ].forEach((id) => {
+      const field = document.getElementById(id);
+      if (field) {
+        field.value = "";
       }
+    });
 
-      console.log("🖼️ URL photo finale:", photoUrl);
-      avatarEdit.src = photoUrl;
-      avatarEdit.style.objectFit = "cover";
+    const sexe = document.getElementById("editSexe").value || "Femme";
+    toggleMeasurementSections(sexe, sexe === "Homme" ? "homme" : null);
+    syncGenderPreview(sexe);
+    updateDefaultPreview(sexe);
+    updateHabitPhotoInfo(null);
+  }
 
-      // Gestion des erreurs de chargement
-      avatarEdit.onerror = function () {
-        console.error("❌ Erreur de chargement de la photo, utilisation par défaut");
-        this.src = sexe.toLowerCase() === "homme" 
-          ? "assets/images/model3.jpg" 
-          : "assets/images/model4.jpg";
-        if (existingPhotoInput) {
-          existingPhotoInput.value = "";
-        }
-      };
+  function normalizeStoragePath(path) {
+    if (!path) {
+      return "";
+    }
+    return path.replace(/^\/+/, "").replace("model_photo/", "").replace("habit_photo/", "");
+  }
 
-      // ✅ CORRECTION : Gérer le genre dans le preview
-      const genderRadios = document.querySelectorAll('input[name="genderPreviewEdit"]');
-      genderRadios.forEach(radio => {
-        radio.checked = (radio.value === sexe);
-      });
+  function setPreviewImage(photoPath, sexe) {
+    const avatar = document.getElementById("avatarEdit");
+    const normalized = normalizeStoragePath(photoPath);
+    if (normalized) {
+      avatar.src = `http://localhost:8081/model_photo/${normalized}`;
+    } else {
+      updateDefaultPreview(sexe);
+    }
+    avatar.style.objectFit = "cover";
+  }
 
-      // Afficher les sections appropriées
-      toggleMeasurementSections(sexe, mesure.typeVetement);
+  function updateDefaultPreview(sexe) {
+    document.getElementById("avatarEdit").src =
+      sexe === "Homme" ? "assets/images/model3.jpg" : "assets/images/model4.jpg";
+  }
 
-      // Remplir les mesures
-      fillMeasurements(mesure);
-      
-    } catch (error) {
-      console.error("❌ Erreur lors du remplissage du formulaire:", error);
-      throw error;
+  function syncGenderPreview(sexe) {
+    document.querySelectorAll('input[name="genderPreviewEdit"]').forEach((radio) => {
+      radio.checked = radio.value === sexe;
+    });
+  }
+
+  function previewMainPhoto(event) {
+    const file = event.target.files[0];
+    if (!file) {
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      Swal.fire({ icon: "error", title: "Type invalide", text: "Veuillez sélectionner une image." });
+      event.target.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      document.getElementById("avatarEdit").src = loadEvent.target.result;
+      document.getElementById("existingPhoto").value = "";
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function updateHabitPhotoInfo(path) {
+    const info = document.getElementById("habitPhotoInfo");
+    const normalized = normalizeStoragePath(path);
+    info.textContent = normalized ? `Photo enregistrée: ${normalized}` : "Aucune photo d'habit enregistrée";
+  }
+
+  function updateHabitPhotoInfoFromFile(event) {
+    const file = event.target.files[0];
+    const info = document.getElementById("habitPhotoInfo");
+    if (file) {
+      info.textContent = `Nouveau fichier sélectionné: ${file.name}`;
+      document.getElementById("existingHabitPhoto").value = "";
+    } else {
+      updateHabitPhotoInfo(document.getElementById("existingHabitPhoto").value);
     }
   }
 
-  // Fonction pour gérer l'upload de nouvelle photo
-  document.getElementById("photoEditInput").addEventListener("change", function (e) {
-    const file = e.target.files[0];
-    if (file) {
-      // ✅ Vérification du type de fichier
-      if (!file.type.startsWith('image/')) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Type de fichier invalide',
-          text: 'Veuillez sélectionner une image'
-        });
-        this.value = ''; // Réinitialiser l'input
-        return;
-      }
-
-      // ✅ Vérification de la taille (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        Swal.fire({
-          icon: 'error',
-          title: 'Fichier trop volumineux',
-          text: 'La taille maximale est de 5MB'
-        });
-        this.value = ''; // Réinitialiser l'input
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = function (event) {
-        const avatarEdit = document.getElementById("avatarEdit");
-        avatarEdit.src = event.target.result;
-        avatarEdit.style.objectFit = "cover";
-
-        // Effacer la référence à la photo existante
-        const existingPhotoInput = document.getElementById("existingPhoto");
-        if (existingPhotoInput) {
-          existingPhotoInput.value = "";
-        }
-      };
-      reader.onerror = function () {
-        Swal.fire({
-          icon: 'error',
-          title: 'Erreur de lecture',
-          text: 'Impossible de lire le fichier'
-        });
-        this.value = ''; // Réinitialiser l'input
-      };
-      reader.readAsDataURL(file);
-    }
-  });
-
   function toggleMeasurementSections(sexe, typeVetement) {
-    console.log("📋 Affichage sections pour:", sexe, typeVetement);
-    
-    // Cacher toutes les sections d'abord
-    document.getElementById("femmeOptionsEdit").style.display = "none";
+    document.getElementById("femmeOptionsEdit").style.display = sexe === "Femme" ? "block" : "none";
     document.getElementById("mesuresRobeEdit").style.display = "none";
     document.getElementById("mesuresJupeEdit").style.display = "none";
-    document.getElementById("mesuresHommeEdit").style.display = "none";
+    document.getElementById("mesuresHommeEdit").style.display = sexe === "Homme" ? "block" : "none";
 
-    // ✅ CORRECTION : Réinitialiser les sélections
-    document.querySelectorAll('input[name="femme_type_edit"]').forEach(radio => {
+    document.querySelectorAll('input[name="femme_type_edit"]').forEach((radio) => {
       radio.checked = false;
     });
-    document.querySelectorAll(".option-card").forEach(card => {
-      card.classList.remove("selected");
-    });
+    document.querySelectorAll(".option-card").forEach((card) => card.classList.remove("selected"));
 
     if (sexe === "Femme") {
-      document.getElementById("femmeOptionsEdit").style.display = "block";
-
-      // Sélectionner l'option appropriée
       if (typeVetement === "robe") {
         document.getElementById("femme_type_robe_edit").checked = true;
-        const robeCard = document.querySelector('.option-card[data-option="robe"]');
-        if (robeCard) robeCard.classList.add("selected");
+        document.querySelector('.option-card[data-option="robe"]')?.classList.add("selected");
         document.getElementById("mesuresRobeEdit").style.display = "block";
       } else if (typeVetement === "jupe") {
         document.getElementById("femme_type_jupe_edit").checked = true;
-        const jupeCard = document.querySelector('.option-card[data-option="jupe"]');
-        if (jupeCard) jupeCard.classList.add("selected");
+        document.querySelector('.option-card[data-option="jupe"]')?.classList.add("selected");
         document.getElementById("mesuresJupeEdit").style.display = "block";
       }
-    } else if (sexe === "Homme") {
-      document.getElementById("mesuresHommeEdit").style.display = "block";
     }
   }
 
   function fillMeasurements(mesure) {
-    console.log("📐 Remplissage des mesures:", mesure);
-    
-    // ✅ CORRECTION : Fonction utilitaire pour remplir un champ
-    const setValue = (elementId, value) => {
-      const element = document.getElementById(elementId);
-      if (element) {
-        element.value = value !== null && value !== undefined ? value : "";
-      } else {
-        console.warn(`❌ Élément non trouvé: ${elementId}`);
+    const setValue = (id, value) => {
+      const field = document.getElementById(id);
+      if (field) {
+        field.value = value ?? "";
       }
     };
 
@@ -276,176 +344,65 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  async function saveClientChanges() {
-    console.log("💾 Sauvegarde des modifications pour client:", currentClientId);
-    
-    // Validation du formulaire
-    const errors = validateEditForm();
-    if (errors.length > 0) {
-      Swal.fire({
-        icon: "error",
-        title: "Erreur de validation",
-        html: errors.join("<br>"),
-      });
-      return;
-    }
-
-    try {
-      // Préparation des données
-      const formData = new FormData();
-      
-      // ✅ CORRECTION : Ajouter tous les champs nécessaires
-      formData.append("nom", document.getElementById("editNom").value);
-      formData.append("prenom", document.getElementById("editPrenom").value);
-      formData.append("contact", document.getElementById("editContact").value);
-      formData.append("adresse", document.getElementById("editAdresse").value);
-      formData.append("email", document.getElementById("editEmail").value);
-      formData.append("sexe", document.getElementById("editSexe").value);
-       // ✅ NOUVEAU : Ajouter le prix
-      const prix = document.getElementById("editPrix").value;
-      formData.append("prix", prix);
-      console.log("💰 Prix envoyé:", prix + " FCFA");
-      // ✅ CORRECTION : Ajouter genderPreview
-      const selectedGender = document.querySelector('input[name="genderPreviewEdit"]:checked');
-      if (selectedGender) {
-        formData.append("genderPreview", selectedGender.value);
-      }
-
-      // Gestion du type de vêtement
-      const sexe = document.getElementById("editSexe").value;
-      if (sexe === "Femme") {
-        const typeVetement = document.querySelector('input[name="femme_type_edit"]:checked')?.value;
-        if (typeVetement) {
-          formData.append("femme_type_edit", typeVetement);
-          console.log("✅ Type vêtement femme envoyé:", typeVetement);
-        } else {
-          throw new Error("Veuillez sélectionner un type de vêtement pour une femme");
-        }
-      }
-
-      // Gestion de la photo
-      const photoInput = document.getElementById("photoEditInput");
-      if (photoInput.files[0]) {
-        formData.append("photo", photoInput.files[0]);
-        console.log("✅ Nouvelle photo envoyée");
-      } else {
-        const existingPhoto = document.getElementById("existingPhoto").value;
-        if (existingPhoto) {
-          formData.append("existing_photo", existingPhoto);
-          console.log("✅ Photo existante conservée:", existingPhoto);
-        }
-      }
-
-      // Ajouter les mesures selon le type
-      addMeasurementsToFormData(formData, sexe);
-
-      // ✅ CORRECTION : Log des données envoyées
-      console.log("📤 Données envoyées pour modification:");
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}: ${value}`);
-      }
-
-      const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-
-      if (!token) {
-        throw new Error("Token non disponible. Veuillez vous reconnecter.");
-      }
-
-      // ✅ CORRECTION : Ajouter un loader
-      const saveBtn = document.getElementById("saveEditBtn");
-      const originalText = saveBtn.innerHTML;
-      saveBtn.disabled = true;
-      saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enregistrement...';
-
-      const response = await fetch(
-        `http://localhost:8081/api/clients/${currentClientId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: "Erreur inconnue" }));
-        throw new Error(errorData.message || `Erreur HTTP ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log("✅ Réponse serveur:", result);
-
-      Swal.fire({
-        icon: "success",
-        title: "Succès",
-        text: result.message || "Modifications enregistrées avec succès",
-        timer: 2500,
-        timerProgressBar: true,
-        showConfirmButton: false,
-      });
-
-      editModal.hide();
-      
-      // ✅ CORRECTION : Recharger les données
-      setTimeout(() => {
-        if (typeof fetchClients === 'function') {
-          fetchClients();
-        } else {
-          location.reload();
-        }
-      }, 1000);
-      
-    } catch (error) {
-      console.error("❌ Erreur lors de la sauvegarde:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Erreur",
-        text: error.message || "Échec de la modification",
-      });
-    } finally {
-      // ✅ CORRECTION : Réactiver le bouton
-      const saveBtn = document.getElementById("saveEditBtn");
-      if (saveBtn) {
-        saveBtn.disabled = false;
-        saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Enregistrer';
-      }
-    }
+  function buildClientInfoFormData() {
+    const formData = new FormData();
+    formData.append("nom", document.getElementById("editNom").value.trim());
+    formData.append("prenom", document.getElementById("editPrenom").value.trim());
+    formData.append("contact", document.getElementById("editContact").value.trim());
+    formData.append("adresse", document.getElementById("editAdresse").value.trim());
+    formData.append("email", document.getElementById("editEmail").value.trim());
+    return formData;
   }
 
-  // ✅ CORRECTION : Fonction pour ajouter les mesures au FormData
-  function addMeasurementsToFormData(formData, sexe) {
-    console.log("➕ Ajout des mesures au FormData pour sexe:", sexe);
-    
-    if (sexe === "Femme") {
-      const typeVetement = document.querySelector('input[name="femme_type_edit"]:checked')?.value;
-      console.log("Type vêtement femme:", typeVetement);
-      
-      if (typeVetement === "robe") {
-        formData.append("robe_epaule", document.getElementById("robe_epaule_edit").value || "");
-        formData.append("robe_manche", document.getElementById("robe_manche_edit").value || "");
-        formData.append("robe_poitrine", document.getElementById("robe_poitrine_edit").value || "");
-        formData.append("robe_taille", document.getElementById("robe_taille_edit").value || "");
-        formData.append("robe_longueur", document.getElementById("robe_longueur_edit").value || "");
-        formData.append("robe_fesse", document.getElementById("robe_fesse_edit").value || "");
-        formData.append("robe_tour_manche", document.getElementById("robe_tour_manche_edit").value || "");
-        formData.append("robe_longueur_poitrine", document.getElementById("robe_longueur_poitrine_edit").value || "");
-        formData.append("robe_longueur_taille", document.getElementById("robe_longueur_taille_edit").value || "");
-        formData.append("robe_longueur_fesse", document.getElementById("robe_longueur_fesse_edit").value || "");
-      } else if (typeVetement === "jupe") {
-        formData.append("jupe_epaule", document.getElementById("jupe_epaule_edit").value || "");
-        formData.append("jupe_manche", document.getElementById("jupe_manche_edit").value || "");
-        formData.append("jupe_poitrine", document.getElementById("jupe_poitrine_edit").value || "");
-        formData.append("jupe_taille", document.getElementById("jupe_taille_edit").value || "");
-        formData.append("jupe_longueur", document.getElementById("jupe_longueur_edit").value || "");
-        formData.append("jupe_longueur_jupe", document.getElementById("jupe_longueur_jupe_edit").value || "");
-        formData.append("jupe_ceinture", document.getElementById("jupe_ceinture_edit").value || "");
-        formData.append("jupe_fesse", document.getElementById("jupe_fesse_edit").value || "");
-        formData.append("jupe_tour_manche", document.getElementById("jupe_tour_manche_edit").value || "");
-        formData.append("jupe_longueur_poitrine", document.getElementById("jupe_longueur_poitrine_edit").value || "");
-        formData.append("jupe_longueur_taille", document.getElementById("jupe_longueur_taille_edit").value || "");
-        formData.append("jupe_longueur_fesse", document.getElementById("jupe_longueur_fesse_edit").value || "");
-      }
+  function buildMesureFormData() {
+    const formData = new FormData();
+    const sexe = document.getElementById("editSexe").value;
+    const typeVetement = sexe === "Femme"
+      ? document.querySelector('input[name="femme_type_edit"]:checked')?.value || ""
+      : "homme";
+
+    formData.append("modeleNom", document.getElementById("editModeleNom").value.trim());
+    formData.append("description", document.getElementById("editDescription").value.trim());
+    formData.append("sexe", sexe);
+    formData.append("typeVetement", typeVetement);
+    formData.append("prix", document.getElementById("editPrix").value.trim());
+
+    if (photoInput.files[0]) {
+      formData.append("photo", photoInput.files[0]);
+    }
+    if (habitPhotoInput.files[0]) {
+      formData.append("habitPhoto", habitPhotoInput.files[0]);
+    }
+
+    addMeasurementsToFormData(formData, sexe, typeVetement);
+    return formData;
+  }
+
+  function addMeasurementsToFormData(formData, sexe, typeVetement) {
+    if (sexe === "Femme" && typeVetement === "robe") {
+      formData.append("robe_epaule", document.getElementById("robe_epaule_edit").value || "");
+      formData.append("robe_manche", document.getElementById("robe_manche_edit").value || "");
+      formData.append("robe_poitrine", document.getElementById("robe_poitrine_edit").value || "");
+      formData.append("robe_taille", document.getElementById("robe_taille_edit").value || "");
+      formData.append("robe_longueur", document.getElementById("robe_longueur_edit").value || "");
+      formData.append("robe_fesse", document.getElementById("robe_fesse_edit").value || "");
+      formData.append("robe_tour_manche", document.getElementById("robe_tour_manche_edit").value || "");
+      formData.append("robe_longueur_poitrine", document.getElementById("robe_longueur_poitrine_edit").value || "");
+      formData.append("robe_longueur_taille", document.getElementById("robe_longueur_taille_edit").value || "");
+      formData.append("robe_longueur_fesse", document.getElementById("robe_longueur_fesse_edit").value || "");
+    } else if (sexe === "Femme" && typeVetement === "jupe") {
+      formData.append("jupe_epaule", document.getElementById("jupe_epaule_edit").value || "");
+      formData.append("jupe_manche", document.getElementById("jupe_manche_edit").value || "");
+      formData.append("jupe_poitrine", document.getElementById("jupe_poitrine_edit").value || "");
+      formData.append("jupe_taille", document.getElementById("jupe_taille_edit").value || "");
+      formData.append("jupe_longueur", document.getElementById("jupe_longueur_edit").value || "");
+      formData.append("jupe_longueur_jupe", document.getElementById("jupe_longueur_jupe_edit").value || "");
+      formData.append("jupe_ceinture", document.getElementById("jupe_ceinture_edit").value || "");
+      formData.append("jupe_fesse", document.getElementById("jupe_fesse_edit").value || "");
+      formData.append("jupe_tour_manche", document.getElementById("jupe_tour_manche_edit").value || "");
+      formData.append("jupe_longueur_poitrine", document.getElementById("jupe_longueur_poitrine_edit").value || "");
+      formData.append("jupe_longueur_taille", document.getElementById("jupe_longueur_taille_edit").value || "");
+      formData.append("jupe_longueur_fesse", document.getElementById("jupe_longueur_fesse_edit").value || "");
     } else if (sexe === "Homme") {
       formData.append("homme_epaule", document.getElementById("homme_epaule_edit").value || "");
       formData.append("homme_manche", document.getElementById("homme_manche_edit").value || "");
@@ -461,178 +418,133 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function validateEditForm() {
     const errors = [];
-    const requiredFields = [
-      { id: "editNom", label: "Nom" },
-      { id: "editPrenom", label: "Prénom" },
-      { id: "editContact", label: "Contact" },
-      { id: "editEmail", label: "Email" },
-      { id: "editSexe", label: "Sexe" },
-      { id: "editPrix", label: "Prix" },
-    ];
-
-    requiredFields.forEach((field) => {
-      const el = document.getElementById(field.id);
-      if (!el || !el.value.trim()) {
-        errors.push(`Le champ ${field.label} est obligatoire.`);
+    [
+      ["editNom", "Nom"],
+      ["editPrenom", "Prénom"],
+      ["editContact", "Contact"],
+      ["editSexe", "Sexe"],
+      ["editPrix", "Prix"],
+    ].forEach(([id, label]) => {
+      const value = document.getElementById(id)?.value?.trim();
+      if (!value) {
+        errors.push(`Le champ ${label} est obligatoire.`);
       }
     });
-     // ✅ NOUVEAU : Validation spécifique du prix
-    const prixInput = document.getElementById("editPrix");
-    if (prixInput && prixInput.value) {
-      const prix = parseFloat(prixInput.value);
-      if (isNaN(prix) || prix <= 0) {
-        errors.push("Le prix doit être un nombre supérieur à 0.");
-      }
+
+    if (!document.getElementById("editModeleNom").value.trim()) {
+      errors.push("Le nom du modèle est obligatoire.");
     }
-    // Validation des mesures selon le type
+
+    const prix = parseFloat(document.getElementById("editPrix").value);
+    if (Number.isNaN(prix) || prix <= 0) {
+      errors.push("Le prix doit être un nombre supérieur à 0.");
+    }
+
     const sexe = document.getElementById("editSexe").value;
     if (sexe === "Femme") {
-      const typeVetement = document.querySelector(
-        'input[name="femme_type_edit"]:checked'
-      )?.value;
+      const typeVetement = document.querySelector('input[name="femme_type_edit"]:checked')?.value;
       if (!typeVetement) {
         errors.push("Veuillez sélectionner un type de vêtement.");
-      } else {
-        // Valider les champs obligatoires selon le type
-        const requiredMeasurements =
-          typeVetement === "robe"
-            ? [
-                "robe_epaule",
-                "robe_manche",
-                "robe_poitrine",
-                "robe_taille",
-                "robe_longueur",
-                "robe_fesse",
-              ]
-            : [
-                "jupe_epaule",
-                "jupe_manche",
-                "jupe_poitrine",
-                "jupe_taille",
-                "jupe_longueur",
-                "jupe_longueur_jupe",
-                "jupe_ceinture",
-                "jupe_fesse",
-              ];
-
-        requiredMeasurements.forEach((field) => {
-          const el = document.getElementById(`${field}_edit`);
-          if (!el || !el.value.trim()) {
-            errors.push(
-              `Le champ ${field.replace(
-                "_",
-                " "
-              )} est obligatoire pour ce type de vêtement.`
-            );
-          }
-        });
       }
-    } else if (sexe === "Homme") {
-      const requiredMeasurements = [
-        "homme_epaule",
-        "homme_manche",
-        "homme_longueur",
-        "homme_longueur_pantalon",
-        "homme_ceinture",
-        "homme_cuisse",
-      ];
-      requiredMeasurements.forEach((field) => {
-        const el = document.getElementById(`${field}_edit`);
-        if (!el || !el.value.trim()) {
-          errors.push(`Le champ ${field.replace("_", " ")} est obligatoire.`);
-        }
-      });
     }
 
     return errors;
   }
 
-  // Initialisation des écouteurs d'événements
-  function setupEditFormListeners() {
-    // Gestion de la photo
-    document.getElementById("avatarEdit").addEventListener("click", () => {
-      document.getElementById("photoEditInput").click();
-    });
+  async function saveClientChanges() {
+    const errors = validateEditForm();
+    if (errors.length > 0) {
+      Swal.fire({ icon: "error", title: "Erreur de validation", html: errors.join("<br>") });
+      return;
+    }
 
-    document
-      .getElementById("photoEditInput")
-      .addEventListener("change", (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = function (event) {
-            document.getElementById("avatarEdit").src = event.target.result;
-            document.getElementById("avatarEdit").style.objectFit = "cover";
-          };
-          reader.readAsDataURL(file);
-        }
+    const originalText = saveBtn.innerHTML;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enregistrement...';
+
+    try {
+      await fetchJson(`http://localhost:8081/api/clients/${currentClientId}/infos`, {
+        method: "PUT",
+        headers: {
+          ...getAuthHeaders(),
+        },
+        body: buildClientInfoFormData(),
       });
 
-    // Gestion du changement de sexe
-    document.getElementById("editSexe").addEventListener("change", function () {
-      const val = this.value;
-      document.getElementById("femmeOptionsEdit").style.display =
-        val === "Femme" ? "block" : "none";
-      document.getElementById("mesuresHommeEdit").style.display =
-        val === "Homme" ? "block" : "none";
+      const mesureFormData = buildMesureFormData();
+      const url = creatingMode || !currentMesureId
+        ? `http://localhost:8081/api/clients/${currentClientId}/mesures`
+        : `http://localhost:8081/api/clients/${currentClientId}/mesures/${currentMesureId}`;
+      const method = creatingMode || !currentMesureId ? "POST" : "PUT";
 
-      // Reset les options femme
-      if (val !== "Femme") {
-        document
-          .querySelectorAll('input[name="femme_type_edit"]')
-          .forEach((el) => (el.checked = false));
-        document
-          .querySelectorAll(".option-card")
-          .forEach((card) => card.classList.remove("selected"));
-        document.getElementById("mesuresRobeEdit").style.display = "none";
-        document.getElementById("mesuresJupeEdit").style.display = "none";
+      await fetchJson(url, {
+        method,
+        headers: {
+          ...getAuthHeaders(),
+        },
+        body: mesureFormData,
+      });
+
+      await Swal.fire({
+        icon: "success",
+        title: "Succès",
+        text: creatingMode ? "Nouveau modèle ajouté avec succès" : "Modèle mis à jour avec succès",
+        timer: 1800,
+        showConfirmButton: false,
+      });
+
+      editModal.hide();
+      window.location.reload();
+    } catch (error) {
+      Swal.fire({ icon: "error", title: "Erreur", text: error.message || "Échec de l'enregistrement" });
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalText;
+    }
+  }
+
+  async function deleteCurrentMeasure() {
+    if (!currentMesureId) {
+      Swal.fire({ icon: "info", title: "Aucun modèle sélectionné", text: "Sélectionnez d'abord un modèle à supprimer." });
+      return;
+    }
+
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Supprimer ce modèle ?",
+      text: "Cette action retirera uniquement ce modèle du client.",
+      showCancelButton: true,
+      confirmButtonText: "Supprimer",
+      cancelButtonText: "Annuler",
+      confirmButtonColor: "#d33",
+    });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    try {
+      await fetchJson(`http://localhost:8081/api/clients/${currentClientId}/mesures/${currentMesureId}`, {
+        method: "DELETE",
+        headers: {
+          ...getAuthHeaders(),
+          Accept: "application/json",
+        },
+      });
+
+      currentMesures = currentMesures.filter((mesure) => mesure.id !== currentMesureId);
+      renderMesuresList();
+      if (currentMesures.length > 0) {
+        selectMeasure(currentMesures[0].id);
+      } else {
+        startNewMeasureMode();
       }
 
-      // Mettre à jour l'image de preview
-      const genderRadios = document.querySelectorAll(
-        'input[name="genderPreviewEdit"]'
-      );
-      genderRadios.forEach((radio) => {
-        if (radio.value === val) radio.checked = true;
-      });
-
-      document.getElementById("avatarEdit").src =
-        val === "Femme"
-          ? "assets/images/model4.jpg"
-          : "assets/images/model3.jpg";
-    });
-
-    // Gestion des options femme
-    document.querySelectorAll(".option-card").forEach((card) => {
-      card.addEventListener("click", () => {
-        document
-          .querySelectorAll(".option-card")
-          .forEach((c) => c.classList.remove("selected"));
-        card.classList.add("selected");
-
-        const radio = card.querySelector(".form-check-input");
-        radio.checked = true;
-
-        const option = card.getAttribute("data-option");
-        document.getElementById("mesuresRobeEdit").style.display =
-          option === "robe" ? "block" : "none";
-        document.getElementById("mesuresJupeEdit").style.display =
-          option === "jupe" ? "block" : "none";
-      });
-    });
-
-    // Gestion des radios de preview
-    document
-      .querySelectorAll('input[name="genderPreviewEdit"]')
-      .forEach((radio) => {
-        radio.addEventListener("change", () => {
-          document.getElementById("avatarEdit").src =
-            radio.value === "Femme"
-              ? "assets/images/model4.jpg"
-              : "assets/images/model3.jpg";
-        });
-      });
+      Swal.fire({ icon: "success", title: "Supprimé", text: "Le modèle a été supprimé." });
+    } catch (error) {
+      Swal.fire({ icon: "error", title: "Erreur", text: error.message || "Impossible de supprimer le modèle." });
+    }
   }
-  // Exportez la fonction pour qu'elle soit accessible depuis votre fichier principal
+
   window.openEditModal = openEditModal;
 });

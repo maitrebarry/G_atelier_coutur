@@ -395,6 +395,25 @@ public class ClientService {
         return clientRepository.findById(id);
     }
 
+    public Client modifierInfosClient(UUID id, ClientDTO dto) {
+        Client client = clientRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Client non trouvé"));
+
+        client.setNom(dto.getNom());
+        client.setPrenom(dto.getPrenom());
+        client.setContact(dto.getContact());
+        client.setAdresse(dto.getAdresse());
+        client.setEmail(dto.getEmail());
+
+        if (dto.getAtelierId() != null) {
+            Atelier atelier = atelierRepository.findById(dto.getAtelierId())
+                    .orElseThrow(() -> new EntityNotFoundException("Atelier non trouvé"));
+            client.setAtelier(atelier);
+        }
+
+        return clientRepository.save(client);
+    }
+
     public List<SyntheseMensuelleDTO> getSyntheseMensuelle(UUID atelierId) {
         Map<String, SyntheseMensuelleDTO> syntheseParMois = new LinkedHashMap<>();
 
@@ -892,6 +911,113 @@ public class ClientService {
         }
 
         return base;
+    }
+
+    @Transactional
+    public Mesure ajouterMesureAClient(UUID clientId, MesureItemDTO mesureDTO, MultipartFile photoFile, MultipartFile habitPhotoFile) {
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new EntityNotFoundException("Client non trouvé"));
+
+        if (client.getMesures() == null) {
+            client.setMesures(new ArrayList<>());
+        }
+
+        Mesure mesure = createMesureFromItem(
+                mesureDTO,
+                client,
+                photoFile != null ? List.of(photoFile) : new ArrayList<>(),
+                habitPhotoFile != null ? List.of(habitPhotoFile) : new ArrayList<>()
+        );
+        client.getMesures().add(mesure);
+        clientRepository.save(client);
+        return mesure;
+    }
+
+    @Transactional
+    public Mesure modifierMesureDeClient(UUID clientId, UUID mesureId, MesureItemDTO mesureDTO, MultipartFile photoFile, MultipartFile habitPhotoFile) {
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new EntityNotFoundException("Client non trouvé"));
+
+        Mesure mesure = client.getMesures().stream()
+                .filter(item -> item.getId().equals(mesureId))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("Mesure non trouvée pour ce client"));
+
+        updateMesureFromItem(mesure, mesureDTO, photoFile, habitPhotoFile);
+        return mesureRepository.save(mesure);
+    }
+
+    @Transactional
+    public void supprimerMesureDeClient(UUID clientId, UUID mesureId) {
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new EntityNotFoundException("Client non trouvé"));
+
+        Mesure mesure = client.getMesures().stream()
+                .filter(item -> item.getId().equals(mesureId))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("Mesure non trouvée pour ce client"));
+
+        if (mesure.getPhotoPath() != null && !mesure.getPhotoPath().isBlank()) {
+            fileStorageService.deleteFile(mesure.getPhotoPath(), "model_photo");
+        }
+        if (mesure.getHabitPhotoPath() != null && !mesure.getHabitPhotoPath().isBlank()) {
+            fileStorageService.deleteFile(mesure.getHabitPhotoPath(), "habit_photo");
+        }
+
+        client.getMesures().remove(mesure);
+        mesureRepository.delete(mesure);
+        clientRepository.save(client);
+    }
+
+    private void updateMesureFromItem(Mesure mesure, MesureItemDTO item, MultipartFile photoFile, MultipartFile habitPhotoFile) {
+        mesure.setSexe(item.getSexe());
+        mesure.setDescription(item.getDescription());
+        mesure.setTypeVetement(item.getTypeVetement() != null ? item.getTypeVetement().trim().toLowerCase() : null);
+
+        Double prix = parsePrix(item.getPrix());
+        if (prix != null && prix <= 0) {
+            throw new IllegalArgumentException("Le prix doit être supérieur à 0 lorsqu'il est renseigné");
+        }
+        mesure.setPrix(prix);
+
+        if (item.getSelectedModelId() != null) {
+            Modele modele = modeleRepository.findById(item.getSelectedModelId())
+                    .orElseThrow(() -> new EntityNotFoundException("Modèle non trouvé avec l'ID: " + item.getSelectedModelId()));
+            mesure.setModeleReferenceId(modele.getId());
+            mesure.setModeleNom(modele.getNom());
+            if ((photoFile == null || photoFile.isEmpty()) && modele.getPhotoPath() != null) {
+                mesure.setPhotoPath(modele.getPhotoPath());
+            }
+        } else {
+            mesure.setModeleNom(item.getModeleNom());
+            mesure.setModeleReferenceId(null);
+        }
+
+        if (photoFile != null && !photoFile.isEmpty()) {
+            try {
+                if (mesure.getPhotoPath() != null && !mesure.getPhotoPath().isBlank()) {
+                    fileStorageService.deleteFile(mesure.getPhotoPath(), "model_photo");
+                }
+                String uniqueFileName = fileStorageService.storeFile(photoFile, "model_photo");
+                mesure.setPhotoPath(uniqueFileName);
+            } catch (Exception e) {
+                throw new RuntimeException("Erreur lors de l'upload de la photo du modèle", e);
+            }
+        }
+
+        if (habitPhotoFile != null && !habitPhotoFile.isEmpty()) {
+            try {
+                if (mesure.getHabitPhotoPath() != null && !mesure.getHabitPhotoPath().isBlank()) {
+                    fileStorageService.deleteFile(mesure.getHabitPhotoPath(), "habit_photo");
+                }
+                String habitFileName = fileStorageService.storeFile(habitPhotoFile, "habit_photo");
+                mesure.setHabitPhotoPath(habitFileName);
+            } catch (Exception e) {
+                throw new RuntimeException("Erreur lors de l'upload de la photo de l'habit", e);
+            }
+        }
+
+        fillMesureFromItem(mesure, item);
     }
 
     }

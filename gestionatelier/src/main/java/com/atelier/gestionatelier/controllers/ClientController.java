@@ -1,11 +1,13 @@
 package com.atelier.gestionatelier.controllers;
 
 import com.atelier.gestionatelier.dto.ClientDTO;
+import com.atelier.gestionatelier.dto.MesureDTO;
 import com.atelier.gestionatelier.dto.MesureItemDTO;
 import com.atelier.gestionatelier.dto.ModeleDTO;
 import com.atelier.gestionatelier.dto.ModeleListDTO;
 import com.atelier.gestionatelier.dto.SyntheseMensuelleDTO;
 import com.atelier.gestionatelier.entities.Client;
+import com.atelier.gestionatelier.entities.Mesure;
 import com.atelier.gestionatelier.entities.Modele;
 import com.atelier.gestionatelier.entities.RendezVous;
 import com.atelier.gestionatelier.entities.Utilisateur;
@@ -27,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/clients")
@@ -245,6 +248,43 @@ public class ClientController {
                     System.out.println("Client non trouvé ou accès refusé: " + id);
                     return ResponseEntity.notFound().build();
                 });
+    }
+
+    @PutMapping("/{id}/infos")
+    public ResponseEntity<?> modifierInfosClient(@PathVariable UUID id, @ModelAttribute ClientDTO clientDTO, Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Utilisateur currentUser = utilisateurService.findByEmail(email);
+
+            Optional<Client> clientOpt;
+            if (Role.TAILLEUR.equals(currentUser.getRole())) {
+                clientOpt = clientService.getClientByIdAndTailleur(id, currentUser.getId());
+            } else if (currentUser.getAtelier() != null) {
+                clientOpt = clientService.getClientByIdAndAtelier(id, currentUser.getAtelier().getId());
+                clientDTO.setAtelierId(currentUser.getAtelier().getId());
+            } else {
+                clientOpt = clientService.getClientById(id);
+            }
+
+            if (clientOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                        "status", "error",
+                        "message", "Client non trouvé ou accès refusé"
+                ));
+            }
+
+            Client clientModifie = clientService.modifierInfosClient(id, clientDTO);
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Informations client mises à jour avec succès",
+                    "clientId", clientModifie.getId()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage() != null ? e.getMessage() : "Erreur serveur lors de la modification"
+            ));
+        }
     }
 
     private void populateMissingModeleInfo(Client client) {
@@ -485,6 +525,285 @@ public class ClientController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/{clientId}/mesures")
+    public ResponseEntity<List<MesureDTO>> getMesuresDeClient(
+            @PathVariable UUID clientId,
+            Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Utilisateur currentUser = utilisateurService.findByEmail(email);
+
+            Optional<Client> clientOpt;
+            if (Role.TAILLEUR.equals(currentUser.getRole())) {
+                clientOpt = clientService.getClientByIdAndTailleur(clientId, currentUser.getId());
+            } else if (currentUser.getAtelier() != null) {
+                clientOpt = clientService.getClientByIdAndAtelier(clientId, currentUser.getAtelier().getId());
+            } else {
+                clientOpt = clientService.getClientById(clientId);
+            }
+
+            if (clientOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            List<MesureDTO> mesuresDTO = clientOpt.get().getMesures().stream()
+                    .map(this::convertMesureToDTO)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(mesuresDTO);
+        } catch (Exception e) {
+            System.err.println("❌ Erreur récupération mesures: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    private MesureDTO convertMesureToDTO(Mesure mesure) {
+        MesureDTO dto = new MesureDTO();
+        dto.setId(mesure.getId());
+        dto.setDateMesure(mesure.getDateMesure());
+        dto.setTypeVetement(mesure.getTypeVetement());
+        dto.setModeleNom(mesure.getModeleNom());
+        dto.setModeleReferenceId(mesure.getModeleReferenceId());
+        dto.setPrix(mesure.getPrix());
+        dto.setDescription(mesure.getDescription());
+        dto.setSexe(mesure.getSexe());
+        dto.setPhotoPath(mesure.getPhotoPath());
+        dto.setHabitPhotoPath(mesure.getHabitPhotoPath());
+        dto.setEpaule(mesure.getEpaule());
+        dto.setManche(mesure.getManche());
+        dto.setPoitrine(mesure.getPoitrine());
+        dto.setTaille(mesure.getTaille());
+        dto.setLongueur(mesure.getLongueur());
+        dto.setFesse(mesure.getFesse());
+        dto.setTourManche(mesure.getTourManche());
+        dto.setLongueurPoitrine(mesure.getLongueurPoitrine());
+        dto.setLongueurTaille(mesure.getLongueurTaille());
+        dto.setLongueurFesse(mesure.getLongueurFesse());
+        dto.setLongueurJupe(mesure.getLongueurJupe());
+        dto.setCeinture(mesure.getCeinture());
+        dto.setLongueurPoitrineRobe(mesure.getLongueurPoitrineRobe());
+        dto.setLongueurTailleRobe(mesure.getLongueurTailleRobe());
+        dto.setLongueurFesseRobe(mesure.getLongueurFesseRobe());
+        dto.setLongueurPantalon(mesure.getLongueurPantalon());
+        dto.setCuisse(mesure.getCuisse());
+        dto.setCorps(mesure.getCorps());
+        return dto;
+    }
+
+    @PostMapping("/{clientId}/mesures")
+    public ResponseEntity<?> ajouterMesureAClient(
+            @PathVariable UUID clientId,
+            @RequestParam(value = "modeleNom", required = false) String modeleNom,
+            @RequestParam(value = "selectedModelId", required = false) String selectedModelId,
+            @RequestParam(value = "sexe", required = false) String sexe,
+            @RequestParam(value = "typeVetement", required = false) String typeVetement,
+            @RequestParam(value = "prix", required = false) String prix,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam Map<String, String> mesuresParams,
+            @RequestParam(value = "photo", required = false) MultipartFile photoFile,
+            @RequestParam(value = "habitPhoto", required = false) MultipartFile habitPhotoFile,
+            Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Utilisateur currentUser = utilisateurService.findByEmail(email);
+
+            Optional<Client> clientOpt;
+            if (Role.TAILLEUR.equals(currentUser.getRole())) {
+                clientOpt = clientService.getClientByIdAndTailleur(clientId, currentUser.getId());
+            } else if (currentUser.getAtelier() != null) {
+                clientOpt = clientService.getClientByIdAndAtelier(clientId, currentUser.getAtelier().getId());
+            } else {
+                clientOpt = clientService.getClientById(clientId);
+            }
+
+            if (clientOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                        "status", "error",
+                        "message", "Client non trouvé ou accès refusé"
+                ));
+            }
+
+            MesureItemDTO mesureDTO = buildMesureItemDTO(modeleNom, selectedModelId, sexe, typeVetement, prix, description, mesuresParams);
+            Mesure nouvelleMesure = clientService.ajouterMesureAClient(clientId, mesureDTO, photoFile, habitPhotoFile);
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Modèle ajouté avec succès",
+                    "mesureId", nouvelleMesure.getId()
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            System.err.println("❌ Erreur ajout mesure: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    @PutMapping("/{clientId}/mesures/{mesureId}")
+    public ResponseEntity<?> modifierMesureDeClient(
+            @PathVariable UUID clientId,
+            @PathVariable UUID mesureId,
+            @RequestParam(value = "modeleNom", required = false) String modeleNom,
+            @RequestParam(value = "selectedModelId", required = false) String selectedModelId,
+            @RequestParam(value = "sexe", required = false) String sexe,
+            @RequestParam(value = "typeVetement", required = false) String typeVetement,
+            @RequestParam(value = "prix", required = false) String prix,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam Map<String, String> mesuresParams,
+            @RequestParam(value = "photo", required = false) MultipartFile photoFile,
+            @RequestParam(value = "habitPhoto", required = false) MultipartFile habitPhotoFile,
+            Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Utilisateur currentUser = utilisateurService.findByEmail(email);
+
+            Optional<Client> clientOpt;
+            if (Role.TAILLEUR.equals(currentUser.getRole())) {
+                clientOpt = clientService.getClientByIdAndTailleur(clientId, currentUser.getId());
+            } else if (currentUser.getAtelier() != null) {
+                clientOpt = clientService.getClientByIdAndAtelier(clientId, currentUser.getAtelier().getId());
+            } else {
+                clientOpt = clientService.getClientById(clientId);
+            }
+
+            if (clientOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                        "status", "error",
+                        "message", "Client non trouvé ou accès refusé"
+                ));
+            }
+
+            MesureItemDTO mesureDTO = buildMesureItemDTO(modeleNom, selectedModelId, sexe, typeVetement, prix, description, mesuresParams);
+            Mesure mesureModifiee = clientService.modifierMesureDeClient(clientId, mesureId, mesureDTO, photoFile, habitPhotoFile);
+
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Modèle modifié avec succès",
+                    "mesureId", mesureModifiee.getId()
+            ));
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            HttpStatus status = e instanceof EntityNotFoundException ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            System.err.println("❌ Erreur modification mesure: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    @DeleteMapping("/{clientId}/mesures/{mesureId}")
+    public ResponseEntity<?> supprimerMesureDeClient(
+            @PathVariable UUID clientId,
+            @PathVariable UUID mesureId,
+            Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Utilisateur currentUser = utilisateurService.findByEmail(email);
+
+            Optional<Client> clientOpt;
+            if (Role.TAILLEUR.equals(currentUser.getRole())) {
+                clientOpt = clientService.getClientByIdAndTailleur(clientId, currentUser.getId());
+            } else if (currentUser.getAtelier() != null) {
+                clientOpt = clientService.getClientByIdAndAtelier(clientId, currentUser.getAtelier().getId());
+            } else {
+                clientOpt = clientService.getClientById(clientId);
+            }
+
+            if (clientOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                        "status", "error",
+                        "message", "Client non trouvé ou accès refusé"
+                ));
+            }
+
+            clientService.supprimerMesureDeClient(clientId, mesureId);
+            return ResponseEntity.ok(Map.of(
+                    "status", "success",
+                    "message", "Modèle supprimé avec succès"
+            ));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            System.err.println("❌ Erreur suppression mesure: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    private MesureItemDTO buildMesureItemDTO(
+            String modeleNom,
+            String selectedModelId,
+            String sexe,
+            String typeVetement,
+            String prix,
+            String description,
+            Map<String, String> mesuresParams) {
+        MesureItemDTO mesureDTO = new MesureItemDTO();
+        mesureDTO.setModeleNom(modeleNom);
+        if (selectedModelId != null && !selectedModelId.isEmpty()) {
+            try {
+                mesureDTO.setSelectedModelId(UUID.fromString(selectedModelId));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("ID de modèle invalide");
+            }
+        }
+        mesureDTO.setSexe(sexe);
+        mesureDTO.setTypeVetement(typeVetement);
+        mesureDTO.setPrix(prix);
+        mesureDTO.setDescription(description);
+        mesureDTO.setRobe_epaule(mesuresParams.get("robe_epaule"));
+        mesureDTO.setRobe_manche(mesuresParams.get("robe_manche"));
+        mesureDTO.setRobe_poitrine(mesuresParams.get("robe_poitrine"));
+        mesureDTO.setRobe_taille(mesuresParams.get("robe_taille"));
+        mesureDTO.setRobe_longueur(mesuresParams.get("robe_longueur"));
+        mesureDTO.setRobe_fesse(mesuresParams.get("robe_fesse"));
+        mesureDTO.setRobe_tour_manche(mesuresParams.get("robe_tour_manche"));
+        mesureDTO.setRobe_longueur_poitrine(mesuresParams.get("robe_longueur_poitrine"));
+        mesureDTO.setRobe_longueur_taille(mesuresParams.get("robe_longueur_taille"));
+        mesureDTO.setRobe_longueur_fesse(mesuresParams.get("robe_longueur_fesse"));
+        mesureDTO.setJupe_epaule(mesuresParams.get("jupe_epaule"));
+        mesureDTO.setJupe_manche(mesuresParams.get("jupe_manche"));
+        mesureDTO.setJupe_poitrine(mesuresParams.get("jupe_poitrine"));
+        mesureDTO.setJupe_taille(mesuresParams.get("jupe_taille"));
+        mesureDTO.setJupe_longueur(mesuresParams.get("jupe_longueur"));
+        mesureDTO.setJupe_longueur_jupe(mesuresParams.get("jupe_longueur_jupe"));
+        mesureDTO.setJupe_ceinture(mesuresParams.get("jupe_ceinture"));
+        mesureDTO.setJupe_fesse(mesuresParams.get("jupe_fesse"));
+        mesureDTO.setJupe_tour_manche(mesuresParams.get("jupe_tour_manche"));
+        mesureDTO.setJupe_longueur_poitrine(mesuresParams.get("jupe_longueur_poitrine"));
+        mesureDTO.setJupe_longueur_taille(mesuresParams.get("jupe_longueur_taille"));
+        mesureDTO.setJupe_longueur_fesse(mesuresParams.get("jupe_longueur_fesse"));
+        mesureDTO.setHomme_epaule(mesuresParams.get("homme_epaule"));
+        mesureDTO.setHomme_manche(mesuresParams.get("homme_manche"));
+        mesureDTO.setHomme_longueur(mesuresParams.get("homme_longueur"));
+        mesureDTO.setHomme_longueur_pantalon(mesuresParams.get("homme_longueur_pantalon"));
+        mesureDTO.setHomme_ceinture(mesuresParams.get("homme_ceinture"));
+        mesureDTO.setHomme_cuisse(mesuresParams.get("homme_cuisse"));
+        mesureDTO.setHomme_poitrine(mesuresParams.get("homme_poitrine"));
+        mesureDTO.setHomme_corps(mesuresParams.get("homme_corps"));
+        mesureDTO.setHomme_tour_manche(mesuresParams.get("homme_tour_manche"));
+        return mesureDTO;
+    }
+
     private String validerClientDTO(ClientDTO dto) {
         // Champs obligatoires
         if (dto.getNom() == null || dto.getNom().isBlank())

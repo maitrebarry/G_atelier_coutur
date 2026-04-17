@@ -17,6 +17,7 @@ const Clients = () => {
   const [habitPhotoFile, setHabitPhotoFile] = useState(null);
   const [habitPhotoCleared, setHabitPhotoCleared] = useState(false);
   const [editingMesureIndex, setEditingMesureIndex] = useState(0);
+  const [isCreatingMesure, setIsCreatingMesure] = useState(false);
   
   const fileInputRef = useRef(null);
   const habitFileInputRef = useRef(null);
@@ -52,17 +53,75 @@ const Clients = () => {
   const selectedClientMeasure = selectedClientMeasures[0];
 
   const getEditingMesure = () => {
+    if (isCreatingMesure) return {};
     const mesures = getSortedMesures(editingClient);
     if (mesures.length === 0) return {};
     const index = Math.min(Math.max(editingMesureIndex, 0), mesures.length - 1);
     return mesures[index] || mesures[0];
   };
 
+  const buildEmptyMesureForm = (sexe = 'Femme') => ({
+    sexe,
+    typeVetement: sexe === 'Homme' ? 'homme' : '',
+    prix: '',
+    description: '',
+    modeleNom: '',
+    mesureId: null,
+    selectedModelId: null,
+    photo: null,
+    epaule: '',
+    manche: '',
+    poitrine: '',
+    taille: '',
+    longueur: '',
+    fesse: '',
+    tourManche: '',
+    longueurPoitrine: '',
+    longueurTaille: '',
+    longueurFesse: '',
+    longueurJupe: '',
+    ceinture: '',
+    longueurPantalon: '',
+    cuisse: '',
+    corps: '',
+    existing_photo: '',
+    existing_habit_photo: '',
+  });
+
+  const buildMesureFormFromExisting = (mesure = {}, fallbackSexe = 'Femme') => ({
+    sexe: mesure.sexe || fallbackSexe,
+    typeVetement: mesure.typeVetement || (fallbackSexe === 'Homme' ? 'homme' : ''),
+    prix: '',
+    description: '',
+    modeleNom: '',
+    mesureId: null,
+    selectedModelId: null,
+    photo: null,
+    epaule: mesure.epaule || '',
+    manche: mesure.manche || '',
+    poitrine: mesure.poitrine || '',
+    taille: mesure.taille || '',
+    longueur: mesure.longueur || '',
+    fesse: mesure.fesse || '',
+    tourManche: mesure.tourManche || '',
+    longueurPoitrine: mesure.longueurPoitrine || '',
+    longueurTaille: mesure.longueurTaille || '',
+    longueurFesse: mesure.longueurFesse || '',
+    longueurJupe: mesure.longueurJupe || '',
+    ceinture: mesure.ceinture || '',
+    longueurPantalon: mesure.longueurPantalon || '',
+    cuisse: mesure.cuisse || '',
+    corps: mesure.corps || '',
+    existing_photo: '',
+    existing_habit_photo: '',
+  });
+
   const selectEditingMesure = (index, clientArg) => {
     const client = clientArg || editingClient;
     if (!client) return;
     const mesures = getSortedMesures(client);
     const mesure = mesures[index] || mesures[0] || {};
+    setIsCreatingMesure(false);
     setEditingMesureIndex(index);
     setEditFormData(prev => ({
       ...prev,
@@ -70,6 +129,7 @@ const Clients = () => {
       typeVetement: mesure.typeVetement || '',
       prix: mesure.prix != null ? String(mesure.prix) : '',
       description: mesure.description || '',
+      modeleNom: mesure.modeleNom || '',
       mesureId: mesure.id || null,
       selectedModelId: mesure.modeleReferenceId || null,
       photo: null,
@@ -96,6 +156,23 @@ const Clients = () => {
     setHabitPhotoPreview(getHabitPhotoUrl(mesure));
     const photoUrl = mesure.photoPath ? getClientPhotoUrl(mesure) : (mesure.sexe === 'Homme' ? '/assets/images/model3.jpg' : '/assets/images/model4.jpg');
     setPhotoPreview(photoUrl);
+  };
+
+  const startNewMesure = () => {
+    const currentMesure = getEditingMesure();
+    const sexe = currentMesure.sexe || editFormData.sexe || 'Femme';
+    setIsCreatingMesure(true);
+    setEditingMesureIndex(-1);
+    setEditFormData(prev => ({
+      ...prev,
+      ...(currentMesure && Object.keys(currentMesure).length > 0
+        ? buildMesureFormFromExisting(currentMesure, sexe)
+        : buildEmptyMesureForm(sexe)),
+    }));
+    setPhotoPreview(sexe === 'Homme' ? '/assets/images/model3.jpg' : '/assets/images/model4.jpg');
+    setHabitPhotoPreview(null);
+    setHabitPhotoFile(null);
+    setHabitPhotoCleared(false);
   };
 
   // helper to build URL for habit photo stored on server
@@ -193,6 +270,7 @@ const Clients = () => {
       const client = res.data;
       setEditingClient(client);
       setEditingMesureIndex(0);
+      setIsCreatingMesure(false);
       setEditFormData({
         nom: client.nom || '',
         prenom: client.prenom || '',
@@ -210,6 +288,7 @@ const Clients = () => {
   const closeEditModal = () => {
     setEditingClient(null);
     setEditingMesureIndex(0);
+    setIsCreatingMesure(false);
     setPhotoPreview(null);
     setHabitPhotoPreview(null);
     setHabitPhotoFile(null);
@@ -218,7 +297,16 @@ const Clients = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setEditFormData(prev => ({ ...prev, [name]: value }));
+    setEditFormData(prev => {
+      const next = { ...prev, [name]: value };
+      if (name === 'sexe' && value === 'Homme') {
+        next.typeVetement = 'homme';
+      }
+      if (name === 'sexe' && value === 'Femme' && prev.typeVetement === 'homme') {
+        next.typeVetement = '';
+      }
+      return next;
+    });
   };
 
   const handleFileChange = (e) => {
@@ -257,43 +345,33 @@ const Clients = () => {
       return;
     }
 
+    if (!editFormData.modeleNom?.trim()) {
+      Swal.fire('Erreur', 'Veuillez renseigner le nom du modèle', 'error');
+      return;
+    }
+
     setSaving(true);
     try {
-      const formData = new FormData();
-      // Append basic fields
-      ['nom', 'prenom', 'contact', 'adresse', 'email', 'sexe', 'prix', 'description'].forEach(key => {
-        formData.append(key, editFormData[key]);
+      const infoFormData = new FormData();
+      ['nom', 'prenom', 'contact', 'adresse', 'email'].forEach(key => {
+        infoFormData.append(key, editFormData[key] || '');
       });
 
-      const selectedMesure = getEditingMesure();
-      if (editFormData.mesureId) {
-        formData.append('selectedMesureId', editFormData.mesureId);
-      }
-      if (editFormData.selectedModelId) {
-        formData.append('selectedModelId', editFormData.selectedModelId);
-      }
+      await api.put(`/clients/${editingClient.id}/infos`, infoFormData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
 
-      // Append photo if new one selected
-      if (editFormData.photo instanceof File) {
-        formData.append('photo', editFormData.photo);
-      } else if (selectedMesure?.photoPath) {
-         const cleanPath = selectedMesure.photoPath.replace(/^\/+/,'').replace("model_photo/", "");
-         formData.append('existing_photo', cleanPath);
-      }
+      const formData = new FormData();
+      formData.append('sexe', editFormData.sexe || '');
+      formData.append('prix', editFormData.prix || '');
+      formData.append('description', editFormData.description || '');
+      formData.append('modeleNom', editFormData.modeleNom || '');
 
-      if (habitPhotoFile instanceof File) {
-        formData.append('habitPhoto', habitPhotoFile);
-      } else if (!habitPhotoCleared && selectedMesure?.habitPhotoPath) {
-        const cleanHabitPath = selectedMesure.habitPhotoPath.replace(/^\/+/,'').replace("habit_photo/", "");
-        formData.append('existing_habit_photo', cleanHabitPath);
-      }
-
-      // Append type specific fields
       if (editFormData.sexe === 'Femme') {
         if (!editFormData.typeVetement) {
             throw new Error("Veuillez sélectionner un type de vêtement");
         }
-        formData.append('femme_type_edit', editFormData.typeVetement);
+        formData.append('typeVetement', editFormData.typeVetement);
         
         if (editFormData.typeVetement === 'robe') {
             ['epaule', 'manche', 'poitrine', 'taille', 'longueur', 'fesse', 'tourManche', 'longueurPoitrine', 'longueurTaille', 'longueurFesse'].forEach(field => {
@@ -305,16 +383,45 @@ const Clients = () => {
             });
         }
       } else {
+         formData.append('typeVetement', 'homme');
          ['epaule', 'manche', 'longueur', 'longueurPantalon', 'ceinture', 'cuisse', 'poitrine', 'corps', 'tourManche'].forEach(field => {
              formData.append(`homme_${field}`, editFormData[field] || '');
          });
       }
 
-      await api.put(`/clients/${editingClient.id}`, formData, {
+      const selectedMesure = getEditingMesure();
+      if (editFormData.selectedModelId) {
+        formData.append('selectedModelId', editFormData.selectedModelId);
+      }
+
+      if (editFormData.photo instanceof File) {
+        formData.append('photo', editFormData.photo);
+      } else if (!isCreatingMesure && selectedMesure?.photoPath) {
+        const cleanPath = selectedMesure.photoPath.replace(/^\/+/,'').replace('model_photo/', '');
+        formData.append('existing_photo', cleanPath);
+      }
+
+      if (habitPhotoFile instanceof File) {
+        formData.append('habitPhoto', habitPhotoFile);
+      } else if (!habitPhotoCleared && !isCreatingMesure && selectedMesure?.habitPhotoPath) {
+        const cleanHabitPath = selectedMesure.habitPhotoPath.replace(/^\/+/,'').replace('habit_photo/', '');
+        formData.append('existing_habit_photo', cleanHabitPath);
+      }
+
+      if (!habitPhotoFile && habitPhotoCleared) {
+        formData.append('existing_habit_photo', '');
+      }
+
+      const endpoint = isCreatingMesure
+        ? `/clients/${editingClient.id}/mesures`
+        : `/clients/${editingClient.id}/mesures/${editFormData.mesureId}`;
+      const method = isCreatingMesure ? 'post' : 'put';
+
+      await api[method](endpoint, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      Swal.fire('Succès', 'Client modifié avec succès', 'success');
+      Swal.fire('Succès', isCreatingMesure ? 'Nouveau modèle ajouté avec succès' : 'Client modifié avec succès', 'success');
       closeEditModal();
       fetchClients();
 
@@ -323,6 +430,39 @@ const Clients = () => {
       Swal.fire('Erreur', err.message || 'Impossible de sauvegarder', 'error');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteMesure = async () => {
+    const mesureId = editFormData.mesureId;
+    if (!editingClient || !mesureId) {
+      Swal.fire('Erreur', 'Sélectionnez un modèle existant à supprimer', 'error');
+      return;
+    }
+
+    const result = await Swal.fire({
+      title: 'Supprimer ce modèle ?',
+      text: "Le client sera conservé, seul le modèle sélectionné sera supprimé.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Oui, supprimer!',
+      cancelButtonText: 'Annuler'
+    });
+
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    try {
+      await api.delete(`/clients/${editingClient.id}/mesures/${mesureId}`);
+      Swal.fire('Supprimé!', 'Le modèle a été supprimé.', 'success');
+      closeEditModal();
+      fetchClients();
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Erreur', 'Impossible de supprimer le modèle', 'error');
     }
   };
 
@@ -670,21 +810,42 @@ const Clients = () => {
                                           <label className="form-label">Prix (FCFA) <small className="text-muted">(à renseigner si disponible)</small></label>
                                           <input type="number" className="form-control" name="prix" value={editFormData.prix} onChange={handleInputChange} />
                                       </div>
+                                      <div className="col-md-6 mb-3">
+                                          <label className="form-label">Nom du modèle <span className="text-danger">*</span></label>
+                                          <input type="text" className="form-control" name="modeleNom" value={editFormData.modeleNom || ''} onChange={handleInputChange} placeholder="Ex: Grand boubou, Jupe droite..." />
+                                      </div>
                                         <div className="col-md-12 mb-3">
                                           <label className="form-label">Description <small className="text-muted">(optionnel)</small></label>
                                           <textarea className="form-control" rows={3} name="description" value={editFormData.description || ''} onChange={handleInputChange} placeholder="Ajouter une description ou note pour ce prix..." />
                                         </div>
                                   </div>
 
-                                  {editingClient && getSortedMesures(editingClient).length > 1 && (
+                                  {editingClient && getSortedMesures(editingClient).length > 0 && (
                                     <div className="mb-4">
-                                      <h5 className="mb-3"><i className="bx bx-list-ul"></i> Modèle à modifier</h5>
+                                      <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 className="mb-0"><i className="bx bx-list-ul"></i> Modèles du client</h5>
+                                        <div className="d-flex gap-2">
+                                          <button type="button" className="btn btn-sm btn-outline-primary" onClick={startNewMesure}>
+                                            <i className="bx bx-plus me-1"></i>Nouveau modèle
+                                          </button>
+                                          {!isCreatingMesure && (
+                                            <button type="button" className="btn btn-sm btn-outline-danger" onClick={handleDeleteMesure}>
+                                              <i className="bx bx-trash me-1"></i>Supprimer
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {isCreatingMesure && (
+                                        <div className="alert alert-info py-2">
+                                          Nouveau modèle en cours de création. Les mesures du modèle sélectionné ont été conservées ; il reste à choisir le nouveau modèle, son prix et la photo de l'habit.
+                                        </div>
+                                      )}
                                       <div className="list-group">
                                         {getSortedMesures(editingClient).map((m, index) => (
                                           <button
                                             key={m.id || index}
                                             type="button"
-                                            className={`list-group-item list-group-item-action ${editingMesureIndex === index ? 'active' : ''}`}
+                                            className={`list-group-item list-group-item-action ${!isCreatingMesure && editingMesureIndex === index ? 'active' : ''}`}
                                             onClick={() => selectEditingMesure(index)}
                                           >
                                             <div className="d-flex justify-content-between align-items-center">
@@ -770,9 +931,9 @@ const Clients = () => {
                           </div>
                       </div>
                       <div className="modal-footer">
-                          <button type="button" className="btn btn-secondary" onClick={() => setEditingClient(null)}>Annuler</button>
+                          <button type="button" className="btn btn-secondary" onClick={closeEditModal}>Annuler</button>
                           <button type="button" className="btn btn-primary" onClick={handleSaveEdit} disabled={saving}>
-                              {saving ? 'Enregistrement...' : 'Enregistrer'}
+                            {saving ? 'Enregistrement...' : isCreatingMesure ? 'Ajouter le modèle' : 'Enregistrer'}
                           </button>
                       </div>
                   </div>
