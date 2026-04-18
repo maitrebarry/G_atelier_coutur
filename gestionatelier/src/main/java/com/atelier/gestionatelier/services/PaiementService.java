@@ -679,6 +679,54 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
         return buildPdfFromRecu(recu);
     }
 
+    public RecuPaiementDto genererRecuSoldeClient(UUID clientId, UUID atelierId) {
+        Client client = clientRepository.findByIdAndAtelierIdWithMesures(clientId, atelierId)
+                .orElseThrow(() -> new RuntimeException("Client non trouvé dans cet atelier"));
+
+        RecuPaiementDto recu = new RecuPaiementDto();
+        recu.setId(client.getId());
+        recu.setTypePaiement("CLIENT");
+        recu.setReference("DU-" + client.getId().toString().substring(0, 8).toUpperCase());
+        recu.setDatePaiement(LocalDateTime.now());
+        recu.setMontant(0.0);
+        recu.setMoyenPaiement("AUCUN");
+
+        recu.setClientNom(client.getNom());
+        recu.setClientPrenom(client.getPrenom());
+        recu.setClientContact(client.getContact());
+        recu.setStatut("Solde dû");
+
+        List<Mesure> mesures = client.getMesures() == null ? Collections.emptyList() : client.getMesures();
+        double totalDu = mesures.stream().mapToDouble(m -> m.getPrix() != null ? m.getPrix() : 0.0).sum();
+        double totalPaiements = paiementRepository.findPaiementsByClientAndAtelier(clientId, atelierId)
+                .stream()
+                .mapToDouble(Paiement::getMontant)
+                .sum();
+
+        recu.setTotalDu(totalDu);
+        recu.setResteAPayer(totalDu - totalPaiements);
+
+        Atelier atelier = client.getAtelier();
+        recu.setAtelierNom(atelier.getNom());
+        recu.setAtelierAdresse(atelier.getAdresse());
+        recu.setAtelierTelephone(atelier.getTelephone());
+
+        Utilisateur proprietaire = getProprietaireAtelier(atelier.getId());
+        if (proprietaire != null) {
+            recu.setProprietaireNom(proprietaire.getNom());
+            recu.setProprietairePrenom(proprietaire.getPrenom());
+        }
+        recu.setMessageMarketing(buildMarketingMessage(atelier.getNom(), proprietaire));
+        recu.setQrCodeData(genererQRCodeData(recu));
+
+        return recu;
+    }
+
+    public byte[] genererRecuSoldeClientPdf(UUID clientId, UUID atelierId) {
+        RecuPaiementDto recu = genererRecuSoldeClient(clientId, atelierId);
+        return buildPdfFromRecu(recu);
+    }
+
     public byte[] genererRecuPaiementTailleurPdf(UUID paiementId, UUID atelierId) {
         RecuPaiementDto recu = genererRecuPaiementTailleur(paiementId, atelierId);
         return buildPdfFromRecu(recu);

@@ -88,6 +88,7 @@ const Mesures = () => {
   const [existingClients, setExistingClients] = useState([]);
   const [monthlyModelCounts, setMonthlyModelCounts] = useState([]);
   const [clientsLoading, setClientsLoading] = useState(false);
+  const [sharingReceipt, setSharingReceipt] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
   const [prefilledClientInfo, setPrefilledClientInfo] = useState(null);
   const [hasPrefilledPreview, setHasPrefilledPreview] = useState(false);
@@ -826,8 +827,38 @@ const Mesures = () => {
         icon: 'success',
         title: 'Succès',
         html: successHtml,
-        timer: 2500,
-        showConfirmButton: false
+        showCancelButton: true,
+        confirmButtonText: 'Envoyer le reçu',
+        cancelButtonText: 'Fermer',
+        focusCancel: true
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            const atelierId = getCurrentAtelierId();
+            if (!atelierId) {
+              throw new Error('Atelier introuvable pour générer le reçu.');
+            }
+
+            const clientId = response?.data?.clientId;
+            if (!clientId) {
+              throw new Error('ID client introuvable après enregistrement.');
+            }
+
+            const paiementRes = await api.get(`/paiements/clients/${clientId}?atelierId=${atelierId}`);
+            const historique = paiementRes.data?.historiquePaiements || [];
+            if (historique.length === 0) {
+              const recuResponse = await api.get(`/paiements/recu/client/due/${clientId}?atelierId=${atelierId}`);
+              await handleSendReceiptWhatsApp(recuResponse.data, `/paiements/recu/client/due/${clientId}/pdf?atelierId=${atelierId}`);
+            } else {
+              const latestPayment = historique.sort((a, b) => new Date(b.datePaiement) - new Date(a.datePaiement))[0];
+              const recuResponse = await api.get(`/paiements/recu/client/${latestPayment.id}?atelierId=${atelierId}`);
+              await handleSendReceiptWhatsApp(recuResponse.data);
+            }
+          } catch (sendError) {
+            console.error('Erreur envoi reçu:', sendError);
+            Swal.fire('Erreur', sendError.response?.data?.message || sendError.message || 'Impossible d\'envoyer le reçu.', 'error');
+          }
+        }
       });
 
       resetFormState();
@@ -840,6 +871,89 @@ const Mesures = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getCurrentAtelierId = () => {
+    const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData') || '{}');
+    return userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
+  };
+
+  const buildReceiptFileName = (recu) => {
+    const baseReference = String(recu?.reference || 'recu').replace(/[^a-zA-Z0-9_-]/g, '-');
+    return `recu-${baseReference}.pdf`;
+  };
+
+  const downloadBlob = (blob, fileName) => {
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+  };
+
+  const fetchReceiptPdfBlob = async (recu, pdfUrl) => {
+    if (!recu && !pdfUrl) {
+      throw new Error('Reçu introuvable');
+    }
+
+    const atelierId = getCurrentAtelierId();
+    if (!atelierId) {
+      throw new Error('Atelier introuvable pour générer le PDF.');
+    }
+
+    const response = pdfUrl
+      ? await api.get(pdfUrl, { responseType: 'blob' })
+      : await api.get(`/paiements/recu/${recu.typePaiement === 'TAILLEUR' ? 'tailleur' : 'client'}/${recu.id}/pdf?atelierId=${atelierId}`, {
+          responseType: 'blob'
+        });
+
+    return response.data instanceof Blob
+      ? response.data
+      : new Blob([response.data], { type: 'application/pdf' });
+  };
+
+  const handleSendReceiptWhatsApp = async (recu, pdfUrl) => {
+    if (!recu && !pdfUrl) {
+      return;
+    }
+
+    const fileName = buildReceiptFileName(recu);
+
+    try {
+      setSharingReceipt(true);
+      const blob = await fetchReceiptPdfBlob(recu, pdfUrl);
+      const file = new File([blob], fileName, { type: 'application/pdf' });
+      const canShareFile = typeof navigator !== 'undefined'
+        && typeof navigator.share === 'function'
+        && (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }));
+
+      if (canShareFile) {
+        await navigator.share({
+          files: [file],
+          title: 'Reçu de paiement ATELIKO',
+          text: 'Envoyer le reçu PDF via WhatsApp'
+        });
+        return;
+      }
+
+      downloadBlob(blob, fileName);
+      Swal.fire(
+        'PDF prêt',
+        'Le reçu PDF a été téléchargé. Joignez-le maintenant dans WhatsApp si le partage direct n\'est pas pris en charge par ce navigateur.',
+        'info'
+      );
+    } catch (error) {
+      console.error('Erreur partage reçu PDF:', error);
+      if (error?.name === 'AbortError') {
+        return;
+      }
+      Swal.fire('Erreur', 'Impossible de générer ou partager le reçu PDF.', 'error');
+    } finally {
+      setSharingReceipt(false);
     }
   };
 
@@ -1533,9 +1647,17 @@ const Mesures = () => {
                 >
                   <i className="fas fa-arrow-left me-2"></i> Étape précédente
                 </button>
-                <button type="submit" className="btn btn-primary px-4" disabled={loading}>
-                  {loading ? <i className="fas fa-spinner fa-spin me-2"></i> : <i className="fas fa-save me-2"></i>}
-                  Enregistrer le client
+                <button type="submit" className="btn btn-primary px-4" disabled={loading || sharingReceipt}>
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm text-light me-2" role="status" aria-hidden="true"></span>
+                      Enregistrement...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-save me-2"></i>Enregistrer le client
+                    </>
+                  )}
                 </button>
               </div>
             </div>

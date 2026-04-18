@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import Swal from 'sweetalert2';
@@ -31,6 +31,9 @@ const Paiements = () => {
     const [savingPayment, setSavingPayment] = useState(false);
     const [sharingReceipt, setSharingReceipt] = useState(false);
     const [loadingReceiptId, setLoadingReceiptId] = useState(null);
+
+    // Ref for montant input field
+    const montantInputRef = useRef(null);
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -103,6 +106,12 @@ const Paiements = () => {
                 montant: '',
                 reference: `REF-CLI-${Date.now().toString().slice(-6)}`
             }));
+            // Focus on montant input field
+            setTimeout(() => {
+                if (montantInputRef.current) {
+                    montantInputRef.current.focus();
+                }
+            }, 100);
         } catch (error) {
             console.error("Erreur chargement détails client:", error);
         }
@@ -120,6 +129,12 @@ const Paiements = () => {
                 montant: '',
                 reference: `REF-TAI-${Date.now().toString().slice(-6)}`
             }));
+            // Focus on montant input field
+            setTimeout(() => {
+                if (montantInputRef.current) {
+                    montantInputRef.current.focus();
+                }
+            }, 100);
         } catch (error) {
             console.error("Erreur chargement détails tailleur:", error);
         }
@@ -663,6 +678,7 @@ const Paiements = () => {
                                             value={paymentForm.montant}
                                             onChange={(e) => setPaymentForm(prev => ({ ...prev, montant: e.target.value }))}
                                             max={activeTab === 'clients' ? selectedClient.resteAPayer : selectedTailleur.resteAPayer}
+                                            ref={montantInputRef}
                                         />
                                     </div>
                                     <div className="mb-3">

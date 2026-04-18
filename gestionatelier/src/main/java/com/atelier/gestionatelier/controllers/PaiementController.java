@@ -333,6 +333,25 @@ public class PaiementController {
         }
     }
 
+    @GetMapping("/recu/client/due/{clientId}")
+    public ResponseEntity<?> getRecuClientDue(
+            @PathVariable UUID clientId,
+            @RequestParam UUID atelierId) {
+        try {
+            Utilisateur currentUser = getCurrentUser();
+
+            if (!hasPermissionForPaiement(currentUser, atelierId)) {
+                return ResponseEntity.badRequest().body("Permission refusée pour cet atelier");
+            }
+
+            RecuPaiementDto recu = paiementService.genererRecuSoldeClient(clientId, atelierId);
+            return ResponseEntity.ok(recu);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Erreur: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/recu/tailleur/{paiementId}")
     public ResponseEntity<?> getRecuPaiementTailleur(
             @PathVariable UUID paiementId,
@@ -368,6 +387,30 @@ public class PaiementController {
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=recu-client-" + recu.getReference() + ".pdf")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(pdf);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Erreur: " + e.getMessage());
+        }
+    }
+
+    @GetMapping(value = "/recu/client/due/{clientId}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<?> downloadRecuClientDuePdf(
+            @PathVariable UUID clientId,
+            @RequestParam UUID atelierId) {
+        try {
+            Utilisateur currentUser = getCurrentUser();
+
+            if (!hasPermissionForPaiement(currentUser, atelierId)) {
+                return ResponseEntity.badRequest().body("Permission refusée pour cet atelier");
+            }
+
+            RecuPaiementDto recu = paiementService.genererRecuSoldeClient(clientId, atelierId);
+            byte[] pdf = paiementService.genererRecuSoldeClientPdf(clientId, atelierId);
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=recu-client-due-" + recu.getReference() + ".pdf")
                     .contentType(MediaType.APPLICATION_PDF)
                     .body(pdf);
 

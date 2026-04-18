@@ -18,6 +18,8 @@ const Clients = () => {
   const [habitPhotoCleared, setHabitPhotoCleared] = useState(false);
   const [editingMesureIndex, setEditingMesureIndex] = useState(0);
   const [isCreatingMesure, setIsCreatingMesure] = useState(false);
+  const [recuData, setRecuData] = useState(null);
+  const [sharingReceipt, setSharingReceipt] = useState(false);
   
   const fileInputRef = useRef(null);
   const habitFileInputRef = useRef(null);
@@ -421,9 +423,36 @@ const Clients = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      Swal.fire('Succès', isCreatingMesure ? 'Nouveau modèle ajouté avec succès' : 'Client modifié avec succès', 'success');
-      closeEditModal();
-      fetchClients();
+      Swal.fire({
+        title: 'Succès',
+        text: isCreatingMesure ? 'Nouveau modèle ajouté avec succès' : 'Client modifié avec succès',
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: 'Envoyer le reçu',
+        cancelButtonText: 'Fermer'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
+            const atelierId = userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
+            const response = await api.get(`/paiements/clients/${editingClient.id}?atelierId=${atelierId}&month=${new Date().getMonth() + 1}&year=${new Date().getFullYear()}`);
+            const payments = response.data;
+            if (payments && payments.length > 0) {
+              const latestPayment = payments.sort((a, b) => new Date(b.datePaiement) - new Date(a.datePaiement))[0];
+              const recuResponse = await api.get(`/paiements/recu/client/${latestPayment.id}?atelierId=${atelierId}`);
+              setRecuData(recuResponse.data);
+              await handleSendReceiptWhatsApp();
+            } else {
+              Swal.fire('Info', 'Aucun paiement trouvé pour ce client', 'info');
+            }
+          } catch (error) {
+            console.error('Erreur chargement reçu:', error);
+            Swal.fire('Erreur', 'Impossible de charger le reçu', 'error');
+          }
+        }
+        closeEditModal();
+        fetchClients();
+      });
 
     } catch (err) {
       console.error(err);
@@ -463,6 +492,88 @@ const Clients = () => {
     } catch (err) {
       console.error(err);
       Swal.fire('Erreur', 'Impossible de supprimer le modèle', 'error');
+    }
+  };
+
+  const getCurrentAtelierId = () => {
+    const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
+    return userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
+  };
+
+  const buildReceiptFileName = (recu) => {
+    const baseReference = String(recu?.reference || 'recu').replace(/[^a-zA-Z0-9_-]/g, '-');
+    return `recu-${baseReference}.pdf`;
+  };
+
+  const downloadBlob = (blob, fileName) => {
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+  };
+
+  const fetchReceiptPdfBlob = async (recu) => {
+    if (!recu) {
+      throw new Error('Reçu introuvable');
+    }
+
+    const atelierId = getCurrentAtelierId();
+    if (!atelierId) {
+      throw new Error('Atelier introuvable pour générer le PDF.');
+    }
+
+    const receiptType = recu.typePaiement === 'TAILLEUR' ? 'tailleur' : 'client';
+    const response = await api.get(`/paiements/recu/${receiptType}/${recu.id}/pdf?atelierId=${atelierId}`, {
+      responseType: 'blob'
+    });
+
+    return response.data instanceof Blob
+      ? response.data
+      : new Blob([response.data], { type: 'application/pdf' });
+  };
+
+  const handleSendReceiptWhatsApp = async () => {
+    if (!recuData) {
+      return;
+    }
+
+    const fileName = buildReceiptFileName(recuData);
+
+    try {
+      setSharingReceipt(true);
+      const blob = await fetchReceiptPdfBlob(recuData);
+      const file = new File([blob], fileName, { type: 'application/pdf' });
+      const canShareFile = typeof navigator !== 'undefined'
+        && typeof navigator.share === 'function'
+        && (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }));
+
+      if (canShareFile) {
+        await navigator.share({
+          files: [file],
+          title: 'Reçu de paiement ATELIKO',
+          text: 'Envoyer le reçu PDF via WhatsApp'
+        });
+        return;
+      }
+
+      downloadBlob(blob, fileName);
+      Swal.fire(
+        'PDF prêt',
+        'Le reçu PDF a été téléchargé. Joignez-le maintenant dans WhatsApp si le partage direct n\'est pas pris en charge par ce navigateur.',
+        'info'
+      );
+    } catch (error) {
+      console.error('Erreur partage reçu PDF:', error);
+      if (error?.name === 'AbortError') {
+        return;
+      }
+      Swal.fire('Erreur', 'Impossible de générer ou partager le reçu PDF.', 'error');
+    } finally {
+      setSharingReceipt(false);
     }
   };
 
@@ -932,8 +1043,8 @@ const Clients = () => {
                       </div>
                       <div className="modal-footer">
                           <button type="button" className="btn btn-secondary" onClick={closeEditModal}>Annuler</button>
-                          <button type="button" className="btn btn-primary" onClick={handleSaveEdit} disabled={saving}>
-                            {saving ? 'Enregistrement...' : isCreatingMesure ? 'Ajouter le modèle' : 'Enregistrer'}
+                          <button type="button" className="btn btn-primary" onClick={handleSaveEdit} disabled={saving || sharingReceipt}>
+                            {saving ? <><i className="bx bx-loader-alt bx-spin me-1"></i>Enregistrement...</> : isCreatingMesure ? 'Ajouter le modèle' : 'Enregistrer'}
                           </button>
                       </div>
                   </div>
