@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -132,14 +133,18 @@ public class RendezVousService {
         return toRendezVousDTO(savedRendezVous);
     }
 
+    private LocalDateTime getCurrentTruncatedToMinutes() {
+        return LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+    }
+
     private LocalDateTime trouverProchainCreneauDisponible(LocalDateTime dateSouhaitee, UUID atelierId) {
         LocalDateTime creneau = dateSouhaitee;
         if (creneau == null) {
             throw new IllegalArgumentException("La date du rendez-vous est obligatoire");
         }
 
-        if (creneau.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("La date du rendez-vous doit être dans le futur");
+        if (creneau.isBefore(getCurrentTruncatedToMinutes())) {
+            throw new IllegalArgumentException("La date du rendez-vous doit être dans le présent ou le futur");
         }
 
         for (int tentative = 0; tentative < 24; tentative++) {
@@ -154,8 +159,8 @@ public class RendezVousService {
     }
 
     private void validerDateRendezVous(LocalDateTime dateRDV, UUID atelierId) {
-        if (dateRDV.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("La date du rendez-vous doit être dans le futur");
+        if (dateRDV.isBefore(getCurrentTruncatedToMinutes())) {
+            throw new IllegalArgumentException("La date du rendez-vous doit être dans le présent ou le futur");
         }
 
         // Vérifier les conflits de rendez-vous (optionnel)
@@ -383,8 +388,8 @@ public class RendezVousService {
     }
 
     private void validerDateRendezVous(LocalDateTime dateRDV, UUID atelierId, UUID rendezVousId) {
-        if (dateRDV.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("La date du rendez-vous doit être dans le futur");
+        if (dateRDV.isBefore(getCurrentTruncatedToMinutes())) {
+            throw new IllegalArgumentException("La date du rendez-vous doit être dans le présent ou le futur");
         }
 
         long conflits = rendezVousId == null

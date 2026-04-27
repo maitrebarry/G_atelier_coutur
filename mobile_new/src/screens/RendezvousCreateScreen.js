@@ -56,10 +56,10 @@ export default function RendezvousCreateScreen({ route, navigation }) {
       return;
     }
 
-    // ✅ Vérification que le client a un email valide pour l'envoi de confirmation
+    // ✅ Le rendez-vous peut être créé même si le client n'a pas d'email valide.
+    // L'envoi du mail de confirmation sera ignoré côté serveur si l'email manque.
     if (!selectedClient?.email || !selectedClient.email.includes('@')) {
-      Alert.alert('Erreur', 'Impossible de créer le rendez-vous : le client n\'a pas d\'email valide pour recevoir la confirmation');
-      return;
+      Alert.alert('Attention', 'Le client n\'a pas d\'email valide. Le rendez-vous sera créé, mais aucune confirmation ne pourra être envoyée par email.');
     }
 
     try {

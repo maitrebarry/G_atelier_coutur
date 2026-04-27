@@ -1,9 +1,10 @@
 // CreateRendezVousDTO.java
 package com.atelier.gestionatelier.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.FutureOrPresent;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -11,7 +12,8 @@ import java.util.UUID;
 public class CreateRendezVousDTO {
 
     @NotNull(message = "La date du rendez-vous est obligatoire")
-    @Future(message = "La date du rendez-vous doit être dans le futur")
+    @FutureOrPresent(message = "La date du rendez-vous doit être dans le présent ou le futur")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm")
     private LocalDateTime dateRDV;
 
     @NotNull(message = "Le type de rendez-vous est obligatoire")
