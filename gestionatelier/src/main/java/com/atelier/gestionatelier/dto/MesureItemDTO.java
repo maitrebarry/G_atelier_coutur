@@ -42,6 +42,7 @@ public class MesureItemDTO {
     private String homme_tour_manche;
     private int photoIndex = -1;
     private int habitPhotoIndex = -1;
+    private int audioIndex = -1;
 
     public UUID getSelectedModelId() {
         return selectedModelId;
@@ -353,5 +354,13 @@ public class MesureItemDTO {
 
     public void setHabitPhotoIndex(int habitPhotoIndex) {
         this.habitPhotoIndex = habitPhotoIndex;
+    }
+
+    public int getAudioIndex() {
+        return audioIndex;
+    }
+
+    public void setAudioIndex(int audioIndex) {
+        this.audioIndex = audioIndex;
     }
 }

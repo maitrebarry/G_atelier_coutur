@@ -62,6 +62,9 @@ public class SecurityConfig {
                         // ✅ AJOUT : Autoriser l'accès aux ressources statiques
                         .requestMatchers("/assets/**").permitAll()
 
+                        // Autoriser l'endpoint de santé (Actuator)
+                        .requestMatchers("/actuator/health").permitAll()
+
                         // ✅ CORRECTION CRITIQUE : Autoriser TAILLEUR sur les routes clients
                         .requestMatchers("/api/clients/**").hasAnyAuthority(
                                 "ROLE_SUPERADMIN",

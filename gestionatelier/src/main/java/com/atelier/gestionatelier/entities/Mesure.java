@@ -62,6 +62,9 @@ private UUID id;
     // Nouvelle photo de l'habit à coudre
     @Column(name = "habit_photo_path")
     private String habitPhotoPath;
+    // Chemin d'accès de l'audio description
+    @Column(name = "audio_description_path")
+    private String audioDescriptionPath;
     // NOUVEAU : Référence au modèle existant
     @Column(name = "modele_reference_id")
     private UUID modeleReferenceId;

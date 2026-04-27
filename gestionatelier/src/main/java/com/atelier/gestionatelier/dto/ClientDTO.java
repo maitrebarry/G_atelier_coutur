@@ -66,6 +66,7 @@ public class ClientDTO implements Serializable {
     private String mesuresJson;
     private MultipartFile[] photos;
     private MultipartFile[] habitPhotos;
+    private MultipartFile[] audios; // Ajouter pour les fichiers audio
     public UUID getAtelierId() {
         return atelierId;
     }
@@ -96,6 +97,14 @@ public class ClientDTO implements Serializable {
 
     public void setHabitPhotos(MultipartFile[] habitPhotos) {
         this.habitPhotos = habitPhotos;
+    }
+
+    public MultipartFile[] getAudios() {
+        return audios;
+    }
+
+    public void setAudios(MultipartFile[] audios) {
+        this.audios = audios;
     }
 
 

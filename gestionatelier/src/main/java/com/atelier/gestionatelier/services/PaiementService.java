@@ -35,6 +35,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -719,6 +720,15 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
         recu.setMessageMarketing(buildMarketingMessage(atelier.getNom(), proprietaire));
         recu.setQrCodeData(genererQRCodeData(recu));
 
+        // Ajouter la date du prochain rendez-vous
+        List<RendezVous> rendezVousClient = rendezVousRepository.findByClientIdOrderByDateRDVDesc(clientId);
+        Optional<RendezVous> prochainRdv = rendezVousClient.stream()
+                .filter(rdv -> rdv.getDateRDV().isAfter(LocalDateTime.now()))
+                .min(Comparator.comparing(RendezVous::getDateRDV)); // Le plus proche dans le futur
+        if (prochainRdv.isPresent()) {
+            recu.setProchainRendezVous(prochainRdv.get().getDateRDV());
+        }
+
         return recu;
     }
 
@@ -878,6 +888,20 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
 
             addAmountBox(document, String.format("%.0f FCFA", recu.getMontant()), amountFont, amountCaptionFont);
             addDivider(document, subtitleFont, 8f, 6f);
+
+            // Ajouter la section rendez-vous si disponible
+            if (recu.getProchainRendezVous() != null) {
+                addSectionTitle(document, "PROCHAIN RENDEZ-VOUS", sectionFont);
+                addKeyValueTable(
+                        document,
+                        new String[][] {
+                                {"Date et heure", formatReceiptDate(recu.getProchainRendezVous())}
+                        },
+                        labelFont,
+                        valueFont
+                );
+                addDivider(document, subtitleFont, 8f, 6f);
+            }
 
             addSectionTitle(document, "VERIFICATION", sectionFont);
             addCenteredText(document, "Conservez ce ticket comme preuve de paiement.", subtitleFont, 0f, 3f);

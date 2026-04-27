@@ -602,6 +602,7 @@ public class ClientController {
             @RequestParam Map<String, String> mesuresParams,
             @RequestParam(value = "photo", required = false) MultipartFile photoFile,
             @RequestParam(value = "habitPhoto", required = false) MultipartFile habitPhotoFile,
+            @RequestParam(value = "audio", required = false) MultipartFile audioFile,
             Authentication authentication) {
         try {
             String email = authentication.getName();
@@ -624,7 +625,7 @@ public class ClientController {
             }
 
             MesureItemDTO mesureDTO = buildMesureItemDTO(modeleNom, selectedModelId, sexe, typeVetement, prix, description, mesuresParams);
-            Mesure nouvelleMesure = clientService.ajouterMesureAClient(clientId, mesureDTO, photoFile, habitPhotoFile);
+            Mesure nouvelleMesure = clientService.ajouterMesureAClient(clientId, mesureDTO, photoFile, habitPhotoFile, audioFile);
 
             return ResponseEntity.ok(Map.of(
                     "status", "success",
@@ -659,6 +660,7 @@ public class ClientController {
             @RequestParam Map<String, String> mesuresParams,
             @RequestParam(value = "photo", required = false) MultipartFile photoFile,
             @RequestParam(value = "habitPhoto", required = false) MultipartFile habitPhotoFile,
+            @RequestParam(value = "audio", required = false) MultipartFile audioFile,
             Authentication authentication) {
         try {
             String email = authentication.getName();
@@ -681,7 +683,7 @@ public class ClientController {
             }
 
             MesureItemDTO mesureDTO = buildMesureItemDTO(modeleNom, selectedModelId, sexe, typeVetement, prix, description, mesuresParams);
-            Mesure mesureModifiee = clientService.modifierMesureDeClient(clientId, mesureId, mesureDTO, photoFile, habitPhotoFile);
+            Mesure mesureModifiee = clientService.modifierMesureDeClient(clientId, mesureId, mesureDTO, photoFile, habitPhotoFile, audioFile);
 
             return ResponseEntity.ok(Map.of(
                     "status", "success",

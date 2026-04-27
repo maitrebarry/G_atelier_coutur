@@ -89,10 +89,11 @@ public class ClientService {
                 List<MesureItemDTO> mesureItems = parseMesureItems(dto);
         List<MultipartFile> photoFiles = dto.getPhotos() != null ? Arrays.asList(dto.getPhotos()) : new ArrayList<>();
         List<MultipartFile> habitFiles = dto.getHabitPhotos() != null ? Arrays.asList(dto.getHabitPhotos()) : new ArrayList<>();
+        List<MultipartFile> audioFiles = dto.getAudios() != null ? Arrays.asList(dto.getAudios()) : new ArrayList<>();
 
         if (mesureItems != null && !mesureItems.isEmpty()) {
             for (MesureItemDTO item : mesureItems) {
-                Mesure mesure = createMesureFromItem(item, clientSauvegarde, photoFiles, habitFiles);
+                Mesure mesure = createMesureFromItem(item, clientSauvegarde, photoFiles, habitFiles, audioFiles);
                 clientSauvegarde.getMesures().add(mesure);
             }
         } else {
@@ -137,7 +138,7 @@ public class ClientService {
         }
     }
 
-    private Mesure createMesureFromItem(MesureItemDTO item, Client client, List<MultipartFile> photoFiles, List<MultipartFile> habitFiles) {
+    private Mesure createMesureFromItem(MesureItemDTO item, Client client, List<MultipartFile> photoFiles, List<MultipartFile> habitFiles, List<MultipartFile> audioFiles) {
         if (item == null) {
             throw new IllegalArgumentException("Le modèle est invalide");
         }
@@ -189,6 +190,19 @@ public class ClientService {
                     System.out.println("Photo de l'habit sauvegardée pour le modèle: " + habitFileName);
                 } catch (Exception e) {
                     throw new RuntimeException("Erreur lors de l'upload de la photo de l'habit", e);
+                }
+            }
+        }
+
+        if (item.getAudioIndex() >= 0 && item.getAudioIndex() < audioFiles.size()) {
+            MultipartFile audioFile = audioFiles.get(item.getAudioIndex());
+            if (audioFile != null && !audioFile.isEmpty()) {
+                try {
+                    String audioFileName = fileStorageService.storeFile(audioFile, "audio_descriptions");
+                    mesure.setAudioDescriptionPath(audioFileName);
+                    System.out.println("Audio description sauvegardée pour le modèle: " + audioFileName);
+                } catch (Exception e) {
+                    throw new RuntimeException("Erreur lors de l'upload de l'audio description", e);
                 }
             }
         }
@@ -914,7 +928,7 @@ public class ClientService {
     }
 
     @Transactional
-    public Mesure ajouterMesureAClient(UUID clientId, MesureItemDTO mesureDTO, MultipartFile photoFile, MultipartFile habitPhotoFile) {
+    public Mesure ajouterMesureAClient(UUID clientId, MesureItemDTO mesureDTO, MultipartFile photoFile, MultipartFile habitPhotoFile, MultipartFile audioFile) {
         Client client = clientRepository.findById(clientId)
                 .orElseThrow(() -> new EntityNotFoundException("Client non trouvé"));
 
@@ -926,7 +940,8 @@ public class ClientService {
                 mesureDTO,
                 client,
                 photoFile != null ? List.of(photoFile) : new ArrayList<>(),
-                habitPhotoFile != null ? List.of(habitPhotoFile) : new ArrayList<>()
+                habitPhotoFile != null ? List.of(habitPhotoFile) : new ArrayList<>(),
+                audioFile != null ? List.of(audioFile) : new ArrayList<>()
         );
         client.getMesures().add(mesure);
         clientRepository.save(client);
@@ -934,7 +949,7 @@ public class ClientService {
     }
 
     @Transactional
-    public Mesure modifierMesureDeClient(UUID clientId, UUID mesureId, MesureItemDTO mesureDTO, MultipartFile photoFile, MultipartFile habitPhotoFile) {
+    public Mesure modifierMesureDeClient(UUID clientId, UUID mesureId, MesureItemDTO mesureDTO, MultipartFile photoFile, MultipartFile habitPhotoFile, MultipartFile audioFile) {
         Client client = clientRepository.findById(clientId)
                 .orElseThrow(() -> new EntityNotFoundException("Client non trouvé"));
 
@@ -943,7 +958,7 @@ public class ClientService {
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException("Mesure non trouvée pour ce client"));
 
-        updateMesureFromItem(mesure, mesureDTO, photoFile, habitPhotoFile);
+        updateMesureFromItem(mesure, mesureDTO, photoFile, habitPhotoFile, audioFile);
         return mesureRepository.save(mesure);
     }
 
@@ -969,7 +984,7 @@ public class ClientService {
         clientRepository.save(client);
     }
 
-    private void updateMesureFromItem(Mesure mesure, MesureItemDTO item, MultipartFile photoFile, MultipartFile habitPhotoFile) {
+    private void updateMesureFromItem(Mesure mesure, MesureItemDTO item, MultipartFile photoFile, MultipartFile habitPhotoFile, MultipartFile audioFile) {
         mesure.setSexe(item.getSexe());
         mesure.setDescription(item.getDescription());
         mesure.setTypeVetement(item.getTypeVetement() != null ? item.getTypeVetement().trim().toLowerCase() : null);
@@ -1014,6 +1029,18 @@ public class ClientService {
                 mesure.setHabitPhotoPath(habitFileName);
             } catch (Exception e) {
                 throw new RuntimeException("Erreur lors de l'upload de la photo de l'habit", e);
+            }
+        }
+
+        if (audioFile != null && !audioFile.isEmpty()) {
+            try {
+                if (mesure.getAudioDescriptionPath() != null && !mesure.getAudioDescriptionPath().isBlank()) {
+                    fileStorageService.deleteFile(mesure.getAudioDescriptionPath(), "audio_descriptions");
+                }
+                String audioFileName = fileStorageService.storeFile(audioFile, "audio_descriptions");
+                mesure.setAudioDescriptionPath(audioFileName);
+            } catch (Exception e) {
+                throw new RuntimeException("Erreur lors de l'upload de l'audio description", e);
             }
         }
 

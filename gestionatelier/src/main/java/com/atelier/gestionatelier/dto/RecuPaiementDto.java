@@ -42,4 +42,7 @@ public class RecuPaiementDto {
 
     // QR Code (optionnel)
     private String qrCodeData;
+
+    // Date du prochain rendez-vous
+    private LocalDateTime prochainRendezVous;
 }

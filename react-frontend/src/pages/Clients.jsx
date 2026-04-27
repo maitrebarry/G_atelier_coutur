@@ -927,7 +927,14 @@ const Clients = () => {
                                       </div>
                                         <div className="col-md-12 mb-3">
                                           <label className="form-label">Description <small className="text-muted">(optionnel)</small></label>
-                                          <textarea className="form-control" rows={3} name="description" value={editFormData.description || ''} onChange={handleInputChange} placeholder="Ajouter une description ou note pour ce prix..." />
+                                          <textarea
+                                            className="form-control"
+                                            rows={3}
+                                            name="description"
+                                            value={editFormData.description || ''}
+                                            onChange={handleInputChange}
+                                            placeholder="Ajouter une description ou note pour ce modèle..."
+                                          />
                                         </div>
                                   </div>
 
