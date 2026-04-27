@@ -61,6 +61,9 @@ public class SecurityConfig {
 
                         // ✅ AJOUT : Autoriser l'accès aux ressources statiques
                         .requestMatchers("/assets/**").permitAll()
+                        .requestMatchers("/static/**").permitAll()
+                        .requestMatchers("/", "/index.html", "/login", "/favicon.ico", "/manifest.json", "/robots.txt", "/asset-manifest.json").permitAll()
+
 
                         // Autoriser l'endpoint de santé (Actuator)
                         .requestMatchers("/actuator/health").permitAll()
