@@ -370,6 +370,14 @@ export default function PaiementsScreen({ navigation }) {
                 value={paymentForm.montant}
                 onChangeText={(v) => setPaymentForm((prev) => ({ ...prev, montant: v }))}
               />
+              <View style={{flexDirection: 'row', gap: 8, marginBottom: 8}}>
+                <TouchableOpacity
+                  style={[styles.methodChip, {flex: 1, justifyContent: 'center'}]}
+                  onPress={() => setPaymentForm((prev) => ({ ...prev, montant: String(selected.reste || 0) }))}
+                >
+                  <Text style={[styles.methodChipText, {textAlign: 'center'}]}>Payer le reste ({Number(selected.reste || 0).toLocaleString('fr-FR')} FCFA)</Text>
+                </TouchableOpacity>
+              </View>
               <TextInput
                 style={styles.input}
                 placeholder="Référence"

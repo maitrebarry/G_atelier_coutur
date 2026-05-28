@@ -435,15 +435,22 @@ const Clients = () => {
           try {
             const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
             const atelierId = userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
-            const response = await api.get(`/paiements/clients/${editingClient.id}?atelierId=${atelierId}&month=${new Date().getMonth() + 1}&year=${new Date().getFullYear()}`);
-            const payments = response.data;
-            if (payments && payments.length > 0) {
+            const response = await api.get(`/paiements/clients/${editingClient.id}?atelierId=${atelierId}`);
+            const payments = Array.isArray(response.data)
+              ? response.data
+              : Array.isArray(response.data?.historiquePaiements)
+                ? response.data.historiquePaiements
+                : [];
+
+            if (payments.length > 0) {
               const latestPayment = payments.sort((a, b) => new Date(b.datePaiement) - new Date(a.datePaiement))[0];
               const recuResponse = await api.get(`/paiements/recu/client/${latestPayment.id}?atelierId=${atelierId}`);
               setRecuData(recuResponse.data);
               await handleSendReceiptWhatsApp();
             } else {
-              Swal.fire('Info', 'Aucun paiement trouvé pour ce client', 'info');
+              const recuResponse = await api.get(`/paiements/recu/client/due/${editingClient.id}?atelierId=${atelierId}`);
+              setRecuData(recuResponse.data);
+              await handleSendReceiptWhatsApp();
             }
           } catch (error) {
             console.error('Erreur chargement reçu:', error);

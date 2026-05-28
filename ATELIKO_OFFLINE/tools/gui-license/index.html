@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Générateur de licence ATELIKO (local)</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <h1>Générateur de licence ATELIKO</h1>
+
+    <form id="licForm">
+      <label>Device ID
+        <input id="deviceId" placeholder="Entrez deviceId (tel: affiché dans l'app)" required />
+      </label>
+
+      <label>Expire le (timestamp ms ou datetime)
+        <input id="expires" placeholder="ex: 1740000000000 ou 2025-12-31T23:59" />
+      </label>
+
+      <label>Issued By (optionnel)
+        <input id="issuedBy" placeholder="ex: Atelier Admin" />
+      </label>
+
+      <label>Clé privée RSA (priv.pem)
+        <input id="privFile" type="file" accept=".pem,.key" />
+      </label>
+
+      <div class="actions">
+        <button id="generate">Générer la licence</button>
+        <button id="download" type="button" disabled>Télécharger license.json</button>
+      </div>
+    </form>
+
+    <section>
+      <h2>Licence générée</h2>
+      <textarea id="output" readonly></textarea>
+    </section>
+    <p class="note">Attention : garde `priv.pem` confidentielle. Cette page signe localement la charge utile.</p>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.5.23/jsrsasign-all-min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

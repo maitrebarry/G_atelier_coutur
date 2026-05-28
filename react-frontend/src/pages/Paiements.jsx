@@ -12,7 +12,8 @@ const Paiements = () => {
     const [loading, setLoading] = useState(false);
     const [loadingRecouvrement, setLoadingRecouvrement] = useState(false);
     const [recouvrementMensuel, setRecouvrementMensuel] = useState(null);
-    const [recouvrementMonth, setRecouvrementMonth] = useState(new Date().getMonth() + 1);
+    // null = pas de filtre mois (afficher tous les clients par défaut)
+    const [recouvrementMonth, setRecouvrementMonth] = useState(null);
     const [recouvrementYear, setRecouvrementYear] = useState(new Date().getFullYear());
     
     const [filters, setFilters] = useState({
@@ -98,7 +99,10 @@ const Paiements = () => {
         try {
             const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
             const atelierId = userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
-            const response = await api.get(`/paiements/clients/${clientId}?atelierId=${atelierId}&month=${recouvrementMonth}&year=${recouvrementYear}`);
+            // N'envoyer month/year que si un filtre est explicitement sélectionné
+            const monthParam = recouvrementMonth ? `&month=${recouvrementMonth}` : '';
+            const yearParam = recouvrementMonth ? `&year=${recouvrementYear}` : '';
+            const response = await api.get(`/paiements/clients/${clientId}?atelierId=${atelierId}${monthParam}${yearParam}`);
             setSelectedClient(response.data);
             // Reset form for new selection
             setPaymentForm(prev => ({
@@ -121,7 +125,10 @@ const Paiements = () => {
         try {
             const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
             const atelierId = userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
-            const response = await api.get(`/paiements/tailleurs/${tailleurId}?atelierId=${atelierId}&month=${recouvrementMonth}&year=${recouvrementYear}`);
+            // N'envoyer month/year que si un filtre est explicitement sélectionné
+            const monthParam = recouvrementMonth ? `&month=${recouvrementMonth}` : '';
+            const yearParam = recouvrementMonth ? `&year=${recouvrementYear}` : '';
+            const response = await api.get(`/paiements/tailleurs/${tailleurId}?atelierId=${atelierId}${monthParam}${yearParam}`);
             setSelectedTailleur(response.data);
             // Reset form for new selection
             setPaymentForm(prev => ({
@@ -162,7 +169,11 @@ const Paiements = () => {
             const payload = {
                 ...paymentForm,
                 montant: parseFloat(paymentForm.montant),
-                atelierId: atelierId, // Removed parseInt
+                // Convertir la date (YYYY-MM-DD) en ISO DateTime pour le backend Java (LocalDateTime)
+                datePaiement: paymentForm.datePaiement
+                    ? `${paymentForm.datePaiement}T00:00:00`
+                    : new Date().toISOString().slice(0, 19),
+                atelierId: atelierId,
                 [isClient ? 'clientId' : 'tailleurId']: isClient ? selectedClient.clientId : selectedTailleur.tailleurId
             };
 
@@ -194,18 +205,21 @@ const Paiements = () => {
     };
 
     const loadRecouvrementMensuel = async () => {
+        setLoadingRecouvrement(true);
         const atelierId = getCurrentAtelierId();
         if (!atelierId) {
             setRecouvrementMensuel(null);
             return;
         }
 
-        setLoadingRecouvrement(true);
+        // Utiliser le mois courant comme fallback pour les stats (toujours afficher une synthèse)
+        const statsMonth = recouvrementMonth || new Date().getMonth() + 1;
+        const statsYear = recouvrementYear || new Date().getFullYear();
+        let url = `/paiements/recouvrement-mensuel?atelierId=${atelierId}&month=${statsMonth}&year=${statsYear}`;
+        if (filters.statut) {
+            url += `&statutPaiement=${encodeURIComponent(filters.statut)}`;
+        }
         try {
-            let url = `/paiements/recouvrement-mensuel?atelierId=${atelierId}&month=${recouvrementMonth}&year=${recouvrementYear}`;
-            if (filters.statut) {
-                url += `&statutPaiement=${encodeURIComponent(filters.statut)}`;
-            }
             const response = await api.get(url);
             setRecouvrementMensuel(response.data || null);
         } catch (error) {
@@ -218,11 +232,15 @@ const Paiements = () => {
 
     const handleSortiesInfoClick = () => {
         const nombreSorties = recouvrementMensuel?.nombreSorties || 0;
-        const libelleMois = `${new Date(recouvrementYear, recouvrementMonth - 1).toLocaleString('fr-FR', { month: 'long' })} ${recouvrementYear}`;
+        const monthName = recouvrementMonth 
+            ? new Date(recouvrementYear, recouvrementMonth - 1).toLocaleString('fr-FR', { month: 'long' })
+            : new Date().toLocaleString('fr-FR', { month: 'long' });
+        const yearDisplay = recouvrementMonth ? recouvrementYear : new Date().getFullYear();
+        
         Swal.fire({
             icon: 'info',
             title: 'Habits livrés',
-            text: `${nombreSorties} habit${nombreSorties > 1 ? 's' : ''} livré${nombreSorties > 1 ? 's' : ''} dans le mois de ${libelleMois}.`,
+            text: `${nombreSorties} habit${nombreSorties > 1 ? 's' : ''} livré${nombreSorties > 1 ? 's' : ''} dans le mois de ${monthName} ${yearDisplay}.`,
             confirmButtonText: 'Fermer'
         });
     };
@@ -411,11 +429,13 @@ const Paiements = () => {
                                     </select>
                                 </div>
                                 <div className="col-md-3">
+                                    {/* Filtre mois — optionnel : vide = afficher tous les clients */}
                                     <select
                                         className="form-select"
-                                        value={recouvrementMonth}
-                                        onChange={(e) => setRecouvrementMonth(Number(e.target.value))}
+                                        value={recouvrementMonth || ''}
+                                        onChange={(e) => setRecouvrementMonth(e.target.value ? Number(e.target.value) : null)}
                                     >
+                                        <option value="">Tous les mois</option>
                                         {Array.from({ length: 12 }, (_, idx) => idx + 1).map((month) => (
                                             <option key={month} value={month}>
                                                 {new Date(0, month - 1).toLocaleString('fr-FR', { month: 'long' })}
@@ -450,12 +470,19 @@ const Paiements = () => {
                                         <div className="card-body py-3 px-4">
                                             <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
                                                 <div>
-                                                    <div className="text-uppercase text-muted small mb-1">Synthèse du mois</div>
-                                                    <div className="h6 mb-0">{`${new Date(recouvrementYear, recouvrementMonth - 1).toLocaleString('fr-FR', { month: 'long' })} ${recouvrementYear}`}</div>
+                                                    <div className="text-uppercase text-muted small mb-1">
+                                                        {recouvrementMonth ? 'Synthèse du mois' : 'Synthèse (Mois en cours)'}
+                                                    </div>
+                                                    <div className="h6 mb-0">
+                                                        {recouvrementMonth 
+                                                            ? `${new Date(recouvrementYear, recouvrementMonth - 1).toLocaleString('fr-FR', { month: 'long' })} ${recouvrementYear}`
+                                                            : `${new Date().toLocaleString('fr-FR', { month: 'long' })} ${new Date().getFullYear()}`
+                                                        }
+                                                    </div>
                                                 </div>
                                                 <div className="d-flex flex-wrap gap-2">
                                                     <div className="bg-light border rounded p-3 text-center" style={{ minWidth: '160px' }}>
-                                                        <div className="text-uppercase text-muted small">TOTAL AVANCE</div>
+                                                        <div className="text-uppercase text-muted small">ENCAISSEMENTS DU MOIS</div>
                                                         <div className="h5 mb-0">{loadingRecouvrement ? '…' : `${recouvrementMensuel?.totalRecouvrement?.toLocaleString('fr-FR') || 0} FCFA`}</div>
                                                     </div>
                                                     <div className="bg-light border rounded p-3 text-center" style={{ minWidth: '120px' }}>

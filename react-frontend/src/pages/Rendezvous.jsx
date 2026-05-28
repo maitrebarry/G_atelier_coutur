@@ -18,16 +18,22 @@ const buildHabitPhotoUrl = (photoPath) => {
     return buildMediaUrl(`habit_photo/${cleanPath}`);
 };
 
-const getTomorrowDate = () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+};
+
+const getCurrentTime = () => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
 };
 
 const getInitialFormData = () => ({
     clientId: '',
-    dateRendezVous: getTomorrowDate(),
-    heureRendezVous: '10:00',
+    dateRendezVous: getTodayDate(),
+    heureRendezVous: getCurrentTime(),
     motif: 'Essayage',
     notes: '',
     mesureId: ''
@@ -44,6 +50,7 @@ const Rendezvous = () => {
     const [tableSearchTerm, setTableSearchTerm] = useState('');
     const [selectedClient, setSelectedClient] = useState(null);
     const [clientDetails, setClientDetails] = useState(null);
+    const [selectedMesureIds, setSelectedMesureIds] = useState([]);
     const [formData, setFormData] = useState(getInitialFormData());
 
     const loadData = useCallback(async () => {
@@ -131,6 +138,7 @@ const Rendezvous = () => {
         setEditingRendezvousId(null);
         setSelectedClient(null);
         setClientDetails(null);
+        setSelectedMesureIds([]);
         setSearchTerm('');
         setFormData(getInitialFormData());
     };
@@ -139,6 +147,7 @@ const Rendezvous = () => {
         setEditingRendezvousId(null);
         setSelectedClient(null);
         setClientDetails(null);
+        setSelectedMesureIds([]);
         setSearchTerm('');
         setFormData(getInitialFormData());
         setShowModal(true);
@@ -218,11 +227,20 @@ const Rendezvous = () => {
         const emailValue = getClientEmail(client, detailsData);
 
         setSelectedClient({ ...client, email: emailValue || client?.email || '' });
+        setSelectedMesureIds([]);
         setFormData(prev => ({
             ...prev,
             clientId: client.id,
             mesureId: prev.clientId === client.id ? prev.mesureId : ''
         }));
+    };
+
+    const toggleMesureSelection = (mesureId) => {
+        setSelectedMesureIds((prev) =>
+            prev.includes(mesureId)
+                ? prev.filter((id) => id !== mesureId)
+                : [...prev, mesureId]
+        );
     };
 
     const handleInputChange = (e) => {
@@ -232,6 +250,9 @@ const Rendezvous = () => {
             [name]: value,
             mesureId: name === 'motif' && !isLivraisonMotif(value) ? '' : prev.mesureId
         }));
+        if (name === 'motif' && !isLivraisonMotif(value)) {
+            setSelectedMesureIds([]);
+        }
     };
 
     const handleEditRendezVous = async (id) => {
@@ -250,7 +271,7 @@ const Rendezvous = () => {
             });
 
             const rdvDate = new Date(rdv.dateRDV);
-            const dateValue = rdv.dateRDV ? rdv.dateRDV.split('T')[0] : getTomorrowDate();
+            const dateValue = rdv.dateRDV ? rdv.dateRDV.split('T')[0] : getTodayDate();
             const heureValue = rdv.dateRDV
                 ? rdvDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false })
                 : '10:00';
@@ -264,6 +285,7 @@ const Rendezvous = () => {
                 notes: rdv.notes || '',
                 mesureId: rdv.mesure?.id || ''
             });
+            setSelectedMesureIds(rdv.mesure?.id ? [rdv.mesure.id] : []);
             setShowModal(true);
         } catch (error) {
             console.error('Erreur chargement rendez-vous:', error);
@@ -479,11 +501,12 @@ const Rendezvous = () => {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             tomorrow.setHours(10, 0, 0, 0);
+            const localTomorrow = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}T${String(tomorrow.getHours()).padStart(2, '0')}:${String(tomorrow.getMinutes()).padStart(2, '0')}`;
 
             await api.post('/rendezvous', {
                 clientId: rdv.client.id,
                 atelierId,
-                dateRDV: tomorrow.toISOString().slice(0, 19),
+                dateRDV: localTomorrow,
                 typeRendezVous: rdv.typeRendezVous,
                 notes: rdv.notes || 'Rendez-vous ajouté pour un autre vêtement restant à livrer.',
                 mesureId
@@ -509,10 +532,26 @@ const Rendezvous = () => {
             const atelierId = userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
 
             // Combine date and time for dateRDV
-            const dateRDV = `${formData.dateRendezVous}T${formData.heureRendezVous}`;
+            let dateRDV = `${formData.dateRendezVous}T${formData.heureRendezVous}`;
+            const selectedDateTime = new Date(`${formData.dateRendezVous}T${formData.heureRendezVous}:00`);
+            const now = new Date();
+
+            if (selectedDateTime < now && formData.dateRendezVous === getTodayDate()) {
+                const adjustedNow = new Date(now);
+                if (adjustedNow.getSeconds() > 0 || adjustedNow.getMilliseconds() > 0) {
+                    adjustedNow.setMinutes(adjustedNow.getMinutes() + 1);
+                }
+                const currentTime = `${String(adjustedNow.getHours()).padStart(2, '0')}:${String(adjustedNow.getMinutes()).padStart(2, '0')}`;
+                dateRDV = `${formData.dateRendezVous}T${currentTime}`;
+                setFormData((prev) => ({ ...prev, heureRendezVous: currentTime }));
+                Swal.fire('Attention', 'L’heure sélectionnée pour aujourd’hui est passée. L’heure a été mise à jour à l’heure actuelle.', 'warning');
+            }
 
             const availableMesures = getAvailableMesures();
-            let selectedMesureId = formData.mesureId || '';
+            const selectedMesureIdsForSubmit = selectedMesureIds.length > 0
+                ? selectedMesureIds
+                : formData.mesureId ? [formData.mesureId] : [];
+            let selectedMesureId = selectedMesureIdsForSubmit[0] || '';
 
             if (isLivraisonMotif(formData.motif)) {
                 if (!selectedMesureId && availableMesures.length === 1) {
@@ -525,22 +564,52 @@ const Rendezvous = () => {
             }
 
             const typeRendezVous = mapMotifToTypeRendezVous(formData.motif);
-
-            const payload = {
-                dateRDV: dateRDV,
-                typeRendezVous: typeRendezVous,
-                notes: formData.notes,
-                mesureId: isLivraisonMotif(formData.motif) ? (selectedMesureId || null) : null
-            };
+            const mesureIds = selectedMesureIdsForSubmit;
 
             if (isEditing) {
+                const payload = {
+                    dateRDV: dateRDV,
+                    typeRendezVous: typeRendezVous,
+                    notes: formData.notes,
+                    mesureId: isLivraisonMotif(formData.motif) ? (mesureIds[0] || null) : null
+                };
                 await api.put(`/rendezvous/${editingRendezvousId}`, payload);
+
+                if (isLivraisonMotif(formData.motif) && mesureIds.length > 1) {
+                    const extraMesureIds = mesureIds.slice(1);
+                    for (const extraMesureId of extraMesureIds) {
+                        await api.post('/rendezvous', {
+                            clientId: formData.clientId,
+                            atelierId: atelierId,
+                            dateRDV: dateRDV,
+                            typeRendezVous: typeRendezVous,
+                            notes: `${formData.notes || ''}`.trim() || 'Rendez-vous supplémentaire pour un autre vêtement.',
+                            mesureId: extraMesureId
+                        });
+                    }
+                }
             } else {
-                await api.post('/rendezvous', {
-                    ...payload,
-                    clientId: formData.clientId,
-                    atelierId: atelierId
-                });
+                if (mesureIds.length > 0) {
+                    for (const selectedMesureId of mesureIds) {
+                        await api.post('/rendezvous', {
+                            clientId: formData.clientId,
+                            atelierId: atelierId,
+                            dateRDV: dateRDV,
+                            typeRendezVous: typeRendezVous,
+                            notes: formData.notes,
+                            mesureId: selectedMesureId
+                        });
+                    }
+                } else {
+                    await api.post('/rendezvous', {
+                        clientId: formData.clientId,
+                        atelierId: atelierId,
+                        dateRDV: dateRDV,
+                        typeRendezVous: typeRendezVous,
+                        notes: formData.notes,
+                        mesureId: null
+                    });
+                }
             }
             
             Swal.fire(
@@ -554,8 +623,12 @@ const Rendezvous = () => {
             loadData(); // Recharger la liste
 
         } catch (error) {
-            console.error("Erreur création rendez-vous:", error);
-            const errorMessage = error.response?.data?.message || error.message || `Impossible de ${isEditing ? 'modifier' : 'créer'} le rendez-vous`;
+            console.error("Erreur création rendez-vous:", error, error.response?.data);
+            const backendData = error.response?.data;
+            const backendMessage = backendData?.message || backendData?.error || backendData || error.message;
+            const errorMessage = typeof backendMessage === 'object'
+                ? Object.values(backendMessage).flat().join(' | ')
+                : backendMessage;
             Swal.fire('Erreur', errorMessage, 'error');
         } finally {
             setSaving(false);
@@ -573,8 +646,12 @@ const Rendezvous = () => {
                 if (!rv.selectedMeasureId) {
                     const rdvResponse = await api.get(`/rendezvous/${rv.id}`);
                     const rdv = rdvResponse.data.data || rdvResponse.data;
+                    
+                    // Sécuriser le format de date (supprimer secondes/ms pour match yyyy-MM-dd'T'HH:mm)
+                    const formattedDate = rdv.dateRDV ? String(rdv.dateRDV).substring(0, 16) : null;
+                    
                     await api.put(`/rendezvous/${rv.id}`, {
-                        dateRDV: rdv.dateRDV,
+                        dateRDV: formattedDate,
                         typeRendezVous: rdv.typeRendezVous,
                         notes: rdv.notes || '',
                         mesureId: mesureSelectionnee
@@ -927,7 +1004,7 @@ const Rendezvous = () => {
                                                     {isLivraisonMotif(formData.motif) && (
                                                         <div className="mb-3">
                                                             <label className="form-label">
-                                                                Vêtement concerné
+                                                                Vêtements concernés
                                                                 {getAvailableMesures().length > 1 ? ' *' : ''}
                                                             </label>
                                                             <div className="d-grid gap-2">
@@ -939,14 +1016,14 @@ const Rendezvous = () => {
                                                                 {getAvailableMesures().map((mesure) => (
                                                                     <div key={mesure.id}>
                                                                         {renderMesureCard(mesure, {
-                                                                            selected: formData.mesureId === mesure.id,
-                                                                            onSelect: (mesureId) => setFormData((prev) => ({ ...prev, mesureId }))
+                                                                            selected: selectedMesureIds.includes(mesure.id),
+                                                                            onSelect: () => toggleMesureSelection(mesure.id)
                                                                         })}
                                                                     </div>
                                                                 ))}
                                                             </div>
                                                             <small className="text-secondary d-block mt-1">
-                                                                Sélectionnez le vêtement attendu pour ce rendez-vous de livraison.
+                                                                Sélectionnez un ou plusieurs vêtements concernés par ce rendez-vous de livraison.
                                                             </small>
                                                         </div>
                                                     )}

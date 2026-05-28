@@ -1,0 +1,14 @@
+{
+  "name": "ateliko-license-generator",
+  "version": "1.0.0",
+  "description": "Générateur de licence ATELIKO (Electron desktop)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "Ateliko",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^25.0.0"
+  }
+}

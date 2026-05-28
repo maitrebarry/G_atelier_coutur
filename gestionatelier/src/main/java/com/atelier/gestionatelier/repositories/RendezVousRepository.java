@@ -78,9 +78,21 @@ public interface RendezVousRepository extends JpaRepository<RendezVous, UUID> {
     @Query("SELECT COUNT(r) FROM RendezVous r WHERE r.atelier.id = :atelierId AND r.statut = :statut")
     long countByAtelierIdAndStatut(@Param("atelierId") UUID atelierId, @Param("statut") String statut);
 
-    // Vérifier les conflits de rendez-vous
+    // Vérifier les conflits de rendez-vous (tous les rendez-vous d'un créneau, pour recherche de créneau libre)
     @Query("SELECT COUNT(r) FROM RendezVous r WHERE r.atelier.id = :atelierId AND r.dateRDV = :dateRDV AND r.statut IN ('PLANIFIE', 'CONFIRME')")
     long countConflitsRendezVous(@Param("atelierId") UUID atelierId, @Param("dateRDV") LocalDateTime dateRDV);
+
+    // Vérifier les conflits de rendez-vous pour un nouveau rendez-vous, en autorisant plusieurs rendez-vous au même horaire pour un même client (multi-vêtement)
+    @Query("SELECT COUNT(r) FROM RendezVous r WHERE r.atelier.id = :atelierId AND r.dateRDV = :dateRDV AND r.client.id <> :clientId AND r.statut IN ('PLANIFIE', 'CONFIRME')")
+    long countConflitsRendezVousPourAutresClients(@Param("atelierId") UUID atelierId,
+                                                   @Param("dateRDV") LocalDateTime dateRDV,
+                                                   @Param("clientId") UUID clientId);
+
+    @Query("SELECT COUNT(r) FROM RendezVous r WHERE r.atelier.id = :atelierId AND r.dateRDV = :dateRDV AND r.id <> :rendezVousId AND r.client.id <> :clientId AND r.statut IN ('PLANIFIE', 'CONFIRME')")
+    long countConflitsRendezVousExcludingIdPourAutresClients(@Param("atelierId") UUID atelierId,
+                                                             @Param("dateRDV") LocalDateTime dateRDV,
+                                                             @Param("rendezVousId") UUID rendezVousId,
+                                                             @Param("clientId") UUID clientId);
 
     @Query("SELECT COUNT(r) FROM RendezVous r WHERE r.atelier.id = :atelierId AND r.dateRDV = :dateRDV AND r.id <> :rendezVousId AND r.statut IN ('PLANIFIE', 'CONFIRME')")
     long countConflitsRendezVousExcludingId(@Param("atelierId") UUID atelierId,

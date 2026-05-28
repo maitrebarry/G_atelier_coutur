@@ -16,6 +16,8 @@ export default function RendezvousCreateScreen({ route, navigation }) {
   const [atelierId, setAtelierId] = useState('');
   const [clients, setClients] = useState([]);
   const [clientId, setClientId] = useState(initialClient?.id ? String(initialClient.id) : '');
+  const [selectedClientDetails, setSelectedClientDetails] = useState(null);
+  const [selectedMesureIds, setSelectedMesureIds] = useState([]);
   const [date, setDate] = useState('');
   const [heure, setHeure] = useState('10:00');
   const [motif, setMotif] = useState('LIVRAISON');
@@ -38,9 +40,42 @@ export default function RendezvousCreateScreen({ route, navigation }) {
     })();
   }, []);
 
+  useEffect(() => {
+    if (!clientId) {
+      setSelectedClientDetails(null);
+      setSelectedMesureIds([]);
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await api.get(`/rendezvous/clients/${clientId}/details`);
+        setSelectedClientDetails(res.data || null);
+        setSelectedMesureIds([]);
+      } catch (e) {
+        setSelectedClientDetails(null);
+      }
+    })();
+  }, [clientId]);
+
   const selectedClient = useMemo(() => {
     return clients.find((c) => String(c?.id) === String(clientId)) || initialClient || null;
   }, [clients, clientId, initialClient]);
+
+  const toggleMesure = (mesureId) => {
+    setSelectedMesureIds((prev) =>
+      prev.includes(mesureId) ? prev.filter((id) => id !== mesureId) : [...prev, mesureId]
+    );
+  };
+
+  const selectAllMesures = () => {
+    const allIds = Array.isArray(selectedClientDetails?.mesures)
+      ? selectedClientDetails.mesures.map((m) => String(m.id))
+      : [];
+    setSelectedMesureIds(allIds);
+  };
+
+  const clearAllMesures = () => setSelectedMesureIds([]);
 
   const handleCreate = async () => {
     if (!clientId) {
@@ -56,26 +91,43 @@ export default function RendezvousCreateScreen({ route, navigation }) {
       return;
     }
 
-    // ✅ Le rendez-vous peut être créé même si le client n'a pas d'email valide.
-    // L'envoi du mail de confirmation sera ignoré côté serveur si l'email manque.
     if (!selectedClient?.email || !selectedClient.email.includes('@')) {
-      Alert.alert('Attention', 'Le client n\'a pas d\'email valide. Le rendez-vous sera créé, mais aucune confirmation ne pourra être envoyée par email.');
+      Alert.alert(
+        'Attention',
+        "Le client n'a pas d'email valide. Le rendez-vous sera créé, mais aucune confirmation ne pourra être envoyée par email."
+      );
     }
 
     try {
-      const payload = {
+      const payloadBase = {
         clientId,
         atelierId,
         dateRDV: `${date}T${heure}`,
         typeRendezVous: motif,
         notes: note,
       };
-      await api.post('/rendezvous', payload);
-      Alert.alert('Succès', 'Rendez-vous créé avec succès ! Un email de confirmation a été envoyé au client.');
+
+      if (selectedMesureIds.length > 0) {
+        let createdCount = 0;
+        for (const mesureId of selectedMesureIds) {
+          await api.post('/rendezvous', { ...payloadBase, mesureId });
+          createdCount += 1;
+        }
+        Alert.alert('Succès', `${createdCount} rendez-vous créés avec succès pour les vêtements sélectionnés.`);
+      } else {
+        await api.post('/rendezvous', payloadBase);
+        Alert.alert('Succès', 'Rendez-vous créé avec succès ! Un email de confirmation a été envoyé au client.');
+      }
       navigation.goBack();
     } catch (e) {
       Alert.alert('Erreur', e?.response?.data?.message || 'Impossible de créer le rendez-vous');
     }
+  };
+
+  const mesureLabel = (mesure) => {
+    const label = mesure.modeleNom || mesure.typeVetement || 'Vêtement';
+    const suffix = mesure.description ? ` — ${mesure.description}` : '';
+    return `${label}${suffix}`;
   };
 
   return (
@@ -93,50 +145,86 @@ export default function RendezvousCreateScreen({ route, navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.sectionCard}>
+        <View style={styles.sectionCard}>
+          <Text style={styles.label}>Client</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalList}>
+            {clients.map((c) => (
+              <TouchableOpacity
+                key={String(c.id)}
+                style={[styles.chip, String(clientId) === String(c.id) && styles.chipActive]}
+                onPress={() => setClientId(String(c.id))}
+              >
+                <Text style={[styles.chipText, String(clientId) === String(c.id) && styles.chipTextActive]}>
+                  {(c.prenom || '') + ' ' + (c.nom || '')}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
-      <Text style={styles.label}>Client</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 12 }}>
-        {clients.map((c) => (
-          <TouchableOpacity
-            key={String(c.id)}
-            style={[styles.chip, String(clientId) === String(c.id) && styles.chipActive]}
-            onPress={() => setClientId(String(c.id))}
-          >
-            <Text style={[styles.chipText, String(clientId) === String(c.id) && styles.chipTextActive]}>
-              {(c.prenom || '') + ' ' + (c.nom || '')}
-            </Text>
+          <Text style={styles.clientInfo}>
+            Client sélectionné: {selectedClient?.prenom || selectedClient?.nom || '—'} {selectedClient?.nom ? '' : ''}
+          </Text>
+
+          {selectedClientDetails?.mesures?.length > 0 ? (
+            <>
+              <View style={styles.rowBetween}>
+                <Text style={[styles.label, { marginTop: 10 }]}>Vêtements du client</Text>
+                <View style={styles.rowGap}>
+                  <TouchableOpacity style={styles.smallBtn} onPress={selectAllMesures}>
+                    <Text style={styles.smallBtnText}>Tout</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.smallBtn, styles.smallBtnOutline]} onPress={clearAllMesures}>
+                    <Text style={[styles.smallBtnText, styles.smallBtnOutlineText]}>Aucun</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalList}>
+                {selectedClientDetails.mesures.map((mesure) => {
+                  const id = String(mesure.id);
+                  const active = selectedMesureIds.includes(id);
+                  return (
+                    <TouchableOpacity
+                      key={id}
+                      style={[styles.chip, active && styles.chipActive]}
+                      onPress={() => toggleMesure(id)}
+                    >
+                      <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                        {mesureLabel(mesure)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </>
+          ) : clientId ? (
+            <Text style={styles.infoText}>Ce client n'a pas encore de vêtements enregistrés.</Text>
+          ) : null}
+
+          <Text style={styles.label}>Date (YYYY-MM-DD)</Text>
+          <TextInput placeholder="Date (YYYY-MM-DD)" style={styles.input} value={date} onChangeText={setDate} />
+
+          <Text style={styles.label}>Heure (HH:mm)</Text>
+          <TextInput placeholder="Heure (HH:mm)" style={styles.input} value={heure} onChangeText={setHeure} />
+
+          <Text style={styles.label}>Motif</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalList}>
+            {['LIVRAISON', 'RETOUCHE', 'MESURE', 'AUTRE'].map((m) => (
+              <TouchableOpacity
+                key={m}
+                style={[styles.chip, motif === m && styles.chipActive]}
+                onPress={() => setMotif(m)}
+              >
+                <Text style={[styles.chipText, motif === m && styles.chipTextActive]}>{m}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <TextInput placeholder="Note" style={[styles.input, { height: 80 }]} multiline value={note} onChangeText={setNote} />
+          <TouchableOpacity style={styles.saveBtn} onPress={handleCreate}>
+            <Text style={styles.saveBtnText}>Créer</Text>
           </TouchableOpacity>
-        ))}
+        </View>
       </ScrollView>
-
-      <Text>Client sélectionné: {selectedClient?.nom || selectedClient?.fullName || selectedClient?.prenom || '—'}</Text>
-
-      <Text style={styles.label}>Date (YYYY-MM-DD)</Text>
-      <TextInput placeholder="Date (YYYY-MM-DD)" style={styles.input} value={date} onChangeText={setDate} />
-
-      <Text style={styles.label}>Heure (HH:mm)</Text>
-      <TextInput placeholder="Heure (HH:mm)" style={styles.input} value={heure} onChangeText={setHeure} />
-
-      <Text style={styles.label}>Motif</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 12 }}>
-        {['LIVRAISON', 'RETOUCHE', 'MESURE', 'AUTRE'].map((m) => (
-          <TouchableOpacity
-            key={m}
-            style={[styles.chip, motif === m && styles.chipActive]}
-            onPress={() => setMotif(m)}
-          >
-            <Text style={[styles.chipText, motif === m && styles.chipTextActive]}>{m}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      <TextInput placeholder="Note" style={[styles.input, {height:80}]} multiline value={note} onChangeText={setNote} />
-      <TouchableOpacity style={styles.saveBtn} onPress={handleCreate}>
-        <Text style={styles.saveBtnText}>Créer</Text>
-      </TouchableOpacity>
-      </View>
-    </ScrollView>
     </View>
   );
 }
@@ -174,6 +262,10 @@ const styles = StyleSheet.create({
   },
   input: { borderWidth: 1, borderColor: '#dfe5f1', padding: 10, borderRadius: 10, marginBottom: 12, backgroundColor: '#fff' },
   label: { fontWeight: '700', marginBottom: 6, marginTop: 6 },
+  clientInfo: { marginBottom: 12, color: '#4a5368' },
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  rowGap: { flexDirection: 'row' },
+  horizontalList: { paddingVertical: 4, marginBottom: 12 },
   chip: {
     borderWidth: 1,
     borderColor: '#dbe2ef',
@@ -181,10 +273,26 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
     backgroundColor: '#fff',
+    marginRight: 8,
   },
   chipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   chipText: { color: '#2b3c62', fontWeight: '700' },
   chipTextActive: { color: '#fff' },
+  smallBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginRight: 8,
+  },
+  smallBtnOutline: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  smallBtnText: { color: '#fff', fontWeight: '700' },
+  smallBtnOutlineText: { color: COLORS.primary },
+  infoText: { color: '#6c757d', marginBottom: 12 },
   saveBtn: {
     marginTop: 4,
     backgroundColor: COLORS.primary,

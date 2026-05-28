@@ -112,7 +112,8 @@ public class PaiementService {
         paiement.setMontant(dto.getMontant());
         paiement.setMoyen(dto.getMoyen());
         paiement.setReference(dto.getReference());
-        paiement.setDatePaiement(LocalDateTime.now());
+        // Utiliser la date d'encaissement réel fournie par le formulaire, sinon la date courante
+        paiement.setDatePaiement(dto.getDatePaiement() != null ? dto.getDatePaiement() : LocalDateTime.now());
         paiement.setTypePaiement(Paiement.TypePaiement.CLIENT);
         paiement.setClient(client);
         paiement.setAtelier(atelier);
@@ -190,19 +191,21 @@ public class PaiementService {
         log.info("✅ Client récupéré: {} {}", client.getPrenom(), client.getNom());
 
         List<Mesure> mesures = client.getMesures() == null ? Collections.emptyList() : client.getMesures();
-        if (month != null && year != null) {
-            mesures = mesures.stream()
-                    .filter(mesure -> mesure.getDateMesure() != null && mesure.getDateMesure().getMonthValue() == month && mesure.getDateMesure().getYear() == year)
-                    .collect(Collectors.toList());
-        }
-        log.info("📏 {} mesure(s) trouvée(s) pour le client {} dans la période {}/{}", mesures.size(), clientId, month, year);
+        // RÈGLE MÉTIER : Les mesures (= commandes, base du prix total dû) ne sont JAMAIS filtrées
+        // par mois. Le total dû d'un client est global, indépendamment de la période affichée.
+        // Seul l'historique des paiements est filtré par mois (date d'encaissement réel).
+        log.info("📏 {} mesure(s) trouvée(s) pour le client {} (toutes périodes confondues)", mesures.size(), clientId);
 
         // Récupérer les paiements du client
-        List<Paiement> paiements = paiementRepository.findPaiementsByClientAndAtelier(clientId, atelierId);
+        List<Paiement> tousPaiements = paiementRepository.findPaiementsByClientAndAtelier(clientId, atelierId);
+        // Filtrer les paiements par mois uniquement pour l'historique affiché
+        List<Paiement> paiements;
         if (month != null && year != null) {
-            paiements = paiements.stream()
+            paiements = tousPaiements.stream()
                     .filter(p -> p.getDatePaiement() != null && p.getDatePaiement().getMonthValue() == month && p.getDatePaiement().getYear() == year)
                     .collect(Collectors.toList());
+        } else {
+            paiements = tousPaiements;
         }
         log.info("💰 {} paiements trouvés pour le client {} dans la période {}/{}", paiements.size(), clientId, month, year);
 
@@ -213,12 +216,12 @@ public class PaiementService {
                 .collect(Collectors.toList());
         log.info("👕 {} affectations trouvées pour le client {}", affectations.size(), clientId);
 
-        // Calculer les totaux - utiliser le prix de la mesure (prix du modèle)
-        Double totalPaiements = paiements.stream()
+        // Calculer les totaux - prix total dû = somme de TOUTES les mesures (global, sans filtre période)
+        Double totalPaiements = tousPaiements.stream()
                 .mapToDouble(Paiement::getMontant)
                 .sum();
 
-        // Utiliser les modèles sélectionnés par période pour le client.
+        // Le prix total des modèles est calculé sur TOUTES les mesures du client (global)
         Double prixTotalModeles = mesures.stream()
                 .mapToDouble(mesure -> mesure.getPrix() != null ? mesure.getPrix() : 0.0)
                 .sum();
@@ -294,7 +297,8 @@ public class PaiementService {
         paiement.setMontant(dto.getMontant());
         paiement.setMoyen(dto.getMoyen());
         paiement.setReference(dto.getReference());
-        paiement.setDatePaiement(LocalDateTime.now());
+        // Utiliser la date d'encaissement réel fournie par le formulaire, sinon la date courante
+        paiement.setDatePaiement(dto.getDatePaiement() != null ? dto.getDatePaiement() : LocalDateTime.now());
         paiement.setTypePaiement(Paiement.TypePaiement.TAILLEUR);
         paiement.setTailleur(tailleur);
         paiement.setAtelier(atelier);
@@ -590,7 +594,7 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
         List<Client> clients = clientRepository.findByAtelierIdWithMesures(criteres.getAtelierId());
 
         return clients.stream()
-                .filter(client -> filtreParMoisAnneeClient(client, criteres.getMonth(), criteres.getYear()))
+            .filter(client -> filtreParMoisAnneeClient(client, criteres.getAtelierId(), criteres.getMonth(), criteres.getYear()))
                 .map(client -> getPaiementsClient(client.getId(), criteres.getAtelierId(), criteres.getMonth(), criteres.getYear()))
                 .filter(dto -> filtreParStatut(dto, criteres.getStatutPaiement()))
                 .filter(dto -> filtreParRecherche(dto, criteres.getSearchTerm()))
@@ -608,11 +612,22 @@ private AffectationInfoDto convertToAffectationInfoDto(Affectation affectation) 
                 .collect(Collectors.toList());
     }
 
-    private boolean filtreParMoisAnneeClient(Client client, Integer month, Integer year) {
+    private boolean filtreParMoisAnneeClient(Client client, UUID atelierId, Integer month, Integer year) {
         if (month == null || year == null) return true;
-        return client.getMesures() != null && client.getMesures().stream()
+        // RÈGLE MÉTIER : Un client apparaît dans le mois M si :
+        // 1. Il a une commande (mesure) dans ce mois → commande récente, paiement éventuellement ultérieur
+        boolean aMesureDansMois = client.getMesures() != null && client.getMesures().stream()
                 .filter(mesure -> mesure.getDateMesure() != null)
-                .anyMatch(mesure -> mesure.getDateMesure().getMonthValue() == month && mesure.getDateMesure().getYear() == year);
+                .anyMatch(mesure -> mesure.getDateMesure().getMonthValue() == month
+                        && mesure.getDateMesure().getYear() == year);
+        if (aMesureDansMois) return true;
+
+        // 2. OU il a un paiement encaissé dans ce mois → solde payé pour une commande antérieure
+        List<Paiement> paiements = paiementRepository.findPaiementsByClientAndAtelier(client.getId(), atelierId);
+        return paiements.stream()
+                .filter(p -> p.getDatePaiement() != null)
+                .anyMatch(p -> p.getDatePaiement().getMonthValue() == month
+                        && p.getDatePaiement().getYear() == year);
     }
 
     private boolean filtreParMoisAnneeTailleur(Utilisateur tailleur, UUID atelierId, Integer month, Integer year) {

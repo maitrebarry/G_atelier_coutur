@@ -74,7 +74,7 @@ public class RendezVousService {
                 .orElseThrow(() -> new EntityNotFoundException("Atelier non trouvé avec ID: " + dto.getAtelierId()));
 
         // Validation de la date
-        validerDateRendezVous(dto.getDateRDV(), atelier.getId());
+        validerDateRendezVous(dto.getDateRDV(), atelier.getId(), dto.getClientId());
 
         RendezVous rendezVous = new RendezVous();
         rendezVous.setDateRDV(dto.getDateRDV());
@@ -170,6 +170,28 @@ public class RendezVousService {
         }
     }
 
+    private void validerDateRendezVous(LocalDateTime dateRDV, UUID atelierId, UUID clientId) {
+        if (dateRDV.isBefore(getCurrentTruncatedToMinutes())) {
+            throw new IllegalArgumentException("La date du rendez-vous doit être dans le présent ou le futur");
+        }
+
+        long conflits = rendezVousRepository.countConflitsRendezVousPourAutresClients(atelierId, dateRDV, clientId);
+        if (conflits > 0) {
+            throw new IllegalArgumentException("Un rendez-vous existe déjà à cette date et heure");
+        }
+    }
+
+    private void validerDateRendezVous(LocalDateTime dateRDV, UUID atelierId, UUID rendezVousId, UUID clientId) {
+        if (dateRDV.isBefore(getCurrentTruncatedToMinutes())) {
+            throw new IllegalArgumentException("La date du rendez-vous doit être dans le présent ou le futur");
+        }
+
+        long conflits = rendezVousRepository.countConflitsRendezVousExcludingIdPourAutresClients(atelierId, dateRDV, rendezVousId, clientId);
+        if (conflits > 0) {
+            throw new IllegalArgumentException("Un rendez-vous existe déjà à cette date et heure");
+        }
+    }
+
     @Transactional
     public RendezVousDTO mettreAJourRendezVous(UUID id, UpdateRendezVousDTO dto) {
         RendezVous rendezVous = rendezVousRepository.findByIdWithRelations(id)
@@ -177,8 +199,8 @@ public class RendezVousService {
 
         boolean dateModifiee = false;
 
-        if (dto.getDateRDV() != null) {
-            validerDateRendezVous(dto.getDateRDV(), rendezVous.getAtelier().getId(), rendezVous.getId());
+        if (dto.getDateRDV() != null && !dto.getDateRDV().truncatedTo(ChronoUnit.MINUTES).equals(rendezVous.getDateRDV().truncatedTo(ChronoUnit.MINUTES))) {
+            validerDateRendezVous(dto.getDateRDV(), rendezVous.getAtelier().getId(), rendezVous.getId(), rendezVous.getClient().getId());
             rendezVous.setDateRDV(dto.getDateRDV());
             dateModifiee = true;
         }
@@ -386,19 +408,7 @@ public class RendezVousService {
                         .filter(mesure -> mesure.getClient() != null && mesure.getClient().getId().equals(client.getId()))
                         .orElseThrow(() -> new IllegalArgumentException("Le vêtement sélectionné n'appartient pas à ce client")));
     }
-
-    private void validerDateRendezVous(LocalDateTime dateRDV, UUID atelierId, UUID rendezVousId) {
-        if (dateRDV.isBefore(getCurrentTruncatedToMinutes())) {
-            throw new IllegalArgumentException("La date du rendez-vous doit être dans le présent ou le futur");
-        }
-
-        long conflits = rendezVousId == null
-                ? rendezVousRepository.countConflitsRendezVous(atelierId, dateRDV)
-                : rendezVousRepository.countConflitsRendezVousExcludingId(atelierId, dateRDV, rendezVousId);
-        if (conflits > 0) {
-            throw new IllegalArgumentException("Un rendez-vous existe déjà à cette date et heure");
-        }
-    }
+    
 
     private RendezVousDTO.MesureInfoDTO toMesureInfoDTO(Mesure mesure) {
         if (mesure == null) {

@@ -1,0 +1,3 @@
+-keep class org.pgsqlite.** { *; }
+-keep class io.liteglue.** { *; }
+-keep class com.RNFetchBlob.** { *; }

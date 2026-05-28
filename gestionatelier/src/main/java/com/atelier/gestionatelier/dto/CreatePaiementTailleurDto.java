@@ -2,6 +2,7 @@ package com.atelier.gestionatelier.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -25,4 +26,10 @@ public class CreatePaiementTailleurDto {
 
     @NotNull(message = "L'ID de l'atelier est obligatoire")
     private UUID atelierId;
+
+    /**
+     * Date d'encaissement réel du paiement.
+     * Si null, la date du jour (LocalDateTime.now()) sera utilisée.
+     */
+    private LocalDateTime datePaiement;
 }

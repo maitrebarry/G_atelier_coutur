@@ -12,7 +12,6 @@ import java.util.UUID;
 public class UpdateRendezVousDTO {
 
     @NotNull(message = "La date du rendez-vous est obligatoire")
-    @FutureOrPresent(message = "La date du rendez-vous doit être dans le présent ou le futur")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm")
     private LocalDateTime dateRDV;
 

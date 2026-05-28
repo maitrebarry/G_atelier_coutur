@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ateliko Licence Generator (Desktop)</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main>
+    <h1>Générateur de licence ATELIKO (Desktop)</h1>
+    <form id="licForm">
+      <label>Device ID
+        <input id="deviceId" placeholder="Entrez deviceId..." required />
+      </label>
+      <label>Expire le (timestamp ms ou ISO)
+        <input id="expires" placeholder="ex: 1740000000000 ou 2025-12-31T23:59" />
+      </label>
+      <label>Issued By (optionnel)
+        <input id="issuedBy" placeholder="Atelier Admin" />
+      </label>
+
+      <div class="priv-row">
+        <button id="selectPriv" type="button">Sélectionner priv.pem</button>
+        <button id="savePriv" type="button" disabled>Enregistrer la clé</button>
+        <button id="useSaved" type="button">Utiliser clé enregistrée</button>
+        <button id="clearSaved" type="button">Supprimer clé enregistrée</button>
+        <span id="privName" class="muted">Aucun fichier</span>
+      </div>
+
+      <div class="actions">
+        <button id="generate">Générer</button>
+        <button id="save" type="button" disabled>Sauvegarder license.json</button>
+      </div>
+    </form>
+
+    <section>
+      <h2>Licence</h2>
+      <div class="license-grid">
+        <textarea id="output" readonly></textarea>
+        <div id="qrBox" class="qr-box hidden">
+          <h3>QR activation</h3>
+          <div id="qrCode"></div>
+          <p class="muted">Scanne ce QR avec le téléphone Android du client.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Historique</h2>
+      <pre id="history" class="muted">Aucun historique chargé</pre>
+    </section>
+    <p class="note">Garde `priv.pem` confidentielle. Cette app signe localement la charge utile.</p>
+  </main>
+
+  <script src="../../node_modules/qrcode-generator/qrcode.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
