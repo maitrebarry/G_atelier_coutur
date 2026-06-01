@@ -1,5 +1,6 @@
 import {execute, query} from '../database/db';
 import {createHabitMovement} from './movementService';
+import {createRendezvous} from './rendezvousService';
 
 const measureFields = [
   'sexe',
@@ -33,6 +34,10 @@ function numberOrNull(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+function buildAdvanceReference(idClient, idModele) {
+  return `REF-CLI-AV-${idClient}-${idModele}-${Date.now().toString().slice(-6)}`;
+}
+
 function normalizeMeasure(input = {}) {
   const out = {};
   measureFields.forEach(field => {
@@ -53,29 +58,23 @@ export async function listClients(search = '') {
   if (!search.trim()) {
     return query(`
       SELECT c.*,
-        COUNT(DISTINCT m.id_mesure) AS mesures_count,
-        COUNT(DISTINCT mo.id_modele) AS modeles_count,
-        COALESCE(SUM(mo.prix), 0) AS total_prix,
-        COALESCE(SUM(mo.avance), 0) AS total_avance
+        (SELECT COUNT(*) FROM mesure m WHERE m.id_client = c.id_client) AS mesures_count,
+        (SELECT COUNT(*) FROM modele_client mo WHERE mo.id_client = c.id_client) AS modeles_count,
+        (SELECT COALESCE(SUM(prix), 0) FROM modele_client mo WHERE mo.id_client = c.id_client) AS total_prix,
+        (SELECT COALESCE(SUM(avance), 0) FROM modele_client mo WHERE mo.id_client = c.id_client) AS total_avance
       FROM client c
-      LEFT JOIN mesure m ON m.id_client = c.id_client
-      LEFT JOIN modele_client mo ON mo.id_client = c.id_client
-      GROUP BY c.id_client
       ORDER BY c.date_creation DESC
     `);
   }
   return query(
     `
       SELECT c.*,
-        COUNT(DISTINCT m.id_mesure) AS mesures_count,
-        COUNT(DISTINCT mo.id_modele) AS modeles_count,
-        COALESCE(SUM(mo.prix), 0) AS total_prix,
-        COALESCE(SUM(mo.avance), 0) AS total_avance
+        (SELECT COUNT(*) FROM mesure m WHERE m.id_client = c.id_client) AS mesures_count,
+        (SELECT COUNT(*) FROM modele_client mo WHERE mo.id_client = c.id_client) AS modeles_count,
+        (SELECT COALESCE(SUM(prix), 0) FROM modele_client mo WHERE mo.id_client = c.id_client) AS total_prix,
+        (SELECT COALESCE(SUM(avance), 0) FROM modele_client mo WHERE mo.id_client = c.id_client) AS total_avance
       FROM client c
-      LEFT JOIN mesure m ON m.id_client = c.id_client
-      LEFT JOIN modele_client mo ON mo.id_client = c.id_client
       WHERE lower(c.nom || ' ' || c.prenom || ' ' || c.contact || ' ' || COALESCE(c.adresse, '')) LIKE ?
-      GROUP BY c.id_client
       ORDER BY c.date_creation DESC
     `,
     [term],
@@ -89,7 +88,8 @@ export async function getClientDetails(idClient) {
   const mesures = await query('SELECT * FROM mesure WHERE id_client = ? ORDER BY date_mesure DESC', [idClient]);
   const modeles = await query('SELECT * FROM modele_client WHERE id_client = ? ORDER BY date_creation DESC', [idClient]);
   const mouvements = await query('SELECT * FROM mouvement_habit WHERE id_client = ? ORDER BY date_mouvement DESC', [idClient]);
-  return {...client, mesures, modeles, mouvements};
+  const paiements = await query("SELECT montant FROM paiement WHERE id_client = ? AND type_paiement = 'CLIENT'", [idClient]);
+  return {...client, mesures, modeles, mouvements, paiements};
 }
 
 export async function createClientWithMeasureAndModel(payload) {
@@ -115,6 +115,7 @@ export async function createClientWithMeasureAndModel(payload) {
 
   let entreeReference = null;
   if (payload.modele?.nom_modele) {
+    const avance = numberOrNull(payload.modele.avance) || 0;
     const modeleResult = await execute(
       `INSERT INTO modele_client
         (id_client, id_mesure, photo, nom_modele, description, message_ia, prix, avance, statut, categorie)
@@ -127,11 +128,28 @@ export async function createClientWithMeasureAndModel(payload) {
         payload.modele.description || mesure.description,
         payload.modele.message_ia || null,
         numberOrNull(payload.modele.prix) || 0,
-        numberOrNull(payload.modele.avance) || 0,
+        avance,
         payload.modele.statut || 'EN_ATTENTE',
         payload.modele.categorie || mesure.type_vetement || null,
       ],
     );
+    if (avance > 0) {
+      await execute(
+        `INSERT INTO paiement
+          (id_client, id_modele, id_mesure, montant, moyen, reference, date_paiement, type_paiement, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'CLIENT', ?)`,
+        [
+          idClient,
+          modeleResult.insertId,
+          idMesure,
+          avance,
+          payload.modele.moyen || 'ESPECES',
+          buildAdvanceReference(idClient, modeleResult.insertId),
+          new Date().toISOString(),
+          'AVANCE_INITIALE',
+        ],
+      );
+    }
     const movement = await createHabitMovement({
       type_mouvement: 'ENTREE',
       id_client: idClient,
@@ -140,6 +158,19 @@ export async function createClientWithMeasureAndModel(payload) {
       notes: `Mesure prise - ${payload.modele.nom_modele}`,
     });
     entreeReference = movement.reference;
+    
+    try {
+      const d = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+      await createRendezvous({
+        id_client: idClient,
+        id_mesure: idMesure,
+        date_rdv: d.toISOString(),
+        type_rendezvous: 'LIVRAISON',
+        notes: 'Rendez-vous généré automatiquement.',
+      });
+    } catch (e) {
+      console.error('Erreur génération RDV auto:', e);
+    }
   }
   const details = await getClientDetails(idClient);
   return {...details, entreeReference};

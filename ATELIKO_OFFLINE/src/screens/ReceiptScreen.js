@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {Alert, Linking, ScrollView, StyleSheet, Text, View} from 'react-native';
 import AppButton from '../components/AppButton';
 import QRCodeMatrix from '../components/QRCodeMatrix';
-import {buildMovementReceipt, buildPaymentReceipt, formatReceiptDate} from '../services/receiptService';
+import {buildMovementReceipt, buildPaymentReceipt, buildCommandeReceipt, formatReceiptDate} from '../services/receiptService';
 
 function formatMoney(value) {
   return `${Number(value || 0).toLocaleString('fr-FR')} FCFA`;
@@ -43,16 +43,21 @@ function buildWhatsAppMessage(receipt) {
 }
 
 export default function ReceiptScreen({route, navigation}) {
-  const {receiptType, idPaiement, movementReference, autoWhatsApp = false} = route.params || {};
+  const {receiptType, idPaiement, idClient, movementReference, autoWhatsApp = false} = route.params || {};
   const [receipt, setReceipt] = useState(null);
   const autoSentRef = useRef(false);
 
   useEffect(() => {
-    const request = receiptType === 'PAIEMENT'
-      ? buildPaymentReceipt(idPaiement)
-      : buildMovementReceipt(movementReference);
+    let request;
+    if (receiptType === 'PAIEMENT') {
+      request = buildPaymentReceipt(idPaiement);
+    } else if (receiptType === 'COMMANDE') {
+      request = buildCommandeReceipt(idClient);
+    } else {
+      request = buildMovementReceipt(movementReference);
+    }
     request.then(setReceipt);
-  }, [receiptType, idPaiement, movementReference]);
+  }, [receiptType, idPaiement, idClient, movementReference]);
 
   const sendWhatsApp = async () => {
     if (!receipt) return;
@@ -97,12 +102,15 @@ export default function ReceiptScreen({route, navigation}) {
         <Row label="Contact" value={receipt.contact} />
         <Row label="Reglement" value={receipt.moyenPaiement} />
         <Row label="Modele" value={receipt.nomModele} />
+        {receipt.nombreModeles ? <Row label="Nombre de modeles" value={receipt.nombreModeles} /> : null}
         <Row label="Quantite" value={receipt.quantite} />
+        {receipt.dateRdv ? <Row label="Date du rendez-vous" value={formatReceiptDate(receipt.dateRdv)} /> : null}
         <Text style={styles.divider}>--------------------------------</Text>
         <Row label="Total du" value={formatMoney(receipt.totalDu)} />
+        <Row label="Avance payee" value={formatMoney(receipt.avancePaye)} />
         <Row label="Reste a payer" value={formatMoney(receipt.resteAPayer)} />
         <View style={styles.amountBox}>
-          <Text style={styles.amountCaption}>{receipt.typeTicket === 'SORTIE' ? 'SORTIE HABIT' : receipt.typeTicket === 'ENTREE' ? 'ENTREE HABIT' : 'MONTANT'}</Text>
+          <Text style={styles.amountCaption}>{receipt.typeTicket === 'SORTIE' ? 'SORTIE HABIT' : receipt.typeTicket === 'ENTREE' ? 'ENTREE HABIT' : 'MONTANT ENCAISSE'}</Text>
           <Text style={styles.amount}>{formatMoney(receipt.montant)}</Text>
         </View>
         <Text style={styles.section}>VERIFICATION</Text>

@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal, ActivityIndicator, FlatList, Image} from 'react-native';
+import {Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal, ActivityIndicator, FlatList, Image, ToastAndroid} from 'react-native';
 import AppButton from '../components/AppButton';
 import FormInput from '../components/FormInput';
 import MeasureFields from '../components/MeasureFields';
@@ -8,7 +8,7 @@ import {takeLocalPhoto, pickLocalImage} from '../services/imageStorage';
 import {addMeasure, createClientWithMeasureAndModel, getClientDetails, updateClient, updateMeasure} from '../services/clientService';
 import {createModele, listAlbums, updateModele} from '../services/modelService';
 
-const initialClient = {nom: '', prenom: '', contact: '', adresse: ''};
+const initialClient = {nom: '', prenom: '', contact: '', adresse: '', avance: ''};
 const initialMeasure = {sexe: 'Femme', type_vetement: 'robe', habit_photo: ''};
 const initialModel = {
   localId: 1,
@@ -16,7 +16,6 @@ const initialModel = {
   description: '',
   message_ia: '',
   prix: '',
-  avance: '',
   statut: 'EN_ATTENTE',
   categorie: 'ROBE',
   photo: '',
@@ -52,8 +51,8 @@ export default function ClientFormScreen({route, navigation}) {
   const idClient = route.params?.idClient;
   const [client, setClient] = useState(initialClient);
   const [existingModels, setExistingModels] = useState([]);
-  const [models, setModels] = useState([makeModel(0)]);
-  const [selectedModelId, setSelectedModelId] = useState(models[0].localId);
+  const [models, setModels] = useState([]);
+  const [selectedModelId, setSelectedModelId] = useState(null);
   const [step, setStep] = useState('client');
   const [saving, setSaving] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -62,7 +61,7 @@ export default function ClientFormScreen({route, navigation}) {
   const [loading, setLoading] = useState(false);
 
   const selectedIndex = Math.max(models.findIndex(m => m.localId === selectedModelId), 0);
-  const selectedModel = models[selectedIndex] || models[0];
+  const selectedModel = models.length > 0 ? models[selectedIndex] || models[0] : null;
   const currentStepIndex = STEPS.findIndex(s => s.key === step);
 
   useEffect(() => {
@@ -93,15 +92,13 @@ export default function ClientFormScreen({route, navigation}) {
           description: m.description || '',
           message_ia: m.message_ia || '',
           prix: m.prix || '',
-          avance: m.avance || '',
           statut: m.statut || 'EN_ATTENTE',
           categorie: m.categorie || normalizeCategory(m),
           photo: m.photo || '',
           mesure: (details.mesures || []).find(ms => ms.id_mesure === m.id_mesure) || {...initialMeasure},
         }));
-        if (mapped.length === 0) mapped.push(makeModel(0));
         setModels(mapped);
-        setSelectedModelId(mapped[0].localId || null);
+        setSelectedModelId(mapped.length > 0 ? mapped[0].localId : null);
       } catch (e) {
         console.error('Error loading client details:', e);
         Alert.alert('Erreur', 'Impossible de charger le client');
@@ -116,9 +113,8 @@ export default function ClientFormScreen({route, navigation}) {
   const totals = useMemo(() => {
     return models.reduce((acc, model) => {
       acc.prix += Number(model.prix || model.mesure?.prix || 0);
-      acc.avance += Number(model.avance || 0);
       return acc;
-    }, {prix: 0, avance: 0});
+    }, {prix: 0});
   }, [models]);
 
   const setClientField = (field, value) => setClient(prev => ({...prev, [field]: value}));
@@ -156,10 +152,6 @@ export default function ClientFormScreen({route, navigation}) {
   };
 
   const removeModel = localId => {
-    if (models.length <= 1 && !idClient) {
-      Alert.alert('Information', 'Un nouveau client doit avoir au moins un modèle.');
-      return;
-    }
     setModels(prev => {
       const next = prev.filter(m => m.localId !== localId);
       setSelectedModelId(next[0]?.localId || null);
@@ -230,7 +222,6 @@ export default function ClientFormScreen({route, navigation}) {
               description: model.description || model.mesure?.description,
               message_ia: model.message_ia,
               prix: model.prix || model.mesure?.prix,
-              avance: model.avance,
               statut: model.statut,
               categorie: model.categorie || normalizeCategory(model.mesure),
             });
@@ -246,8 +237,7 @@ export default function ClientFormScreen({route, navigation}) {
             });
           }
         }
-        Alert.alert('Succès', 'Client mis à jour');
-        navigation.replace('ClientDetail', {idClient});
+        Alert.alert('Succès', 'Client mis à jour avec succès', [{ text: 'OK', onPress: () => navigation.replace('ClientDetail', {idClient}) }]);
         return;
       }
 
@@ -260,6 +250,7 @@ export default function ClientFormScreen({route, navigation}) {
           photo: first.photo,
           prix: first.prix || first.mesure?.prix,
           description: first.description || first.mesure?.description,
+          avance: client.avance, // Set the global advance on the first model
         },
       });
       for (const model of rest) {
@@ -273,12 +264,9 @@ export default function ClientFormScreen({route, navigation}) {
           description: model.description || model.mesure?.description,
         });
       }
-      Alert.alert('Succès', 'Client enregistré');
-      if (saved.entreeReference) {
-        navigation.replace('Receipt', {receiptType: 'MOUVEMENT', movementReference: saved.entreeReference, autoWhatsApp: true});
-        return;
-      }
-      navigation.replace('ClientDetail', {idClient: saved.id_client});
+      Alert.alert('Succès', 'Client enregistré avec succès', [{ text: 'OK', onPress: () => {
+        navigation.replace('Receipt', {receiptType: 'COMMANDE', idClient: saved.id_client, autoWhatsApp: true});
+      } }]);
     } catch (e) {
       console.error('Error saving client:', e);
       Alert.alert('Erreur', e?.message || 'Erreur lors de la sauvegarde');
@@ -356,9 +344,29 @@ export default function ClientFormScreen({route, navigation}) {
       </View>
 
       {models.length === 0 ? (
-        <TouchableOpacity style={styles.emptyAdd} onPress={addModel}>
-          <Text style={styles.emptyAddText}>+ Ajouter un nouveau modèle</Text>
-        </TouchableOpacity>
+        <View style={{gap: 12, marginTop: 10}}>
+          <TouchableOpacity style={styles.emptyAdd} onPress={addModel}>
+            <Text style={{fontSize: 24, marginBottom: 8}}>✂️</Text>
+            <Text style={styles.emptyAddText}>Créer un modèle personnalisé</Text>
+            <Text style={{fontSize: 12, color: '#6b7280', marginTop: 4, textAlign: 'center'}}>Saisir manuellement le nom, prix et photo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.emptyAdd, {borderColor: '#198754', backgroundColor: '#eafaf1'}]} onPress={async () => {
+            setShowImportModal(true);
+            setLoadingAlbum(true);
+            try {
+              const list = await listAlbums('');
+              setAlbumModels(list || []);
+            } catch (e) {
+              setAlbumModels([]);
+            } finally {
+              setLoadingAlbum(false);
+            }
+          }}>
+            <Text style={{fontSize: 24, marginBottom: 8}}>🖼️</Text>
+            <Text style={[styles.emptyAddText, {color: '#198754'}]}>Choisir depuis les Albums</Text>
+            <Text style={{fontSize: 12, color: '#6b7280', marginTop: 4, textAlign: 'center'}}>Sélectionner un modèle existant du catalogue</Text>
+          </TouchableOpacity>
+        </View>
       ) : models.map((model, index) => (
         <Pressable
           key={model.localId}
@@ -374,10 +382,15 @@ export default function ClientFormScreen({route, navigation}) {
             </View>
           </View>
           <PhotoPicker label="Photo du modèle" value={model.photo} onChange={uri => updateModel(model.localId, {photo: uri})} prefix="modele" />
+          <PhotoPicker
+            label="Photo de l'habit à coudre"
+            value={model.mesure?.habit_photo}
+            onChange={uri => updateModel(model.localId, {mesure: {...model.mesure, habit_photo: uri}})}
+            prefix="habit"
+          />
           <FormInput label="Nom du modèle *" value={model.nom_modele} onChangeText={v => updateModel(model.localId, {nom_modele: v})} />
           <FormInput label="Description" value={model.description} onChangeText={v => updateModel(model.localId, {description: v})} multiline />
           <FormInput label="Prix du modèle" value={String(model.prix || '')} onChangeText={v => updateModel(model.localId, {prix: v})} numeric />
-          <FormInput label="Avance" value={String(model.avance || '')} onChangeText={v => updateModel(model.localId, {avance: v})} numeric />
           <View style={styles.modelActions}>
             <AppButton label="Mesures" onPress={() => { setSelectedModelId(model.localId); setStep('measure'); }} variant="ghost" />
             <AppButton label="Dupliquer" onPress={() => duplicateModel(model.localId)} variant="muted" />
@@ -413,30 +426,6 @@ export default function ClientFormScreen({route, navigation}) {
           ))}
         </View>
         <MeasureFields value={selectedModel.mesure} onChange={next => updateModel(selectedModel.localId, {mesure: next})} />
-        <View style={{marginTop: 8, marginBottom: 10}}>
-          <AppButton
-            label="Prendre photo de l'habit"
-            onPress={async () => {
-              const uri = await takeLocalPhoto('habit');
-              if (uri) updateModel(selectedModel.localId, {mesure: {...selectedModel.mesure, habit_photo: uri}});
-            }}
-            variant="muted"
-          />
-          <AppButton
-            label="Choisir photo habit"
-            onPress={async () => {
-              const uri = await pickLocalImage('habit');
-              if (uri) updateModel(selectedModel.localId, {mesure: {...selectedModel.mesure, habit_photo: uri}});
-            }}
-            variant="ghost"
-          />
-        </View>
-        <PhotoPicker
-          label="Aperçu photo de l'habit"
-          value={selectedModel.mesure?.habit_photo}
-          onChange={uri => updateModel(selectedModel.localId, {mesure: {...selectedModel.mesure, habit_photo: uri}})}
-          prefix="habit"
-        />
       </View>
     );
   };
@@ -459,17 +448,18 @@ export default function ClientFormScreen({route, navigation}) {
             <Text style={styles.totalLabel}>Total</Text>
             <Text style={styles.totalValue}>{money(totals.prix)}</Text>
           </View>
-          <View style={styles.totalBox}>
-            <Text style={styles.totalLabel}>Avance</Text>
-            <Text style={styles.totalValue}>{money(totals.avance)}</Text>
-          </View>
         </View>
+        {!idClient ? (
+          <View style={{marginTop: 15}}>
+            <FormInput label="Avance globale versée (FCFA)" value={client.avance} onChangeText={v => setClientField('avance', v)} numeric />
+          </View>
+        ) : null}
       </View>
       {models.map((model, index) => (
         <View key={model.localId} style={styles.summaryCard}>
           <Text style={styles.modelTitle}>{index + 1}. {model.nom_modele || 'Modèle sans nom'}</Text>
           <Text style={styles.summaryMeta}>{model.categorie || normalizeCategory(model.mesure)} • {model.mesure?.sexe || '-'} • {model.mesure?.type_vetement || '-'}</Text>
-          <Text style={styles.summaryMeta}>Prix {money(model.prix || model.mesure?.prix)} • Avance {money(model.avance)}</Text>
+          <Text style={styles.summaryMeta}>Prix {money(model.prix || model.mesure?.prix)}</Text>
           {model.description || model.mesure?.description ? <Text style={styles.description}>{model.description || model.mesure?.description}</Text> : null}
         </View>
       ))}

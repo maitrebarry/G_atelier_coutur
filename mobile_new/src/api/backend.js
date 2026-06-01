@@ -1,6 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../utils/env';
+import { cacheOnlineResponse, isOfflineForced, offlineHandle } from './offlineStore';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -33,5 +34,30 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+const wrapOffline = (method) => {
+  const onlineMethod = api[method].bind(api);
+  api[method] = async (url, dataOrConfig, maybeConfig) => {
+    const data = ['post', 'put', 'patch'].includes(method) ? dataOrConfig : undefined;
+
+    if (isOfflineForced()) {
+      const offlineData = await offlineHandle(method, url, data);
+      return { data: offlineData, status: 200, statusText: 'OFFLINE', headers: {}, config: maybeConfig || dataOrConfig || {} };
+    }
+
+    try {
+      const response = await onlineMethod(url, dataOrConfig, maybeConfig);
+      cacheOnlineResponse(method, url, response?.data).catch(() => {});
+      return response;
+    } catch (error) {
+      const isNetworkError = !error?.response || error?.code === 'ECONNABORTED' || /Network Error/i.test(error?.message || '');
+      if (!isNetworkError) throw error;
+      const offlineData = await offlineHandle(method, url, data);
+      return { data: offlineData, status: 200, statusText: 'OFFLINE', headers: {}, config: maybeConfig || dataOrConfig || {} };
+    }
+  };
+};
+
+['get', 'post', 'put', 'delete'].forEach(wrapOffline);
 
 export default api;

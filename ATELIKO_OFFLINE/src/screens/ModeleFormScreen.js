@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Alert, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Alert, ScrollView, StyleSheet, Text, View, ToastAndroid} from 'react-native';
 import AppButton from '../components/AppButton';
 import FormInput from '../components/FormInput';
 import PhotoPicker from '../components/PhotoPicker';
@@ -24,21 +24,24 @@ export default function ModeleFormScreen({route, navigation}) {
       if (idClient) {
         if (modele?.id_modele) {
           await updateModele(modele.id_modele, { photo: form.photo, nom_modele: form.nom_modele.trim(), prix: form.prix });
+          Alert.alert('Succès', 'Modèle mis à jour avec succès', [{ text: 'OK', onPress: () => navigation.goBack() }]);
         } else {
           const saved = await createModele({ id_client: idClient, photo: form.photo, nom_modele: form.nom_modele.trim(), prix: form.prix });
           if (saved?.entreeReference) {
-            navigation.replace('Receipt', {receiptType: 'MOUVEMENT', movementReference: saved.entreeReference, autoWhatsApp: true});
-            return;
+            Alert.alert('Succès', 'Modèle créé avec succès', [{ text: 'OK', onPress: () => navigation.replace('Receipt', {receiptType: 'MOUVEMENT', movementReference: saved.entreeReference, autoWhatsApp: true}) }]);
+          } else {
+            Alert.alert('Succès', 'Modèle créé avec succès', [{ text: 'OK', onPress: () => navigation.goBack() }]);
           }
         }
       } else {
         if (modele?.id_album) {
           await updateAlbum(modele.id_album, { photo: form.photo, nom_modele: form.nom_modele.trim(), prix: form.prix });
+          Alert.alert('Succès', 'Album mis à jour avec succès', [{ text: 'OK', onPress: () => navigation.goBack() }]);
         } else {
           await createAlbum({ photo: form.photo, nom_modele: form.nom_modele.trim(), prix: form.prix });
+          Alert.alert('Succès', 'Album créé avec succès', [{ text: 'OK', onPress: () => navigation.goBack() }]);
         }
       }
-      navigation.goBack();
     } catch (e) {
       Alert.alert('Erreur', 'Impossible d\'enregistrer le modèle.');
     }

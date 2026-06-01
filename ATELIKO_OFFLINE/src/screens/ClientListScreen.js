@@ -1,5 +1,5 @@
 import React, {useCallback, useState} from 'react';
-import {Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View, ToastAndroid} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import AppButton from '../components/AppButton';
 import {AppHeader, BottomBar, ui} from '../components/MobileShell';
@@ -18,7 +18,11 @@ export default function ClientListScreen({navigation}) {
   const confirmDelete = client => {
     Alert.alert('Suppression', `Supprimer ${client.prenom} ${client.nom} ?`, [
       {text: 'Annuler', style: 'cancel'},
-      {text: 'Supprimer', style: 'destructive', onPress: async () => { await deleteClient(client.id_client); load(); }},
+      {text: 'Supprimer', style: 'destructive', onPress: async () => { 
+        await deleteClient(client.id_client); 
+        Alert.alert('Succès', 'Client supprimé avec succès');
+        load(); 
+      }},
     ]);
   };
 

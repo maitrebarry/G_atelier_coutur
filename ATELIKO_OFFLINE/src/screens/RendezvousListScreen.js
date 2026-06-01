@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View, ToastAndroid} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import AppButton from '../components/AppButton';
 import {AppHeader, BottomBar, StatusChip, ui} from '../components/MobileShell';
@@ -34,6 +34,7 @@ export default function RendezvousListScreen({navigation}) {
       {text: 'Annuler', style: 'cancel'},
       {text: 'Confirmer', onPress: async () => {
         const movement = await updateRendezvousStatus(item.id_rendezvous, statut);
+        Alert.alert('Succès', 'Statut mis à jour avec succès');
         load();
         if (movement?.reference) {
           navigation.navigate('Receipt', {receiptType: 'MOUVEMENT', movementReference: movement.reference});
@@ -45,7 +46,11 @@ export default function RendezvousListScreen({navigation}) {
   const remove = item => {
     Alert.alert('Suppression', 'Supprimer ce rendez-vous ?', [
       {text: 'Annuler', style: 'cancel'},
-      {text: 'Supprimer', style: 'destructive', onPress: async () => { await deleteRendezvous(item.id_rendezvous); load(); }},
+      {text: 'Supprimer', style: 'destructive', onPress: async () => { 
+        await deleteRendezvous(item.id_rendezvous); 
+        Alert.alert('Succès', 'Rendez-vous supprimé avec succès');
+        load(); 
+      }},
     ]);
   };
 
@@ -87,6 +92,7 @@ export default function RendezvousListScreen({navigation}) {
               <View style={styles.actionsRow}>
                 {['PLANIFIE', 'EN_ATTENTE'].includes(item.statut) ? <AppButton label="Confirmer" onPress={() => changeStatus(item, 'CONFIRME')} variant="ghost" /> : null}
                 {item.statut === 'CONFIRME' ? <AppButton label="Terminer" onPress={() => changeStatus(item, 'TERMINE')} variant="muted" /> : null}
+                {!['ANNULE', 'TERMINE'].includes(item.statut) ? <AppButton label="Modifier" onPress={() => navigation.navigate('RendezvousForm', {idRendezvous: item.id_rendezvous})} variant="ghost" /> : null}
                 {!['ANNULE', 'TERMINE'].includes(item.statut) ? <AppButton label="Annuler" onPress={() => changeStatus(item, 'ANNULE')} variant="danger" /> : null}
                 {!['CONFIRME', 'TERMINE'].includes(item.statut) ? <AppButton label="Supprimer" onPress={() => remove(item)} variant="danger" /> : null}
               </View>

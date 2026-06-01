@@ -10,7 +10,7 @@ const CATEGORIES = [
   {key: 'ROBE', label: 'Robe'},
   {key: 'JUPE', label: 'Jupe'},
   {key: 'HOMME', label: 'Homme'},
-  {key: 'BASIN', label: 'Basin'},
+  {key: 'ENFANT', label: 'Enfant'},
   {key: 'AUTRE', label: 'Autre'},
 ];
 
@@ -19,27 +19,27 @@ function money(value) {
 }
 
 function categoryLabel(value) {
-  return CATEGORIES.find(c => c.key === String(value || '').toUpperCase())?.label || value || 'Modèle';
+  return CATEGORIES.find(c => c.key === String(value || '').toUpperCase())?.label || value || 'Catégorie inconnue';
 }
 
-export default function ModeleListScreen({navigation}) {
-  const [modeles, setModeles] = useState([]);
+export default function AlbumListScreen({navigation}) {
+  const [albums, setAlbums] = useState([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
 
-  const load = useCallback(() => { listAlbums(search).then(setModeles); }, [search]);
+  const load = useCallback(() => { listAlbums(search).then(setAlbums); }, [search]);
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const filteredModeles = useMemo(() => {
-    if (!category) return modeles;
-    return modeles.filter(item => String(item.categorie || '').toUpperCase() === category);
-  }, [category, modeles]);
+  const filteredAlbums = useMemo(() => {
+    if (!category) return albums;
+    return albums.filter(item => String(item.categorie || '').toUpperCase() === category);
+  }, [category, albums]);
 
-  const confirmDelete = modele => {
-    Alert.alert('Suppression', `Supprimer l'album ${modele.nom_modele || ''} ?`, [
+  const confirmDelete = album => {
+    Alert.alert('Suppression', `Supprimer l'album "${album.nom_modele || ''}" ?`, [
       {text: 'Annuler', style: 'cancel'},
       {text: 'Supprimer', style: 'destructive', onPress: async () => { 
-        await deleteAlbum(modele.id_album); 
+        await deleteAlbum(album.id_album); 
         Alert.alert('Succès', 'Album supprimé avec succès');
         load(); 
       }},
@@ -48,8 +48,6 @@ export default function ModeleListScreen({navigation}) {
 
   const renderCard = ({item}) => {
     const price = Number(item.prix || 0);
-    const advance = 0;
-    const percent = 0;
     return (
       <View style={styles.card}>
         <View style={styles.mediaWrap}>
@@ -75,7 +73,7 @@ export default function ModeleListScreen({navigation}) {
           </View>
 
           <View style={styles.actionsRow}>
-            <AppButton label="Modifier" onPress={() => navigation.navigate('ModeleForm', {idClient: null, modele: item})} variant="warning" />
+            <AppButton label="Modifier" onPress={() => navigation.navigate('AlbumForm', {album: item})} variant="warning" />
             <AppButton label="Supprimer" onPress={() => confirmDelete(item)} variant="danger" />
           </View>
         </View>
@@ -85,7 +83,7 @@ export default function ModeleListScreen({navigation}) {
 
   return (
     <View style={ui.page}>
-      <AppHeader navigation={navigation} title="Albums" subtitle="Galerie des modèles" showBack />
+      <AppHeader navigation={navigation} title="Albums" subtitle="Catalogue de modèles" showBack={false} />
       <View style={styles.topPanel}>
         <TextInput
           style={ui.search}
@@ -105,24 +103,24 @@ export default function ModeleListScreen({navigation}) {
             );
           })}
         </ScrollView>
-        <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('ModeleForm', {idClient: null})}>
+        <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('AlbumForm')}>
           <Text style={styles.addBtnText}>+ Nouvel album</Text>
         </TouchableOpacity>
       </View>
 
       <FlatList
-        data={filteredModeles}
+        data={filteredAlbums}
         keyExtractor={item => String(item.id_album)}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <Text style={styles.emptyTitle}>Aucun album</Text>
-            <Text style={styles.emptySub}>Ajoutez un modèle avec photo, catégorie et prix.</Text>
+            <Text style={styles.emptySub}>Ajoutez un modèle pour alimenter votre catalogue.</Text>
           </View>
         }
         renderItem={renderCard}
       />
-      <BottomBar navigation={navigation} active="Modeles" />
+      <BottomBar navigation={navigation} active="Albums" />
     </View>
   );
 }
@@ -150,9 +148,6 @@ const styles = StyleSheet.create({
   rowBetween: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8},
   price: {fontWeight: '900', color: '#198754'},
   clientText: {fontSize: 12, color: '#64748b', flexShrink: 1, textAlign: 'right'},
-  progressTrack: {height: 7, backgroundColor: '#eef2f7', borderRadius: 6, overflow: 'hidden', marginTop: 4},
-  progressFill: {height: '100%', backgroundColor: '#20c997'},
-  advanceText: {fontSize: 12, color: '#64748b', fontWeight: '700'},
   actionsRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4},
   emptyWrap: {alignItems: 'center', padding: 28},
   emptyTitle: {fontSize: 18, color: '#1b2a4a', fontWeight: '900'},

@@ -214,10 +214,13 @@ export default function PaiementsScreen({ navigation }) {
           <div class="row"><span class="label">Référence</span><span class="value">${recu.reference || ''}</span></div>
           <div class="row"><span class="label">Date</span><span class="value">${dateStr}</span></div>
           <div class="row"><span class="label">Client/Tailleur</span><span class="value">${name}</span></div>
+          <div class="row"><span class="label">Total dû</span><span class="value">${Number(recu.totalDu || 0).toLocaleString('fr-FR')} FCFA</span></div>
+          <div class="row"><span class="label">Reste à payer</span><span class="value">${Number(recu.resteAPayer || 0).toLocaleString('fr-FR')} FCFA</span></div>
           <div class="amount-box">
             <div class="amount">${Number(recu.montant || 0).toLocaleString('fr-FR')} FCFA</div>
             <div class="method">${recu.moyenPaiement || ''}</div>
           </div>
+          ${recu.prochainRendezVous ? `<div class="row"><span class="label">Prochain RDV</span><span class="value">${new Date(recu.prochainRendezVous).toLocaleDateString('fr-FR')}</span></div>` : ''}
         </body>
       </html>
     `;

@@ -56,6 +56,25 @@ export async function createRendezvous(input) {
   return result.insertId;
 }
 
+export async function updateRendezvous(idRendezvous, input) {
+  if (!input.date_rdv) throw new Error('Date obligatoire');
+  const date = new Date(input.date_rdv);
+  if (Number.isNaN(date.getTime())) throw new Error('Date invalide');
+
+  const result = await execute(
+    `UPDATE rendezvous 
+     SET date_rdv = ?, type_rendezvous = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+     WHERE id_rendezvous = ?`,
+    [
+      input.date_rdv,
+      input.type_rendezvous || 'LIVRAISON',
+      input.notes?.trim() || null,
+      idRendezvous,
+    ],
+  );
+  return result;
+}
+
 export async function updateRendezvousStatus(idRendezvous, statut) {
   await execute('UPDATE rendezvous SET statut = ?, updated_at = CURRENT_TIMESTAMP WHERE id_rendezvous = ?', [statut, idRendezvous]);
   if (statut !== 'TERMINE') return null;

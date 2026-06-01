@@ -99,6 +99,7 @@ $('licForm').addEventListener('submit', async (e)=>{
 
   const deviceId = $('deviceId').value.trim();
   const expiresRaw = $('expires').value.trim();
+  const atelierName = $('atelierName').value.trim();
   const iss = $('issuedBy').value.trim();
   const expires = parseExpires(expiresRaw) || (Date.now() + 1000*60*60*24*365);
 
@@ -106,6 +107,7 @@ $('licForm').addEventListener('submit', async (e)=>{
   if(!privPem){ alert('Sélectionne priv.pem'); $('generate').disabled=false; return; }
 
   const payload = { deviceId, expires };
+  if(atelierName) payload.atelierName = atelierName;
   if(iss) payload.issuedBy = iss;
 
   const res = await window.electronAPI.generateLicense(payload, privPem);

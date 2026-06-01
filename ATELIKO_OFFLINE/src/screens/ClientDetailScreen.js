@@ -66,11 +66,15 @@ export default function ClientDetailScreen({route, navigation}) {
 
   const totals = useMemo(() => {
     const modeles = client?.modeles || [];
-    return modeles.reduce((acc, m) => {
+    const paiements = client?.paiements || [];
+    const base = modeles.reduce((acc, m) => {
       acc.prix += Number(m.prix || 0);
       acc.avance += Number(m.avance || 0);
       return acc;
     }, {prix: 0, avance: 0});
+    
+    base.avance += paiements.reduce((sum, p) => sum + Number(p.montant || 0), 0);
+    return base;
   }, [client]);
 
   if (!client) {
@@ -134,8 +138,27 @@ export default function ClientDetailScreen({route, navigation}) {
           const s = statusMeta[model.statut] || {label: model.statut || '—', color: '#6c757d', bg: '#f2f4f7'};
           return (
             <View style={styles.modelCard} key={model.id_modele || index}>
-              {model.photo || measure?.habit_photo ? (
-                <Image source={{uri: model.photo || measure.habit_photo}} style={styles.modelPhoto} />
+              {model.photo && measure?.habit_photo ? (
+                <View style={styles.photoRow}>
+                  <View style={styles.photoTile}>
+                    <Text style={styles.photoCaption}>Photo du modèle</Text>
+                    <Image source={{uri: model.photo}} style={styles.modelPhoto} />
+                  </View>
+                  <View style={styles.photoTile}>
+                    <Text style={styles.photoCaption}>Photo de l'habit à coudre</Text>
+                    <Image source={{uri: measure.habit_photo}} style={styles.modelPhoto} />
+                  </View>
+                </View>
+              ) : model.photo ? (
+                <View style={styles.photoTile}>
+                  <Text style={styles.photoCaption}>Photo du modèle</Text>
+                  <Image source={{uri: model.photo}} style={styles.modelPhoto} />
+                </View>
+              ) : measure?.habit_photo ? (
+                <View style={styles.photoTile}>
+                  <Text style={styles.photoCaption}>Photo de l'habit à coudre</Text>
+                  <Image source={{uri: measure.habit_photo}} style={styles.modelPhoto} />
+                </View>
               ) : (
                 <View style={styles.modelPhotoPlaceholder}>
                   <Text style={styles.placeholderIcon}>🖼️</Text>
@@ -149,7 +172,7 @@ export default function ClientDetailScreen({route, navigation}) {
                   </View>
                   <StatusChip label={s.label} color={s.color} backgroundColor={s.bg} />
                 </View>
-                <Text style={styles.moneyLine}>Prix {money(model.prix)} • Avance {money(model.avance)}</Text>
+                <Text style={styles.moneyLine}>Prix {money(model.prix)}</Text>
                 {model.description || measure?.description ? (
                   <Text style={styles.description}>{model.description || measure.description}</Text>
                 ) : null}
@@ -207,7 +230,10 @@ const styles = StyleSheet.create({
   sectionHeader: {marginTop: 18, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
   sectionCount: {minWidth: 30, textAlign: 'center', backgroundColor: '#e8f1ff', color: '#0d6efd', fontWeight: '900', paddingVertical: 4, borderRadius: 8},
   modelCard: {backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e5eaf3', overflow: 'hidden', marginBottom: 12},
-  modelPhoto: {width: '100%', height: 205, backgroundColor: '#eef2f7'},
+  photoRow: {flexDirection: 'row', gap: 10},
+  photoTile: {flex: 1},
+  photoCaption: {fontSize: 12, color: '#475569', fontWeight: '700', marginBottom: 8},
+  modelPhoto: {width: '100%', height: 205, backgroundColor: '#eef2f7', borderRadius: 10},
   modelPhotoPlaceholder: {height: 132, backgroundColor: '#f3f6fb', alignItems: 'center', justifyContent: 'center'},
   placeholderIcon: {fontSize: 34},
   modelBody: {padding: 12, gap: 8},

@@ -1,10 +1,13 @@
 import React, {useEffect, useState} from 'react';
 import {ActivityIndicator, SafeAreaView, StyleSheet, Text} from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import {NavigationContainer} from '@react-navigation/native';
 import AppNavigator from './src/navigation/AppNavigator';
 import {initializeDatabase} from './src/database/schema';
 import ActivationScreen from './src/screens/ActivationScreen';
 import {getUserProfile} from './src/services/userService';
+
+Ionicons.loadFont();
 
 export default function App() {
   const [ready, setReady] = useState(false);

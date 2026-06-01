@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Alert, Linking, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {Alert, Linking, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ToastAndroid} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import {getUserProfile, setUserProfile} from '../services/userService';
 import {KJUR, KEYUTIL, b64tohex} from 'jsrsasign';
@@ -63,8 +63,17 @@ export default function ActivationScreen({onActivated}) {
     }
     const profile = (await getUserProfile()) || {};
     profile.activation = {activated: true, activatedAt: now, payload: payloadObj};
+    profile.atelier = { name: payloadObj.atelierName || payloadObj.issuedBy || profile.atelier?.name || 'Votre atelier' };
     await setUserProfile(profile);
-    Alert.alert('Activation', 'App activée avec succès');
+    Alert.alert('Succès', 'App activée avec succès');
+    onActivated && onActivated();
+  };
+
+  const bypassActivation = async () => {
+    const profile = (await getUserProfile()) || {};
+    profile.activation = {activated: true, activatedAt: Date.now(), payload: {deviceId, expires: 9999999999999, isTest: true}};
+    await setUserProfile(profile);
+    Alert.alert('Mode Test', 'Application activée pour le test (Bypass)');
     onActivated && onActivated();
   };
 
@@ -124,13 +133,18 @@ export default function ActivationScreen({onActivated}) {
           placeholder='Paste license JSON here'
         />
 
-        <View style={{flexDirection: 'row', gap: 8}}>
+        <View style={{flexDirection: 'row', gap: 8, flexWrap: 'wrap'}}>
           <TouchableOpacity style={styles.btn} onPress={tryActivate}>
             <Text style={styles.btnText}>Activer</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.btn, {backgroundColor: '#f3f4f6'}]} onPress={() => setPayloadText('')}>
             <Text style={[styles.btnText, {color: '#0d6efd'}]}>Effacer</Text>
           </TouchableOpacity>
+          {__DEV__ && (
+            <TouchableOpacity style={[styles.btn, {backgroundColor: '#10b981'}]} onPress={bypassActivation}>
+              <Text style={styles.btnText}>Test (Bypass)</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

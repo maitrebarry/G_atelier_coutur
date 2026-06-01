@@ -1,4 +1,4 @@
-import {execute} from './db';
+import {execute, query} from './db';
 
 export async function initializeDatabase() {
   await execute('PRAGMA foreign_keys = ON');
@@ -12,7 +12,10 @@ export async function initializeDatabase() {
       adresse TEXT,
       email TEXT,
       photo TEXT,
-      date_creation TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      date_creation TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      statut TEXT NOT NULL DEFAULT 'EN_ATTENTE',
+      livraisons_count INTEGER NOT NULL DEFAULT 0,
+      disponible INTEGER NOT NULL DEFAULT 0
     )
   `);
 
@@ -74,6 +77,8 @@ export async function initializeDatabase() {
       id_paiement INTEGER PRIMARY KEY AUTOINCREMENT,
       id_client INTEGER,
       id_tailleur INTEGER,
+      id_modele INTEGER,
+      id_mesure INTEGER,
       montant REAL NOT NULL,
       moyen TEXT NOT NULL DEFAULT 'ESPECES',
       reference TEXT NOT NULL UNIQUE,
@@ -82,7 +87,9 @@ export async function initializeDatabase() {
       sens TEXT NOT NULL DEFAULT 'ENTREE',
       note TEXT,
       FOREIGN KEY (id_client) REFERENCES client(id_client) ON DELETE CASCADE,
-      FOREIGN KEY (id_tailleur) REFERENCES tailleur(id_tailleur) ON DELETE CASCADE
+      FOREIGN KEY (id_tailleur) REFERENCES tailleur(id_tailleur) ON DELETE CASCADE,
+      FOREIGN KEY (id_modele) REFERENCES modele_client(id_modele) ON DELETE SET NULL,
+      FOREIGN KEY (id_mesure) REFERENCES mesure(id_mesure) ON DELETE SET NULL
     )
   `);
 
@@ -156,6 +163,45 @@ export async function initializeDatabase() {
   await execute('CREATE INDEX IF NOT EXISTS idx_paiement_client ON paiement(id_client)');
   await execute('CREATE INDEX IF NOT EXISTS idx_paiement_tailleur ON paiement(id_tailleur)');
   await execute('CREATE INDEX IF NOT EXISTS idx_rendezvous_client ON rendezvous(id_client)');
+
+  const paiementColumns = await query("PRAGMA table_info('paiement')");
+  const hasIdModele = paiementColumns.some(col => col.name === 'id_modele');
+  const hasIdMesure = paiementColumns.some(col => col.name === 'id_mesure');
+  if (!hasIdModele) {
+    await execute('ALTER TABLE paiement ADD COLUMN id_modele INTEGER');
+  }
+  if (!hasIdMesure) {
+    await execute('ALTER TABLE paiement ADD COLUMN id_mesure INTEGER');
+  }
+  await execute('CREATE INDEX IF NOT EXISTS idx_paiement_modele ON paiement(id_modele)');
+
+  await execute(`
+    INSERT INTO paiement
+      (id_client, id_modele, id_mesure, montant, moyen, reference, date_paiement, type_paiement, sens, note)
+    SELECT
+      mo.id_client,
+      mo.id_modele,
+      mo.id_mesure,
+      mo.avance,
+      'ESPECES',
+      'REF-CLI-AV-' || mo.id_client || '-' || mo.id_modele,
+      COALESCE(mo.date_creation, CURRENT_TIMESTAMP),
+      'CLIENT',
+      'ENTREE',
+      'AVANCE_INITIALE'
+    FROM modele_client mo
+    WHERE COALESCE(mo.avance, 0) > 0
+      AND NOT EXISTS (
+        SELECT 1 FROM paiement p
+        WHERE p.id_modele = mo.id_modele
+          AND p.type_paiement = 'CLIENT'
+          AND p.note = 'AVANCE_INITIALE'
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM paiement p
+        WHERE p.reference = 'REF-CLI-AV-' || mo.id_client || '-' || mo.id_modele
+      )
+  `);
   await execute('CREATE INDEX IF NOT EXISTS idx_rendezvous_date ON rendezvous(date_rdv)');
   await execute('CREATE INDEX IF NOT EXISTS idx_affectation_tailleur ON affectation(id_tailleur)');
   await execute('CREATE INDEX IF NOT EXISTS idx_mouvement_client ON mouvement_habit(id_client)');

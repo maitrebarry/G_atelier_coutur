@@ -19,8 +19,16 @@ export default function FormInput({label, value, onChangeText, numeric = false, 
 }
 
 const styles = StyleSheet.create({
-  field: {gap: 6, marginBottom: 12},
-  label: {fontSize: 13, color: '#334155', fontWeight: '700'},
-  input: {minHeight: 44, borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 8, paddingHorizontal: 12, color: '#0f172a', backgroundColor: '#fff'},
-  multiline: {minHeight: 88, paddingTop: 10, textAlignVertical: 'top'},
+  field: {gap: 8, marginBottom: 16},
+  label: {fontSize: 13, color: '#475569', fontWeight: '700'},
+  input: {
+    minHeight: 50,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    color: '#0f172a',
+    backgroundColor: '#ffffff',
+  },
+  multiline: {minHeight: 100, paddingTop: 12, textAlignVertical: 'top'},
 });

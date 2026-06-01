@@ -6,6 +6,8 @@ import {
 import api from '../api/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import Icon from 'react-native-vector-icons/MaterialIcons'; // npm install react-native-vector-icons
 
 const { width } = Dimensions.get('window');
@@ -20,6 +22,7 @@ export default function MesureAddScreen({ navigation }) {
   const [clientPhotoPreview, setClientPhotoPreview] = useState(null);
   const [habitPhotoFile, setHabitPhotoFile] = useState(null);
   const [habitPhotoPreview, setHabitPhotoPreview] = useState(null);
+  const [recuData, setRecuData] = useState(null);
   const [formData, setFormData] = useState({
     nom: '', prenom: '', contact: '', adresse: '', email: '',
     sexe: 'Femme', femme_type: 'robe',
@@ -224,12 +227,74 @@ export default function MesureAddScreen({ navigation }) {
         payload.append('habitPhoto', habitPhotoFile);
       }
 
-      await api.post('/clients/ajouter', payload, { headers: { 'Content-Type': 'multipart/form-data' } });
-      Alert.alert('Succès', 'Client et mesures enregistrés');
-      navigation.navigate('Clients');
+      const res = await api.post('/clients/ajouter', payload, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const clientId = res?.data?.clientId;
+      let receipt = null;
+      if (clientId) {
+        try {
+          const userRaw = await AsyncStorage.getItem('userData');
+          const user = userRaw ? JSON.parse(userRaw) : null;
+          const atelierId = user?.atelierId || user?.atelier?.id;
+          if (atelierId) {
+            const recuRes = await api.get(`/paiements/recu/client/due/${clientId}?atelierId=${atelierId}`);
+            receipt = recuRes?.data || null;
+            setRecuData(receipt);
+          }
+        } catch (receiptError) {
+          console.log('Reçu automatique indisponible:', receiptError?.message || receiptError);
+        }
+      }
+      Alert.alert('Succès', 'Client, mesures, reçu et rendez-vous enregistrés');
+      if (!receipt) navigation.navigate('Clients');
     } catch (e) {
       Alert.alert('Erreur', e?.response?.data?.message || 'Échec de l\'enregistrement');
     }
+  };
+
+  const buildReceiptHtml = (recu) => {
+    if (!recu) return '';
+    const name = `${recu.clientPrenom || ''} ${recu.clientNom || ''}`.trim();
+    const dateStr = recu.datePaiement ? new Date(recu.datePaiement).toLocaleDateString('fr-FR') : '';
+    const rdvStr = recu.prochainRendezVous ? new Date(recu.prochainRendezVous).toLocaleString('fr-FR') : '';
+    return `
+      <html><head><meta charset="utf-8" />
+      <style>
+        body { font-family: Arial, sans-serif; margin: 24px; color: #26364f; }
+        .header { text-align: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 14px; }
+        .header h2 { margin: 0; text-transform: uppercase; font-size: 20px; }
+        .row { display: flex; justify-content: space-between; margin: 8px 0; }
+        .label { color: #667085; font-weight: bold; }
+        .value { font-weight: 700; }
+        .box { margin-top: 16px; padding: 12px; border: 2px dashed #26364f; border-radius: 10px; text-align: center; }
+      </style></head>
+      <body>
+        <div class="header">
+          <h2>${recu.atelierNom || 'Atelier'}</h2>
+          ${recu.atelierAdresse ? `<div>${recu.atelierAdresse}</div>` : ''}
+          ${recu.atelierTelephone ? `<div>${recu.atelierTelephone}</div>` : ''}
+        </div>
+        <div class="row"><span class="label">Référence</span><span class="value">${recu.reference || ''}</span></div>
+        <div class="row"><span class="label">Date</span><span class="value">${dateStr}</span></div>
+        <div class="row"><span class="label">Client</span><span class="value">${name}</span></div>
+        <div class="row"><span class="label">Total dû</span><span class="value">${Number(recu.totalDu || 0).toLocaleString('fr-FR')} FCFA</span></div>
+        <div class="row"><span class="label">Reste à payer</span><span class="value">${Number(recu.resteAPayer || 0).toLocaleString('fr-FR')} FCFA</span></div>
+        ${rdvStr ? `<div class="row"><span class="label">Rendez-vous</span><span class="value">${rdvStr}</span></div>` : ''}
+        <div class="box">Reçu généré automatiquement lors de l'enregistrement du client.</div>
+      </body></html>
+    `;
+  };
+
+  const shareReceiptPdf = async () => {
+    if (!recuData) return;
+    const { uri } = await Print.printToFileAsync({ html: buildReceiptHtml(recuData) });
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri, { UTI: 'com.adobe.pdf', mimeType: 'application/pdf' });
+    }
+  };
+
+  const closeReceipt = () => {
+    setRecuData(null);
+    navigation.navigate('Clients');
   };
 
   const renderInput = (label, field, numeric = false) => (
@@ -545,6 +610,29 @@ export default function MesureAddScreen({ navigation }) {
                 ListEmptyComponent={<Text style={{ color: '#666' }}>Aucun modèle disponible pour cet atelier.</Text>}
               />
             )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={!!recuData} transparent animationType="slide" onRequestClose={closeReceipt}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeaderRow}>
+              <Text style={styles.modalTitle}>Reçu généré</Text>
+              <TouchableOpacity onPress={closeReceipt}>
+                <Text style={styles.modalClose}>Fermer</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.summaryText}>Client: {recuData?.clientPrenom} {recuData?.clientNom}</Text>
+            <Text style={styles.summaryText}>Total dû: {Number(recuData?.totalDu || 0).toLocaleString('fr-FR')} FCFA</Text>
+            <Text style={styles.summaryText}>Reste à payer: {Number(recuData?.resteAPayer || 0).toLocaleString('fr-FR')} FCFA</Text>
+            {recuData?.prochainRendezVous ? (
+              <Text style={styles.summaryText}>RDV: {new Date(recuData.prochainRendezVous).toLocaleString('fr-FR')}</Text>
+            ) : null}
+            <TouchableOpacity style={styles.submitButton} onPress={shareReceiptPdf}>
+              <Icon name="picture-as-pdf" size={22} color="#fff" />
+              <Text style={styles.submitButtonText}>Partager le reçu PDF</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>

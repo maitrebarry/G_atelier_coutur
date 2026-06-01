@@ -1,5 +1,5 @@
 import React, {useCallback, useState} from 'react';
-import {Alert, FlatList, StyleSheet, Text, View} from 'react-native';
+import {Alert, FlatList, StyleSheet, Text, View, ToastAndroid} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import AppButton from '../components/AppButton';
 import {deletePayment, getClientPaymentDetails, getTailleurPaymentDetails} from '../services/paymentService';
@@ -18,7 +18,11 @@ export default function PaymentDetailScreen({route, navigation}) {
   const confirmDelete = paiement => {
     Alert.alert('Suppression', `Supprimer le paiement ${paiement.reference} ?`, [
       {text: 'Annuler', style: 'cancel'},
-      {text: 'Supprimer', style: 'destructive', onPress: async () => { await deletePayment(paiement.id_paiement); load(); }},
+      {text: 'Supprimer', style: 'destructive', onPress: async () => { 
+        await deletePayment(paiement.id_paiement); 
+        Alert.alert('Succès', 'Paiement supprimé avec succès');
+        load(); 
+      }},
     ]);
   };
 
@@ -44,10 +48,20 @@ export default function PaymentDetailScreen({route, navigation}) {
         renderItem={({item}) => (
           <View style={styles.card}>
             <Text style={styles.name}>{Number(item.montant).toLocaleString('fr-FR')} FCFA</Text>
+            {item.modele_nom ? <Text style={styles.meta}>Modèle: {item.modele_nom}</Text> : null}
             <Text style={styles.meta}>{item.moyen} - {item.reference}</Text>
             <Text style={styles.meta}>{new Date(item.date_paiement).toLocaleString('fr-FR')}</Text>
-            <AppButton label="Recu thermique" onPress={() => navigation.navigate('Receipt', {receiptType: 'PAIEMENT', idPaiement: item.id_paiement})} variant="ghost" />
-            <AppButton label="Supprimer" onPress={() => confirmDelete(item)} variant="danger" />
+            {details.statut_paiement === 'PAYE' ? (
+              <View style={styles.actionsRow}>
+                <AppButton label="Modifier" onPress={() => navigation.navigate('PaymentForm', {type, idClient, idTailleur, paymentId: item.id_paiement})} variant="ghost" />
+                <AppButton label="Reçu" onPress={() => navigation.navigate('Receipt', {receiptType: 'PAIEMENT', idPaiement: item.id_paiement})} variant="ghost" />
+              </View>
+            ) : (
+              <>
+                <AppButton label="Reçu thermique" onPress={() => navigation.navigate('Receipt', {receiptType: 'PAIEMENT', idPaiement: item.id_paiement})} variant="ghost" />
+                <AppButton label="Supprimer" onPress={() => confirmDelete(item)} variant="danger" />
+              </>
+            )}
           </View>
         )}
       />
@@ -66,4 +80,5 @@ const styles = StyleSheet.create({
   name: {fontSize: 17, color: '#0f766e', fontWeight: '900'},
   meta: {color: '#475569'},
   empty: {textAlign: 'center', color: '#64748b', marginTop: 30},
+  actionsRow: {flexDirection: 'row', gap: 10, marginTop: 5},
 });

@@ -1,5 +1,5 @@
 import React, {useCallback, useState} from 'react';
-import {Alert, FlatList, ScrollView, StyleSheet, Text, TextInput, View} from 'react-native';
+import {Alert, FlatList, ScrollView, StyleSheet, Text, TextInput, View, ToastAndroid} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import AppButton from '../components/AppButton';
 import FormInput from '../components/FormInput';
@@ -23,9 +23,14 @@ export default function TailleurListScreen({navigation}) {
       Alert.alert('Validation', 'Nom et prénom du tailleur sont obligatoires.');
       return;
     }
-    await createTailleur(form);
-    setForm({nom: '', prenom: '', contact: '', email: ''});
-    load();
+    try {
+      await createTailleur(form);
+      Alert.alert('Succès', 'Tailleur enregistré avec succès');
+      setForm({nom: '', prenom: '', contact: '', email: ''});
+      load();
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible d\'enregistrer le tailleur.');
+    }
   };
 
   return (

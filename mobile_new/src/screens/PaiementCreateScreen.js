@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Modal } from 'react-native';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import api from '../api/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -8,6 +10,7 @@ export default function PaiementCreateScreen({ route, navigation }) {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('ESPECES');
   const [reference, setReference] = useState('');
+  const [recuData, setRecuData] = useState(null);
 
   const handlePay = async () => {
     const isClient = type !== 'tailleurs';
@@ -30,12 +33,61 @@ export default function PaiementCreateScreen({ route, navigation }) {
         ...(isClient ? { clientId: targetId } : { tailleurId: targetId }),
       };
 
-      await api.post(isClient ? '/paiements/clients' : '/paiements/tailleurs', payload);
-      Alert.alert('Succès', 'Paiement enregistré');
-      navigation.goBack();
+      const res = await api.post(isClient ? '/paiements/clients' : '/paiements/tailleurs', payload);
+      const paiementId = res?.data?.id;
+      if (paiementId) {
+        try {
+          const recuRes = await api.get(`/paiements/recu/${isClient ? 'client' : 'tailleur'}/${paiementId}?atelierId=${atelierId}`);
+          setRecuData(recuRes?.data || null);
+        } catch {
+          Alert.alert('Succès', 'Paiement enregistré');
+          navigation.goBack();
+        }
+      } else {
+        Alert.alert('Succès', 'Paiement enregistré');
+        navigation.goBack();
+      }
     } catch (e) {
       Alert.alert('Erreur', e?.response?.data?.message || e?.response?.data || 'Echec de l\'enregistrement');
     }
+  };
+
+  const buildReceiptHtml = (recu) => {
+    const name = recu.clientNom
+      ? `${recu.clientPrenom || ''} ${recu.clientNom || ''}`.trim()
+      : `${recu.tailleurPrenom || ''} ${recu.tailleurNom || ''}`.trim();
+    return `
+      <html><head><meta charset="utf-8" />
+      <style>
+        body { font-family: Arial, sans-serif; margin: 24px; color: #26364f; }
+        .header { text-align: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 14px; }
+        .row { display: flex; justify-content: space-between; margin: 8px 0; }
+        .label { color: #667085; font-weight: bold; }
+        .value { font-weight: 700; }
+        .amount { margin-top: 16px; padding: 12px; border: 2px dashed #26364f; border-radius: 10px; text-align: center; font-size: 22px; font-weight: bold; }
+      </style></head>
+      <body>
+        <div class="header"><h2>${recu.atelierNom || 'Atelier'}</h2></div>
+        <div class="row"><span class="label">Référence</span><span class="value">${recu.reference || ''}</span></div>
+        <div class="row"><span class="label">Bénéficiaire</span><span class="value">${name}</span></div>
+        <div class="row"><span class="label">Total dû</span><span class="value">${Number(recu.totalDu || 0).toLocaleString('fr-FR')} FCFA</span></div>
+        <div class="row"><span class="label">Reste à payer</span><span class="value">${Number(recu.resteAPayer || 0).toLocaleString('fr-FR')} FCFA</span></div>
+        <div class="amount">${Number(recu.montant || 0).toLocaleString('fr-FR')} FCFA</div>
+      </body></html>
+    `;
+  };
+
+  const shareReceiptPdf = async () => {
+    if (!recuData) return;
+    const { uri } = await Print.printToFileAsync({ html: buildReceiptHtml(recuData) });
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri, { UTI: 'com.adobe.pdf', mimeType: 'application/pdf' });
+    }
+  };
+
+  const closeReceipt = () => {
+    setRecuData(null);
+    navigation.goBack();
   };
 
   return (
@@ -83,6 +135,25 @@ export default function PaiementCreateScreen({ route, navigation }) {
       </TouchableOpacity>
       </View>
       </ScrollView>
+
+      <Modal visible={!!recuData} transparent animationType="slide" onRequestClose={closeReceipt}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Reçu généré</Text>
+              <TouchableOpacity onPress={closeReceipt}>
+                <Text style={styles.modalClose}>Fermer</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.receiptLine}>Montant: {Number(recuData?.montant || 0).toLocaleString('fr-FR')} FCFA</Text>
+            <Text style={styles.receiptLine}>Total dû: {Number(recuData?.totalDu || 0).toLocaleString('fr-FR')} FCFA</Text>
+            <Text style={styles.receiptLine}>Reste à payer: {Number(recuData?.resteAPayer || 0).toLocaleString('fr-FR')} FCFA</Text>
+            <TouchableOpacity style={styles.saveBtn} onPress={shareReceiptPdf}>
+              <Text style={styles.saveBtnText}>Partager le reçu PDF</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -149,4 +220,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveBtnText: { color: '#fff', fontWeight: '900' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(10,18,35,0.45)', justifyContent: 'center', padding: 14 },
+  modalCard: { backgroundColor: '#fff', borderRadius: 14, padding: 14 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  modalTitle: { fontSize: 18, fontWeight: '900', color: '#1b2a4a' },
+  modalClose: { color: '#dc3545', fontWeight: '800' },
+  receiptLine: { color: '#26364f', fontWeight: '800', marginBottom: 8 },
 });

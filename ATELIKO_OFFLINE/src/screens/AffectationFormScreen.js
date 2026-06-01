@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Alert, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {Alert, Pressable, ScrollView, StyleSheet, Text, View, ToastAndroid} from 'react-native';
 import AppButton from '../components/AppButton';
 import FormInput from '../components/FormInput';
 import {getClientDetails, listClients} from '../services/clientService';
@@ -30,15 +30,19 @@ export default function AffectationFormScreen({route, navigation}) {
       Alert.alert('Validation', 'Choisissez un client et indiquez le prix tailleur.');
       return;
     }
-    await addAffectation({
-      id_tailleur: idTailleur,
-      id_client: Number(clientId),
-      id_mesure: form.id_mesure ? Number(form.id_mesure) : null,
-      prix_tailleur: form.prix_tailleur,
-      statut: form.statut,
-      date_echeance: form.date_echeance || null,
-    });
-    navigation.goBack();
+    try {
+      await addAffectation({
+        id_tailleur: idTailleur,
+        id_client: Number(clientId),
+        id_mesure: form.id_mesure ? Number(form.id_mesure) : null,
+        prix_tailleur: form.prix_tailleur,
+        statut: form.statut,
+        date_echeance: form.date_echeance || null,
+      });
+      Alert.alert('Succès', 'Affectation enregistrée avec succès', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible d\'enregistrer l\'affectation.');
+    }
   };
 
   return (

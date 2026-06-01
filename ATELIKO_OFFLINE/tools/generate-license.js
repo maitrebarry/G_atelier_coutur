@@ -3,7 +3,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 function usage() {
-  console.log('Usage: node generate-license.js --deviceId=ID --key=./priv.pem [--expires=TIMESTAMP_MS] [--outfile=license.json] [--issuedBy=NAME]');
+  console.log('Usage: node generate-license.js --deviceId=ID --key=./priv.pem [--expires=TIMESTAMP_MS] [--atelierName="Nom de l atelier"] [--issuedBy=NAME] [--outfile=license.json]');
   process.exit(1);
 }
 
@@ -17,6 +17,7 @@ if (!args.deviceId || !args.key) usage();
 const deviceId = args.deviceId;
 const keyPath = args.key;
 const expires = args.expires ? Number(args.expires) : null;
+const atelierName = args.atelierName || null;
 const issuedBy = args.issuedBy || null;
 const outfile = args.outfile || null;
 
@@ -27,7 +28,8 @@ if (!fs.existsSync(keyPath)) {
 
 const payload = { deviceId };
 if (expires) payload.expires = expires;
-if (issuedBy) payload.issuedBy = issuedBy;
+if (atelierName) payload.atelierName = atelierName;
+if (issuedBy && !atelierName) payload.issuedBy = issuedBy;
 
 const payloadStr = JSON.stringify(payload);
 const privateKey = fs.readFileSync(keyPath, 'utf8');
