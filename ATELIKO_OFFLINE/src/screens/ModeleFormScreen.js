@@ -16,10 +16,6 @@ export default function ModeleFormScreen({route, navigation}) {
 
   const set = (field, value) => setForm(prev => ({...prev, [field]: value}));
   const save = async () => {
-    if (!form.nom_modele.trim()) {
-      Alert.alert('Champ requis', 'Le nom du modèle est obligatoire.');
-      return;
-    }
     try {
       if (idClient) {
         if (modele?.id_modele) {
@@ -51,7 +47,7 @@ export default function ModeleFormScreen({route, navigation}) {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>{modele ? 'Modifier modèle' : 'Nouveau modèle'}</Text>
       <PhotoPicker label="Photo du modèle" value={form.photo} onChange={uri => set('photo', uri)} prefix="modele" />
-      <FormInput label="Nom modèle *" value={form.nom_modele} onChangeText={v => set('nom_modele', v)} />
+      <FormInput label="Nom modèle (optionnel)" value={form.nom_modele} onChangeText={v => set('nom_modele', v)} />
       <FormInput label="Prix (FCFA)" value={form.prix} onChangeText={v => set('prix', v)} numeric />
       <FormInput label="URL vidéo (optionnel)" value={form.videoURL} onChangeText={v => set('videoURL', v)} />
       <View style={{height: 8}} />

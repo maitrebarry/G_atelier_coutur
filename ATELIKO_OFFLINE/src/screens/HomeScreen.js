@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {AppHeader, BottomBar, ui} from '../components/MobileShell';
@@ -7,6 +7,7 @@ import {listClients} from '../services/clientService';
 import {listModeles} from '../services/modelService';
 import {listRendezvous} from '../services/rendezvousService';
 import {listClientPaymentSummaries} from '../services/paymentService';
+import {exportDatabaseToDownloads, importDatabaseFromDownloads, getBackupDirectory} from '../services/databaseBackupService';
 
 function money(value) {
   return `${Number(value || 0).toLocaleString('fr-FR')} F`;
@@ -72,6 +73,35 @@ export default function HomeScreen({navigation}) {
     </TouchableOpacity>
   );
 
+  const handleExportDatabase = async () => {
+    try {
+      const path = await exportDatabaseToDownloads();
+      Alert.alert('Export réussi', `Sauvegarde créée dans :\n${path}`);
+    } catch (error) {
+      console.error('Export failed', error);
+      Alert.alert('Échec de l’export', error?.message || 'Impossible d’exporter la base de données.');
+    }
+  };
+
+  const handleImportDatabase = async () => {
+    Alert.alert(
+      'Importer la base',
+      `Le fichier doit se trouver dans :\n${getBackupDirectory()}\n\nImporter la dernière sauvegarde ?`,
+      [
+        {text: 'Annuler', style: 'cancel'},
+        {text: 'Importer', onPress: async () => {
+          try {
+            const path = await importDatabaseFromDownloads();
+            Alert.alert('Import réussi', `Base restaurée depuis :\n${path}`);
+          } catch (error) {
+            console.error('Import failed', error);
+            Alert.alert('Échec de l’import', error?.message || 'Impossible d’importer la base de données.');
+          }
+        }}
+      ]
+    );
+  };
+
   const DashboardButton = ({title, value, icon, onPress}) => (
     <TouchableOpacity activeOpacity={0.86} style={styles.dashboardButton} onPress={onPress}>
       <View style={styles.dashboardIconWrap}>
@@ -104,6 +134,15 @@ export default function HomeScreen({navigation}) {
             <QuickActionButton title="Paiement" icon="card-outline" tone="green" onPress={() => navigation.navigate('Payments')} />
             <QuickActionButton title="Tailleur" icon="cut-outline" tone="amber" onPress={() => navigation.navigate('Tailleurs')} />
           </View>
+        </View>
+
+        <View style={ui.section}>
+          <Text style={ui.sectionTitle}>Sauvegarde</Text>
+          <View style={styles.quickActionsGrid}>
+            <QuickActionButton title="Exporter la base" icon="download-outline" tone="emerald" onPress={handleExportDatabase} />
+            <QuickActionButton title="Importer la base" icon="cloud-download-outline" tone="cyan" onPress={handleImportDatabase} />
+          </View>
+          <Text style={styles.backupHint}>Sauvegarde dans : {getBackupDirectory()}</Text>
         </View>
 
         <View style={ui.section}>
@@ -187,6 +226,12 @@ const styles = StyleSheet.create({
   amberTone: {backgroundColor: '#fff7ed'},
   quickActionLabel: {color: '#0f172a', fontWeight: '800', fontSize: 14, paddingRight: 10},
   quickActionArrow: {position: 'absolute', right: 14, bottom: 14},
+  backupHint: {
+    color: '#475569',
+    fontSize: 12,
+    marginTop: 8,
+    lineHeight: 18,
+  },
   recentCard: {
     backgroundColor: '#ffffff',
     padding: 16,

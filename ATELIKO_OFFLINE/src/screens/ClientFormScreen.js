@@ -9,7 +9,7 @@ import {addMeasure, createClientWithMeasureAndModel, getClientDetails, updateCli
 import {createModele, listAlbums, updateModele} from '../services/modelService';
 
 const initialClient = {nom: '', prenom: '', contact: '', adresse: '', avance: ''};
-const initialMeasure = {sexe: 'Femme', type_vetement: 'robe', habit_photo: ''};
+const initialMeasure = {sexe: '', type_vetement: '', habit_photo: ''};
 const initialModel = {
   localId: 1,
   nom_modele: '',
@@ -39,7 +39,7 @@ function makeModel(index) {
 }
 
 function normalizeCategory(measure = {}) {
-  if (measure.sexe === 'Homme') return 'HOMME';
+  if (String(measure.sexe || '').toLowerCase() === 'homme') return 'HOMME';
   return String(measure.type_vetement || 'robe').toUpperCase();
 }
 
@@ -63,6 +63,18 @@ export default function ClientFormScreen({route, navigation}) {
   const selectedIndex = Math.max(models.findIndex(m => m.localId === selectedModelId), 0);
   const selectedModel = models.length > 0 ? models[selectedIndex] || models[0] : null;
   const currentStepIndex = STEPS.findIndex(s => s.key === step);
+
+  const stepCompletion = useMemo(() => ({
+    client: Boolean(client.nom.trim() && client.prenom.trim()),
+    models: models.length > 0,
+    measure: models.length > 0 && models.every(model => {
+      const mesure = model.mesure || {};
+      const sexe = String(mesure.sexe || '').toLowerCase();
+      const type = String(mesure.type_vetement || '').toLowerCase();
+      return sexe && (sexe === 'homme' || ['robe', 'jupe'].includes(type));
+    }),
+    summary: models.length > 0,
+  }), [client, models]);
 
   useEffect(() => {
     if (!idClient) return;
@@ -160,8 +172,8 @@ export default function ClientFormScreen({route, navigation}) {
   };
 
   const validateClient = () => {
-    if (!client.nom.trim() || !client.prenom.trim() || !client.contact.trim()) {
-      Alert.alert('Champs requis', 'Nom, prénom et contact sont obligatoires.');
+    if (!client.nom.trim() || !client.prenom.trim()) {
+      Alert.alert('Champs requis', 'Nom et prénom sont obligatoires.');
       return false;
     }
     return true;
@@ -170,13 +182,6 @@ export default function ClientFormScreen({route, navigation}) {
   const validateModels = () => {
     if (!idClient && models.length === 0) {
       Alert.alert('Modèle requis', 'Ajoutez au moins un modèle pour ce client.');
-      return false;
-    }
-    const missing = models.findIndex(model => !model.nom_modele.trim());
-    if (missing >= 0) {
-      Alert.alert('Modèle incomplet', `Renseignez le nom du modèle ${missing + 1}.`);
-      setSelectedModelId(models[missing].localId);
-      setStep('models');
       return false;
     }
     return true;
@@ -280,12 +285,13 @@ export default function ClientFormScreen({route, navigation}) {
       {STEPS.map((item, index) => {
         const active = item.key === step;
         const done = index < currentStepIndex;
+        const complete = stepCompletion[item.key];
         return (
-          <Pressable key={item.key} style={[styles.stepTab, active && styles.stepTabActive]} onPress={() => setStep(item.key)}>
-            <View style={[styles.stepDot, (active || done) && styles.stepDotActive]}>
-              <Text style={[styles.stepDotText, (active || done) && styles.stepDotTextActive]}>{index + 1}</Text>
+          <Pressable key={item.key} style={[styles.stepTab, active && styles.stepTabActive, !complete && !active && styles.stepTabIncomplete]} onPress={() => setStep(item.key)}>
+            <View style={[styles.stepDot, complete && styles.stepDotComplete, (active || done) && styles.stepDotActive]}>
+              <Text style={[styles.stepDotText, (active || done) && styles.stepDotTextActive]}>{complete ? '✔' : index + 1}</Text>
             </View>
-            <Text style={[styles.stepLabel, active && styles.stepLabelActive]} numberOfLines={1}>{item.label}</Text>
+            <Text style={[styles.stepLabel, active && styles.stepLabelActive, !complete && !active && styles.stepLabelIncomplete]} numberOfLines={1}>{item.label}</Text>
           </Pressable>
         );
       })}
@@ -298,7 +304,7 @@ export default function ClientFormScreen({route, navigation}) {
       <Text style={styles.helper}>Identifiez le client avant d'ajouter ses habits à coudre.</Text>
       <FormInput label="Nom *" value={client.nom} onChangeText={v => setClientField('nom', v)} />
       <FormInput label="Prénom *" value={client.prenom} onChangeText={v => setClientField('prenom', v)} />
-      <FormInput label="Contact *" value={client.contact} onChangeText={v => setClientField('contact', v)} numeric />
+      <FormInput label="Contact (optionnel)" value={client.contact} onChangeText={v => setClientField('contact', v)} numeric />
       <FormInput label="Adresse ou localité" value={client.adresse} onChangeText={v => setClientField('adresse', v)} />
     </View>
   );
@@ -323,9 +329,6 @@ export default function ClientFormScreen({route, navigation}) {
           <Text style={styles.helper}>Ajoutez un habit par carte: boubou, robe, pantalon, etc.</Text>
         </View>
         <View style={{flexDirection: 'row', gap: 8}}>
-          <TouchableOpacity style={styles.addSmallBtn} onPress={addModel}>
-            <Text style={styles.addSmallBtnText}>+ Ajouter</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={[styles.addSmallBtn, {backgroundColor: '#eef6ff'}]} onPress={async () => {
             setShowImportModal(true);
             setLoadingAlbum(true);
@@ -340,16 +343,14 @@ export default function ClientFormScreen({route, navigation}) {
           }}>
             <Text style={[styles.addSmallBtnText, {color: '#0d6efd'}]}>Importer depuis Album</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.addSmallBtn} onPress={addModel}>
+            <Text style={styles.addSmallBtnText}>+ Ajouter</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
       {models.length === 0 ? (
         <View style={{gap: 12, marginTop: 10}}>
-          <TouchableOpacity style={styles.emptyAdd} onPress={addModel}>
-            <Text style={{fontSize: 24, marginBottom: 8}}>✂️</Text>
-            <Text style={styles.emptyAddText}>Créer un modèle personnalisé</Text>
-            <Text style={{fontSize: 12, color: '#6b7280', marginTop: 4, textAlign: 'center'}}>Saisir manuellement le nom, prix et photo</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={[styles.emptyAdd, {borderColor: '#198754', backgroundColor: '#eafaf1'}]} onPress={async () => {
             setShowImportModal(true);
             setLoadingAlbum(true);
@@ -365,6 +366,11 @@ export default function ClientFormScreen({route, navigation}) {
             <Text style={{fontSize: 24, marginBottom: 8}}>🖼️</Text>
             <Text style={[styles.emptyAddText, {color: '#198754'}]}>Choisir depuis les Albums</Text>
             <Text style={{fontSize: 12, color: '#6b7280', marginTop: 4, textAlign: 'center'}}>Sélectionner un modèle existant du catalogue</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.emptyAdd} onPress={addModel}>
+            <Text style={{fontSize: 24, marginBottom: 8}}>✂️</Text>
+            <Text style={styles.emptyAddText}>Créer un modèle personnalisé</Text>
+            <Text style={{fontSize: 12, color: '#6b7280', marginTop: 4, textAlign: 'center'}}>Saisir manuellement le nom, prix et photo</Text>
           </TouchableOpacity>
         </View>
       ) : models.map((model, index) => (
@@ -388,7 +394,7 @@ export default function ClientFormScreen({route, navigation}) {
             onChange={uri => updateModel(model.localId, {mesure: {...model.mesure, habit_photo: uri}})}
             prefix="habit"
           />
-          <FormInput label="Nom du modèle *" value={model.nom_modele} onChangeText={v => updateModel(model.localId, {nom_modele: v})} />
+          <FormInput label="Nom du modèle" value={model.nom_modele} onChangeText={v => updateModel(model.localId, {nom_modele: v})} />
           <FormInput label="Description" value={model.description} onChangeText={v => updateModel(model.localId, {description: v})} multiline />
           <FormInput label="Prix du modèle" value={String(model.prix || '')} onChangeText={v => updateModel(model.localId, {prix: v})} numeric />
           <View style={styles.modelActions}>
@@ -545,10 +551,13 @@ const styles = StyleSheet.create({
   stepTabActive: {borderColor: '#0d6efd', backgroundColor: '#e8f1ff'},
   stepDot: {width: 26, height: 26, borderRadius: 13, backgroundColor: '#eef2f7', alignItems: 'center', justifyContent: 'center', marginBottom: 5},
   stepDotActive: {backgroundColor: '#0d6efd'},
+  stepDotComplete: {backgroundColor: '#16a34a'},
   stepDotText: {fontSize: 12, fontWeight: '900', color: '#64748b'},
   stepDotTextActive: {color: '#fff'},
   stepLabel: {fontSize: 11, color: '#475569', fontWeight: '800'},
   stepLabelActive: {color: '#0d6efd'},
+  stepLabelIncomplete: {color: '#dc2626'},
+  stepTabIncomplete: {borderColor: '#f8dad8', backgroundColor: '#fff1f0'},
   card: {padding: 14, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5eaf3', marginBottom: 12},
   section: {fontSize: 18, fontWeight: '900', color: '#1d2c4d', marginBottom: 6},
   helper: {fontSize: 12, color: '#6b7280', marginBottom: 12},

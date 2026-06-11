@@ -30,13 +30,16 @@ export default function RendezvousListScreen({navigation}) {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const changeStatus = (item, statut) => {
-    Alert.alert('Confirmation', `Passer ce rendez-vous en ${statut} ?`, [
+    const label = statut === 'TERMINE' ? 'prêt à récupérer' : statut;
+    Alert.alert('Confirmation', `Passer ce rendez-vous en ${label} ?`, [
       {text: 'Annuler', style: 'cancel'},
       {text: 'Confirmer', onPress: async () => {
         const movement = await updateRendezvousStatus(item.id_rendezvous, statut);
         Alert.alert('Succès', 'Statut mis à jour avec succès');
         load();
-        if (movement?.reference) {
+        if (statut === 'TERMINE') {
+          navigation.navigate('Receipt', {receiptType: 'RDV_READY', idRendezvous: item.id_rendezvous, autoWhatsApp: true});
+        } else if (movement?.reference) {
           navigation.navigate('Receipt', {receiptType: 'MOUVEMENT', movementReference: movement.reference});
         }
       }},
@@ -91,7 +94,7 @@ export default function RendezvousListScreen({navigation}) {
               {item.notes ? <Text style={styles.note}>{item.notes}</Text> : null}
               <View style={styles.actionsRow}>
                 {['PLANIFIE', 'EN_ATTENTE'].includes(item.statut) ? <AppButton label="Confirmer" onPress={() => changeStatus(item, 'CONFIRME')} variant="ghost" /> : null}
-                {item.statut === 'CONFIRME' ? <AppButton label="Terminer" onPress={() => changeStatus(item, 'TERMINE')} variant="muted" /> : null}
+                {!['ANNULE', 'TERMINE'].includes(item.statut) ? <AppButton label="Prêt à récupérer" onPress={() => changeStatus(item, 'TERMINE')} variant="muted" /> : null}
                 {!['ANNULE', 'TERMINE'].includes(item.statut) ? <AppButton label="Modifier" onPress={() => navigation.navigate('RendezvousForm', {idRendezvous: item.id_rendezvous})} variant="ghost" /> : null}
                 {!['ANNULE', 'TERMINE'].includes(item.statut) ? <AppButton label="Annuler" onPress={() => changeStatus(item, 'ANNULE')} variant="danger" /> : null}
                 {!['CONFIRME', 'TERMINE'].includes(item.statut) ? <AppButton label="Supprimer" onPress={() => remove(item)} variant="danger" /> : null}

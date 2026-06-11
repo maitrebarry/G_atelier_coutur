@@ -68,6 +68,22 @@ export default function PaymentListScreen({navigation}) {
           </Pressable>
         </View>
 
+        <TextInput
+          style={ui.search}
+          value={search}
+          onChangeText={setSearch}
+          onSubmitEditing={load}
+          placeholder={`Rechercher ${activeTab === 'CLIENT' ? 'client' : 'tailleur'}`}
+          placeholderTextColor="#94a3b8"
+        />
+        <View style={styles.filters}>
+          {STATUS.map(s => (
+            <Pressable key={s || 'ALL'} onPress={() => setStatus(s)} style={[styles.chip, status === s && styles.chipActive]}>
+              <Text style={[styles.chipText, status === s && styles.chipTextActive]}>{s || 'TOUS'}</Text>
+            </Pressable>
+          ))}
+        </View>
+
         <View style={styles.monthBar}>
           <Pressable style={styles.monthButton} onPress={goToPreviousMonth}>
             <Text style={styles.monthButtonText}>‹</Text>
@@ -86,22 +102,6 @@ export default function PaymentListScreen({navigation}) {
             <View style={styles.metric}><Text style={styles.metricLabel}>Total modèles</Text><Text style={styles.metricValue}>{money(synthesis.total_modeles)}</Text></View>
           </View>
         ) : null}
-
-        <TextInput
-          style={ui.search}
-          value={search}
-          onChangeText={setSearch}
-          onSubmitEditing={load}
-          placeholder={`Rechercher ${activeTab === 'CLIENT' ? 'client' : 'tailleur'}`}
-          placeholderTextColor="#94a3b8"
-        />
-        <View style={styles.filters}>
-          {STATUS.map(s => (
-            <Pressable key={s || 'ALL'} onPress={() => setStatus(s)} style={[styles.chip, status === s && styles.chipActive]}>
-              <Text style={[styles.chipText, status === s && styles.chipTextActive]}>{s || 'TOUS'}</Text>
-            </Pressable>
-          ))}
-        </View>
       </View>
 
       <FlatList
@@ -144,18 +144,18 @@ export default function PaymentListScreen({navigation}) {
 }
 
 const styles = StyleSheet.create({
-  contentTop: {paddingHorizontal: 18, paddingTop: 16},
-  tabs: {flexDirection: 'row', gap: 10, marginBottom: 16, backgroundColor: '#eef4ff', padding: 5, borderRadius: 18},
-  tab: {flex: 1, borderRadius: 14, paddingVertical: 12, alignItems: 'center', backgroundColor: '#f8fbff'},
+  contentTop: {paddingHorizontal: 18, paddingTop: 12},
+  tabs: {flexDirection: 'row', gap: 10, marginBottom: 12, backgroundColor: '#eef4ff', padding: 5, borderRadius: 18},
+  tab: {flex: 1, borderRadius: 14, paddingVertical: 10, alignItems: 'center', backgroundColor: '#f8fbff'},
   tabActive: {backgroundColor: '#0d6efd'},
   tabText: {fontWeight: '800', color: '#475569'},
   tabTextActive: {color: '#ffffff'},
-  synthesis: {flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16},
-  metric: {width: '48%', backgroundColor: '#ffffff', borderRadius: 18, padding: 14, borderWidth: 1, borderColor: '#e8edf5', shadowColor: '#0f172a', shadowOpacity: 0.04, shadowRadius: 12, shadowOffset: {width: 0, height: 6}, elevation: 2},
-  metricLabel: {fontSize: 12, color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4},
-  metricValue: {fontSize: 16, color: '#102a43', fontWeight: '900', marginTop: 6},
-  monthBar: {flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 16, backgroundColor: '#ffffff', borderRadius: 18, borderWidth: 1, borderColor: '#e2e8f0', padding: 12, shadowColor: '#0f172a', shadowOpacity: 0.04, shadowRadius: 14, shadowOffset: {width: 0, height: 6}, elevation: 2},
-  monthButton: {width: 42, height: 42, borderRadius: 14, borderWidth: 1, borderColor: '#d1d5db', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc'},
+  synthesis: {flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12},
+  metric: {width: '48%', backgroundColor: '#ffffff', borderRadius: 18, padding: 12, borderWidth: 1, borderColor: '#e8edf5', shadowColor: '#0f172a', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: {width: 0, height: 4}, elevation: 2},
+  metricLabel: {fontSize: 11, color: '#64748b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4},
+  metricValue: {fontSize: 15, color: '#102a43', fontWeight: '900', marginTop: 4},
+  monthBar: {flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12, backgroundColor: '#ffffff', borderRadius: 18, borderWidth: 1, borderColor: '#e2e8f0', padding: 10, shadowColor: '#0f172a', shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: {width: 0, height: 4}, elevation: 2},
+  monthButton: {width: 38, height: 38, borderRadius: 12, borderWidth: 1, borderColor: '#d1d5db', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc'},
   monthButtonText: {fontSize: 18, color: '#334155', fontWeight: '900'},
   monthLabel: {fontSize: 14, color: '#334155', fontWeight: '800'},
   filters: {flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginVertical: 14},

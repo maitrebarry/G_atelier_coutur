@@ -234,6 +234,47 @@ export async function buildCommandeReceipt(idClient) {
   return { ...recu, qrCodeData: qrData(recu) };
 }
 
+export async function buildRendezvousReadyReceipt(idRendezvous) {
+  const rows = await query(
+    `SELECT r.*, c.nom, c.prenom, c.contact, m.type_vetement, mo.nom_modele
+     FROM rendezvous r
+     JOIN client c ON c.id_client = r.id_client
+     LEFT JOIN mesure m ON m.id_mesure = r.id_mesure
+     LEFT JOIN modele_client mo ON mo.id_mesure = r.id_mesure
+     WHERE r.id_rendezvous = ?
+     ORDER BY mo.date_creation DESC
+     LIMIT 1`,
+    [idRendezvous],
+  );
+  const rdv = rows[0];
+  if (!rdv) return null;
+
+  const atelier = await getAtelierInfo();
+  const recu = {
+    typeTicket: 'RDV_READY',
+    statut: 'Habit pret a recuperer',
+    reference: `RDV-${String(idRendezvous).padStart(6, '0')}`,
+    date: new Date().toISOString(),
+    dateRdv: rdv.date_rdv,
+    montant: 0,
+    moyenPaiement: 'INFORMATION',
+    beneficiaire: `${rdv.prenom || ''} ${rdv.nom || ''}`.trim(),
+    contact: rdv.contact,
+    totalDu: 0,
+    avancePaye: 0,
+    resteAPayer: 0,
+    nomModele: rdv.nom_modele || rdv.type_vetement || 'Habit client',
+    quantite: 1,
+    notes: rdv.notes,
+    atelierNom: atelier.nom,
+    atelierAdresse: atelier.adresse,
+    atelierTelephone: atelier.telephone,
+    messageMarketing: `Bonjour ${rdv.prenom || ''}, votre habit est prêt. Merci de passer chez ${atelier.nom} pour le récupérer.`,
+    readyMessage: `Votre commande est prête. Vous pouvez passer chez ${atelier.nom} pour récupérer vos habits.`,
+  };
+  return { ...recu, qrCodeData: qrData(recu) };
+}
+
 export function formatReceiptDate(value) {
   return formatDate(value);
 }

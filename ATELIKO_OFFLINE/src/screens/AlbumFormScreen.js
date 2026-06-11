@@ -19,10 +19,6 @@ export default function AlbumFormScreen({route, navigation}) {
   const set = (field, value) => setForm(prev => ({...prev, [field]: value}));
   
   const save = async () => {
-    if (!form.nom_modele.trim()) {
-      Alert.alert('Champ requis', 'Le nom du modèle est obligatoire.');
-      return;
-    }
     if (!form.categorie.trim()) {
       Alert.alert('Champ requis', 'La catégorie est obligatoire.');
       return;
@@ -57,7 +53,7 @@ export default function AlbumFormScreen({route, navigation}) {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>{album ? 'Modifier album' : 'Nouvel album'}</Text>
       <PhotoPicker label="Photo du modèle" value={form.photo} onChange={uri => set('photo', uri)} prefix="album" />
-      <FormInput label="Nom modèle *" value={form.nom_modele} onChangeText={v => set('nom_modele', v)} />
+      <FormInput label="Nom modèle (optionnel)" value={form.nom_modele} onChangeText={v => set('nom_modele', v)} />
       
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Catégorie *</Text>

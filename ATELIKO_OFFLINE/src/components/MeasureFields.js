@@ -3,12 +3,14 @@ import {Pressable, StyleSheet, Text, View} from 'react-native';
 import FormInput from './FormInput';
 
 const common = [
-  ['E — Épaule', 'epaule'], ['M — Manche', 'manche'], ['P — Poitrine', 'poitrine'], ['T — Taille', 'taille'],
-  ['LR — Longueur robe', 'longueur'], ['F — Fesse', 'fesse'], ['Tm — Tour de manche', 'tour_manche'],
+  ['E — Épaule', 'epaule'], ['M — Manche', 'manche'], ['P — Poitrine', 'poitrine'], ['Tm — Tour de manche', 'tour_manche'],
 ];
-const robe = [['Lp — Longueur de poitrine', 'longueur_poitrine'], ['Lt — Longueur de taille', 'longueur_taille'], ['Lf — Longueur de fesse', 'longueur_fesse']];
-const jupe = [['L — Longueur', 'longueur'], ['LJ — Longueur jupe', 'longueur_jupe'], ['C — Ceinture', 'ceinture'], ...robe];
+const mensCommon = [['L — Longueur', 'longueur']];
+const robe = [['LR — Longueur robe', 'longueur'], ['Lp — Longueur de poitrine', 'longueur_poitrine'], ['Lt — Longueur de taille', 'longueur_taille'], ['Lf — Longueur de fesse', 'longueur_fesse']];
+const jupe = [['L — Longueur', 'longueur'], ['LJ — Longueur jupe', 'longueur_jupe'], ['C — Ceinture', 'ceinture'], ...robe.slice(1)];
 const homme = [['Lp — Longueur pantalon', 'longueur_pantalon'], ['C — Ceinture', 'ceinture'], ['Q — Cuisse', 'cuisse'], ['Cd — Cou / Corps', 'corps']];
+const femmeOnlyFields = ['taille', 'fesse', 'longueur_poitrine', 'longueur_taille', 'longueur_fesse', 'longueur_jupe'];
+const hommeOnlyFields = ['longueur_pantalon', 'cuisse', 'corps'];
 
 function Choice({active, label, onPress}) {
   return (
@@ -20,30 +22,46 @@ function Choice({active, label, onPress}) {
 
 export default function MeasureFields({value, onChange}) {
   const set = (field, v) => onChange({...value, [field]: v});
-  const sexe = value.sexe || 'Femme';
-  const type = value.type_vetement || (sexe === 'Homme' ? 'homme' : 'robe');
-  const fields = sexe === 'Homme' ? [...common, ...homme] : [...common, ...(type === 'jupe' ? jupe : robe)];
+  const switchGender = sexe => {
+    const next = {...value, sexe};
+    if (sexe === 'Femme') {
+      next.type_vetement = ['robe', 'jupe'].includes(String(value.type_vetement || '').toLowerCase()) ? value.type_vetement : 'robe';
+      hommeOnlyFields.forEach(field => { next[field] = ''; });
+    } else {
+      next.type_vetement = 'homme';
+      femmeOnlyFields.forEach(field => { next[field] = ''; });
+    }
+    onChange(next);
+  };
+  const sexeValue = String(value.sexe || '').toLowerCase();
+  const typeValue = String(value.type_vetement || '').toLowerCase();
+  const fields = !sexeValue ? [] : sexeValue === 'homme' ? [...common, ...mensCommon, ...homme] : [...common, ...(typeValue === 'jupe' ? jupe : robe)];
 
   return (
     <View>
       <Text style={styles.section}>Mesures</Text>
       <View style={styles.row}>
-        <Choice active={sexe === 'Femme'} label="Femme" onPress={() => onChange({...value, sexe: 'Femme', type_vetement: 'robe'})} />
-        <Choice active={sexe === 'Homme'} label="Homme" onPress={() => onChange({...value, sexe: 'Homme', type_vetement: 'homme'})} />
+        <Choice active={sexeValue === 'femme'} label="Femme" onPress={() => switchGender('Femme')} />
+        <Choice active={sexeValue === 'homme'} label="Homme" onPress={() => switchGender('Homme')} />
       </View>
-      {sexe === 'Femme' ? (
+      {!sexeValue ? (
+        <Text style={styles.help}>Sélectionnez un genre pour voir ses mesures.</Text>
+      ) : null}
+      {sexeValue === 'femme' ? (
         <View style={styles.row}>
-          <Choice active={type === 'robe'} label="Robe" onPress={() => set('type_vetement', 'robe')} />
-          <Choice active={type === 'jupe'} label="Jupe" onPress={() => set('type_vetement', 'jupe')} />
+          <Choice active={typeValue === 'robe'} label="Robe" onPress={() => set('type_vetement', 'robe')} />
+          <Choice active={typeValue === 'jupe'} label="Jupe" onPress={() => set('type_vetement', 'jupe')} />
         </View>
       ) : null}
-      <View style={styles.grid}>
-        {fields.map(([label, field]) => (
-          <View style={styles.cell} key={field}>
-            <FormInput label={label} value={String(value[field] || '')} onChangeText={v => set(field, v)} numeric />
-          </View>
-        ))}
-      </View>
+      {fields.length ? (
+        <View style={styles.grid}>
+          {fields.map(([label, field]) => (
+            <View style={styles.cell} key={field}>
+              <FormInput label={label} value={String(value[field] || '')} onChangeText={v => set(field, v)} numeric />
+            </View>
+          ))}
+        </View>
+      ) : null}
       <FormInput label="Description mesure" value={value.description || ''} onChangeText={v => set('description', v)} multiline />
     </View>
   );
@@ -58,4 +76,5 @@ const styles = StyleSheet.create({
   choiceTextActive: {color: '#fff'},
   grid: {flexDirection: 'row', flexWrap: 'wrap', columnGap: 10},
   cell: {width: '48%'},
+  help: {color: '#475569', fontSize: 13, marginBottom: 12},
 });

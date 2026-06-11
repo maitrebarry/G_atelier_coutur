@@ -1,8 +1,9 @@
 import React, {useEffect, useState} from 'react';
-import {Modal, Pressable, StyleSheet, Text, TouchableOpacity, View, Image} from 'react-native';
+import {Alert, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View, Image} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import PhotoPicker from './PhotoPicker';
 import {getUserProfile, setUserProfilePhoto} from '../services/userService';
+import {exportDatabaseToDownloads, importDatabaseFromDownloads, getBackupDirectory} from '../services/databaseBackupService';
 
 Ionicons.loadFont();
 
@@ -32,6 +33,37 @@ export function AppHeader({navigation, title = '', subtitle = '', showBack = fal
   const goTo = screen => {
     setSidebarVisible(false);
     navigation.navigate(screen);
+  };
+
+  const handleExportDatabase = async () => {
+    setSidebarVisible(false);
+    try {
+      const exportedPath = await exportDatabaseToDownloads();
+      Alert.alert('Export réussi', `Sauvegarde créée dans :\n${exportedPath}`);
+    } catch (error) {
+      console.error('Export database failed', error);
+      Alert.alert('Échec de l’export', error?.message || 'Impossible d’exporter la base de données.');
+    }
+  };
+
+  const handleImportDatabase = () => {
+    setSidebarVisible(false);
+    Alert.alert(
+      'Importer la base',
+      `Le fichier doit se trouver dans :\n${getBackupDirectory()}\n\nImporter la dernière sauvegarde ?`,
+      [
+        {text: 'Annuler', style: 'cancel'},
+        {text: 'Importer', onPress: async () => {
+          try {
+            const importedPath = await importDatabaseFromDownloads();
+            Alert.alert('Import réussi', `Base restaurée depuis :\n${importedPath}`);
+          } catch (error) {
+            console.error('Import database failed', error);
+            Alert.alert('Échec de l’import', error?.message || 'Impossible d’importer la base de données.');
+          }
+        }},
+      ],
+    );
   };
 
   useEffect(() => {
@@ -108,6 +140,16 @@ export function AppHeader({navigation, title = '', subtitle = '', showBack = fal
                 <Text style={styles.sidebarLabel}>{item.label}</Text>
               </TouchableOpacity>
             ))}
+            <View style={styles.sidebarDivider} />
+            <Text style={styles.sidebarSectionTitle}>Sauvegarde</Text>
+            <TouchableOpacity style={styles.sidebarItem} onPress={handleExportDatabase}>
+              <Ionicons name="download-outline" size={20} color="#0d6efd" style={styles.sidebarIcon} />
+              <Text style={styles.sidebarLabel}>Exporter la base</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.sidebarItem} onPress={handleImportDatabase}>
+              <Ionicons name="cloud-download-outline" size={20} color="#0d6efd" style={styles.sidebarIcon} />
+              <Text style={styles.sidebarLabel}>Importer la base</Text>
+            </TouchableOpacity>
           </Pressable>
         </Pressable>
       </Modal>
@@ -253,6 +295,8 @@ const styles = StyleSheet.create({
   sidebarItem: {flexDirection: 'row', alignItems: 'center', marginBottom: 18, paddingVertical: 8},
   sidebarIcon: {marginRight: 14},
   sidebarLabel: {fontSize: 15, color: '#334155', fontWeight: '700'},
+  sidebarDivider: {height: 1, backgroundColor: '#e2e8f0', marginVertical: 16},
+  sidebarSectionTitle: {fontSize: 13, color: '#64748b', fontWeight: '800', marginBottom: 12},
   bottomBar: {
     position: 'absolute',
     left: 12,
