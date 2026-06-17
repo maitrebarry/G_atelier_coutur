@@ -38,18 +38,17 @@ function findMeasureForModel(client, model) {
   return (client.mesures || []).find(m => m.id_mesure === model.id_mesure) || null;
 }
 
-function MeasureGrid({measure}) {
+function MeasureLines({measure}) {
   const rows = measureLabels.filter(([, , key]) => measure?.[key] !== null && measure?.[key] !== undefined && measure?.[key] !== '');
   if (rows.length === 0) {
     return <Text style={styles.emptyLine}>Aucune mesure détaillée.</Text>;
   }
   return (
-    <View style={styles.measureGrid}>
-      {rows.map(([short, label, key]) => (
-        <View key={key} style={styles.measurePill}>
-          <Text style={styles.measureShort}>{short}</Text>
-          <Text style={styles.measureValue}>{measure[key]}</Text>
-          <Text style={styles.measureLabel} numberOfLines={1}>{label}</Text>
+    <View style={styles.measureList}>
+      {rows.map(([abbr, label, key]) => (
+        <View key={key} style={styles.measureRow}>
+          <Text style={styles.measureLabelRow}>{abbr} - {label}</Text>
+          <Text style={styles.measureValueRow}>{measure[key]}</Text>
         </View>
       ))}
     </View>
@@ -59,6 +58,7 @@ function MeasureGrid({measure}) {
 export default function ClientDetailScreen({route, navigation}) {
   const {idClient} = route.params;
   const [client, setClient] = useState(null);
+  const latestMeasure = client?.mesures?.[0] || null;
 
   useFocusEffect(useCallback(() => {
     getClientDetails(idClient).then(setClient);
@@ -93,6 +93,19 @@ export default function ClientDetailScreen({route, navigation}) {
     <View style={ui.page}>
       <AppHeader navigation={navigation} title="Détail client" subtitle={fullName} showBack />
       <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.sectionHeader}>
+          <Text style={ui.sectionTitle}>Mesures client</Text>
+          <Text style={styles.sectionCount}>{client.mesures?.length || 0}</Text>
+        </View>
+        {latestMeasure ? (
+          <>
+            <Text style={styles.measureUpdated}>Dernière mesure : {new Date(latestMeasure.date_mesure).toLocaleDateString('fr-FR')}</Text>
+            <MeasureLines measure={latestMeasure} />
+          </>
+        ) : (
+          <Text style={ui.empty}>Aucune mesure enregistrée.</Text>
+        )}
+
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{fullName.slice(0, 1).toUpperCase()}</Text>
@@ -181,7 +194,7 @@ export default function ClientDetailScreen({route, navigation}) {
                     <Text style={styles.habitPhotoText}>Photo de l'habit enregistrée</Text>
                   </View>
                 ) : null}
-                <MeasureGrid measure={measure} />
+                <MeasureLines measure={measure} />
                 <View style={styles.cardActions}>
                   <AppButton label="Modifier" onPress={() => navigation.navigate('ClientForm', {idClient})} variant="soft" />
                   {client.mouvements?.[0]?.reference ? (
@@ -229,6 +242,7 @@ const styles = StyleSheet.create({
   actionPanel: {backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e5eaf3', padding: 10, marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8},
   sectionHeader: {marginTop: 18, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
   sectionCount: {minWidth: 30, textAlign: 'center', backgroundColor: '#e8f1ff', color: '#0d6efd', fontWeight: '900', paddingVertical: 4, borderRadius: 8},
+  measureUpdated: {fontSize: 12, color: '#64748b', marginBottom: 8},
   modelCard: {backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e5eaf3', overflow: 'hidden', marginBottom: 12},
   photoRow: {flexDirection: 'row', gap: 10},
   photoTile: {flex: 1},
@@ -243,12 +257,11 @@ const styles = StyleSheet.create({
   description: {color: '#1f2937', backgroundColor: '#f8f9fc', padding: 8, borderRadius: 8},
   habitPhotoLine: {alignSelf: 'flex-start', backgroundColor: '#eafaf1', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5},
   habitPhotoText: {fontSize: 12, color: '#198754', fontWeight: '900'},
-  measureGrid: {flexDirection: 'row', flexWrap: 'wrap', gap: 8},
-  measurePill: {width: '31.5%', minHeight: 68, backgroundColor: '#f8f9fc', borderRadius: 8, borderWidth: 1, borderColor: '#edf1f6', padding: 8},
-  measureShort: {fontSize: 12, color: '#0d6efd', fontWeight: '900'},
-  measureValue: {fontSize: 18, color: '#1b2a4a', fontWeight: '900', marginTop: 2},
-  measureLabel: {fontSize: 10, color: '#64748b', marginTop: 2},
-  emptyLine: {color: '#94a3b8', fontStyle: 'italic'},
+  measureList: {marginTop: 10, backgroundColor: '#f8f9fc', borderRadius: 12, borderWidth: 1, borderColor: '#edf1f6', overflow: 'hidden'},
+  measureRow: {flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: '#e5eaf3'},
+  measureLabelRow: {fontSize: 13, color: '#475569', fontWeight: '700'},
+  measureValueRow: {fontSize: 15, color: '#1b2a4a', fontWeight: '900'},
+  emptyLine: {color: '#94a3b8', fontStyle: 'italic', marginTop: 10},
   cardActions: {flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 2},
   timelineCard: {backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#e5eaf3', padding: 12, marginBottom: 8, flexDirection: 'row', gap: 10},
   timelineDot: {width: 12, height: 12, borderRadius: 6, backgroundColor: '#198754', marginTop: 4},

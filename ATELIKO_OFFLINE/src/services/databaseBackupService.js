@@ -1,8 +1,11 @@
 import {PermissionsAndroid, Platform} from 'react-native';
 import RNFS from 'react-native-fs';
+import DocumentPicker from 'react-native-document-picker';
 import {getDatabase, query} from '../database/db';
 
 const BACKUP_DIR_NAME = 'Ateliko_Base_De_Donnees';
+const DOWNLOAD_BACKUP_DIR = `${RNFS.DownloadDirectoryPath}/${BACKUP_DIR_NAME}`;
+const INTERNAL_BACKUP_DIR = `${RNFS.DocumentDirectoryPath}/${BACKUP_DIR_NAME}`;
 
 async function requestStoragePermission() {
   if (Platform.OS !== 'android') return true;
@@ -20,28 +23,25 @@ async function requestStoragePermission() {
 
 export function getBackupDirectory() {
   if (Platform.OS === 'android') {
-    return `${RNFS.DownloadDirectoryPath}/${BACKUP_DIR_NAME}`;
+    return DOWNLOAD_BACKUP_DIR;
   }
-  return `${RNFS.DocumentDirectoryPath}/${BACKUP_DIR_NAME}`;
+  return INTERNAL_BACKUP_DIR;
 }
 
 async function getEffectiveBackupDirectory() {
-  const externalBackupDir = `${RNFS.DownloadDirectoryPath}/${BACKUP_DIR_NAME}`;
-  const internalBackupDir = `${RNFS.DocumentDirectoryPath}/${BACKUP_DIR_NAME}`;
-
   if (Platform.OS !== 'android') {
-    return ensureDirectory(internalBackupDir);
+    return ensureDirectory(INTERNAL_BACKUP_DIR);
   }
 
   if (await requestStoragePermission()) {
     try {
-      return await ensureDirectory(externalBackupDir);
+      return await ensureDirectory(DOWNLOAD_BACKUP_DIR);
     } catch (error) {
       console.warn('Impossible de créer le dossier dans Téléchargements :', error);
     }
   }
 
-  return ensureDirectory(internalBackupDir);
+  return ensureDirectory(INTERNAL_BACKUP_DIR);
 }
 
 async function ensureDirectory(path) {
@@ -106,17 +106,32 @@ export async function listBackupFiles() {
 }
 
 export async function importDatabaseFromDownloads() {
-  const backupDir = await getEffectiveBackupDirectory();
-  const files = await listBackupFiles();
-  if (!files.length) {
-    throw new Error(`Aucun fichier de sauvegarde trouvé dans ${getBackupDirectory()}`);
+  let fileUri;
+  let fileName;
+
+  try {
+    const res = await DocumentPicker.pickSingle({
+      type: [DocumentPicker.types.allFiles],
+    });
+    fileUri = res.uri;
+    fileName = res.name;
+  } catch (err) {
+    if (DocumentPicker.isCancel(err)) {
+      throw new Error('Importation annulée.');
+    }
+    throw new Error('Impossible de sélectionner le fichier.');
   }
 
-  const latest = files[0];
-  const text = await RNFS.readFile(latest.path, 'utf8');
-  const backup = JSON.parse(text);
+  const text = await RNFS.readFile(fileUri, 'utf8');
+  let backup;
+  try {
+    backup = JSON.parse(text);
+  } catch (e) {
+    throw new Error('Le fichier sélectionné n\'est pas un fichier de sauvegarde valide.');
+  }
+
   if (!backup || !backup.tables) {
-    throw new Error('Fichier de sauvegarde invalide.');
+    throw new Error('Fichier de sauvegarde invalide (structure incorrecte).');
   }
 
   await runSqlTransaction(tx => {
@@ -138,5 +153,5 @@ export async function importDatabaseFromDownloads() {
     tx.executeSql('PRAGMA foreign_keys = ON');
   });
 
-  return latest.path;
+  return fileName;
 }

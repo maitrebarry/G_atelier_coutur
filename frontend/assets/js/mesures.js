@@ -562,24 +562,38 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
   });
 
-  // Gestion du changement de sexe
-  sexe.addEventListener("change", () => {
-    const val = sexe.value;
-    femmeOptions.style.display = "none";
+  function resetWomenSelection() {
+    optionCards.forEach((card) => card.classList.remove("selected"));
+    document.querySelectorAll('input[name="femme_type"]').forEach((radio) => {
+      radio.checked = false;
+    });
     mesuresRobe.style.display = "none";
     mesuresJupe.style.display = "none";
+  }
+
+  function updateMeasurementSections() {
+    const val = sexe.value;
+    femmeOptions.style.display = "none";
     mesuresHomme.style.display = "none";
+    resetWomenSelection();
 
     if (val === "Femme") {
       femmeOptions.style.display = "block";
     } else if (val === "Homme") {
       mesuresHomme.style.display = "block";
     }
+  }
+
+  // Gestion du changement de sexe
+  sexe.addEventListener("change", () => {
+    updateMeasurementSections();
   });
 
   // Gestion des options femme
   optionCards.forEach((card) => {
     card.addEventListener("click", () => {
+      if (sexe.value !== "Femme") return;
+
       optionCards.forEach((c) => c.classList.remove("selected"));
       card.classList.add("selected");
 

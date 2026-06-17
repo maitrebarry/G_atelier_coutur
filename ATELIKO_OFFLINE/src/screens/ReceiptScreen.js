@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {Alert, NativeModules, Platform, ScrollView, Share, StyleSheet, Text, View} from 'react-native';
+import {captureRef} from 'react-native-view-shot';
 import RNFS from 'react-native-fs';
 import QRCode from 'qrcode-generator';
 import AppButton from '../components/AppButton';
@@ -204,7 +205,7 @@ function buildWhatsAppMessage(receipt) {
       receipt.nomModele ? `Habit: ${receipt.nomModele}` : null,
       receipt.dateRdv ? `Rendez-vous prévu: ${formatReceiptDate(receipt.dateRdv)}` : null,
       '',
-      'Le reçu PDF est joint à ce message.',
+      'L’image du reçu est jointe à ce message.',
     ].filter(Boolean).join('\n');
   }
   return [
@@ -225,10 +226,11 @@ function buildWhatsAppMessage(receipt) {
 export default function ReceiptScreen({route, navigation}) {
   const {receiptType, idPaiement, idClient, idRendezvous, movementReference, autoWhatsApp = false} = route.params || {};
   const [receipt, setReceipt] = useState(null);
-  const [pdfPath, setPdfPath] = useState(null);
-  const [pdfGenerating, setPdfGenerating] = useState(false);
-  const [pdfError, setPdfError] = useState(null);
+  const [imagePath, setImagePath] = useState(null);
+  const [imageGenerating, setImageGenerating] = useState(false);
+  const [imageError, setImageError] = useState(null);
   const autoSentRef = useRef(false);
+  const receiptRef = useRef(null);
 
   useEffect(() => {
     let request;
@@ -244,7 +246,36 @@ export default function ReceiptScreen({route, navigation}) {
     request.then(setReceipt);
   }, [receiptType, idPaiement, idClient, idRendezvous, movementReference]);
 
-  const sendWhatsAppPdf = async () => {
+  const captureReceiptImage = async () => {
+    if (!receiptRef.current) {
+      throw new Error('Impossible de capturer le reçu.');
+    }
+    try {
+      setImageGenerating(true);
+      // Small delay to ensure the view is fully rendered before capture
+      await new Promise(resolve => setTimeout(resolve, 400));
+      const uri = await captureRef(receiptRef.current, {
+        format: 'png',
+        quality: 1.0,
+        result: 'tmpfile',
+      });
+      // Copy to a persistent location with a meaningful name
+      const safeRef = String(receipt?.reference || 'recu').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const destPath = `${RNFS.DocumentDirectoryPath}/receipts/${safeRef}.png`;
+      const dirExists = await RNFS.exists(`${RNFS.DocumentDirectoryPath}/receipts`);
+      if (!dirExists) await RNFS.mkdir(`${RNFS.DocumentDirectoryPath}/receipts`);
+      if (await RNFS.exists(destPath)) await RNFS.unlink(destPath);
+      await RNFS.copyFile(uri, destPath);
+      setImagePath(destPath);
+      return destPath;
+    } catch (error) {
+      throw new Error(`Impossible de capturer le reçu en image: ${error.message || error}`);
+    } finally {
+      setImageGenerating(false);
+    }
+  };
+
+  const sendWhatsAppReceipt = async () => {
     if (!receipt) return;
     const phone = cleanPhone(receipt.contact);
     if (!phone) {
@@ -252,45 +283,44 @@ export default function ReceiptScreen({route, navigation}) {
       return;
     }
     try {
-      const path = pdfPath || await generateReceiptPdf(receipt);
-      setPdfPath(path);
+      const path = imagePath || await captureReceiptImage();
+      setImagePath(path);
       const message = buildWhatsAppMessage(receipt);
-      if (Platform.OS === 'android' && WhatsAppPdfShare?.sharePdf) {
-        await WhatsAppPdfShare.sharePdf(path, phone, message);
+      if (Platform.OS === 'android' && WhatsAppPdfShare?.shareImage) {
+        await WhatsAppPdfShare.shareImage(path, phone, message);
       } else {
         await Share.share({
           title: 'Reçu thermique',
-          url: `file://${path}`,
+          message,
+          url: path,
         });
       }
     } catch (error) {
-      Alert.alert('WhatsApp', `Impossible de partager le PDF: ${error.message || error}`);
+      Alert.alert('WhatsApp', `Impossible de partager le reçu: ${error.message || error}`);
     }
   };
 
   useEffect(() => {
     if (!receipt) return;
-    setPdfError(null);
+    setImageError(null);
     let mounted = true;
-    (async () => {
-      setPdfGenerating(true);
+    // Auto-generate the image once the receipt is loaded and rendered
+    const timer = setTimeout(async () => {
+      if (!mounted) return;
       try {
-        const generatedPath = await generateReceiptPdf(receipt);
-        if (mounted) setPdfPath(generatedPath);
-      } catch (error) {
-        if (mounted) setPdfError(String(error));
-      } finally {
-        if (mounted) setPdfGenerating(false);
+        await captureReceiptImage();
+      } catch (_) {
+        // Image will be generated on demand when sharing
       }
-    })();
-    return () => { mounted = false; };
+    }, 600);
+    return () => { mounted = false; clearTimeout(timer); };
   }, [receipt]);
 
   useEffect(() => {
     if (!autoWhatsApp || !receipt || autoSentRef.current) return;
     autoSentRef.current = true;
-    sendWhatsAppPdf();
-  }, [autoWhatsApp, receipt, pdfPath]);
+    sendWhatsAppReceipt();
+  }, [autoWhatsApp, receipt, imagePath]);
 
   if (!receipt) {
     return <View style={styles.center}><Text>Recu introuvable.</Text></View>;
@@ -298,7 +328,7 @@ export default function ReceiptScreen({route, navigation}) {
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
-      <View style={styles.ticket}>
+      <View ref={receiptRef} collapsable={false} style={styles.ticket}>
         <Text style={styles.brand}>{receipt.atelierNom}</Text>
         <Text style={styles.sub}>{receipt.atelierAdresse}</Text>
         {receipt.atelierTelephone ? <Text style={styles.sub}>{receipt.atelierTelephone}</Text> : null}
@@ -341,10 +371,11 @@ export default function ReceiptScreen({route, navigation}) {
         <Text style={styles.sub}>{receipt.messageMarketing}</Text>
         <Text style={styles.sub}>{receipt.atelierNom}</Text>
       </View>
-      {pdfError ? <Text style={styles.error}>{pdfError}</Text> : null}
-      {pdfGenerating ? <Text style={styles.info}>Génération du PDF en cours...</Text> : null}
+      {imageError ? <Text style={styles.error}>{imageError}</Text> : null}
+      {imageGenerating ? <Text style={styles.info}>Génération de l'image en cours...</Text> : null}
+      {imagePath ? <Text style={styles.infoSuccess}>Image du reçu prête ✔</Text> : null}
       <View style={styles.actions}>
-        <AppButton label="Envoyer le reçu sur WhatsApp" onPress={sendWhatsAppPdf} variant="success" />
+        <AppButton label="Envoyer le reçu sur WhatsApp" onPress={sendWhatsAppReceipt} variant="success" />
         <AppButton label="Retour" onPress={() => navigation.goBack()} variant="ghost" />
       </View>
     </ScrollView>
@@ -371,6 +402,7 @@ const styles = StyleSheet.create({
   noticeText: {fontSize: 12, color: '#111', fontWeight: '800', textAlign: 'center', lineHeight: 18},
   qrWrap: {alignItems: 'center', marginVertical: 10, gap: 6},
   info: {textAlign: 'center', color: '#1d4ed8', marginTop: 10, fontSize: 12},
+  infoSuccess: {textAlign: 'center', color: '#198754', marginTop: 6, fontSize: 12, fontWeight: '700'},
   error: {textAlign: 'center', color: '#b91c1c', marginTop: 10, fontSize: 12},
   thanks: {textAlign: 'center', fontWeight: '900', color: '#111', fontSize: 12},
   actions: {width: 300, marginTop: 12},
