@@ -3,7 +3,7 @@ import {createHabitMovement} from './movementService';
 
 function money(value) {
   if (value === '' || value === null || value === undefined) return 0;
-  const n = Number(String(value).replace(',', '.'));
+  const n = Number(String(value).replace(/\s/g, '').replace(',', '.'));
   return Number.isFinite(n) ? n : 0;
 }
 

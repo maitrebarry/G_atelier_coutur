@@ -30,7 +30,9 @@ const measureFields = [
 
 function numberOrNull(value) {
   if (value === '' || value === null || value === undefined) return null;
-  const n = Number(String(value).replace(',', '.'));
+  // Supprime les espaces (séparateur milliers français : "50 000" → "50000")
+  const cleaned = String(value).replace(/\s/g, '').replace(',', '.');
+  const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
 }
 

@@ -103,7 +103,7 @@ export default function ClientFormScreen({route, navigation}) {
           nom_modele: m.nom_modele || '',
           description: m.description || '',
           message_ia: m.message_ia || '',
-          prix: m.prix || '',
+          prix: m.prix != null ? String(m.prix) : '',
           statut: m.statut || 'EN_ATTENTE',
           categorie: m.categorie || normalizeCategory(m),
           photo: m.photo || '',
@@ -431,7 +431,12 @@ export default function ClientFormScreen({route, navigation}) {
             </Pressable>
           ))}
         </View>
-        <MeasureFields value={selectedModel.mesure} onChange={next => updateModel(selectedModel.localId, {mesure: next})} />
+        <MeasureFields
+          value={selectedModel.mesure}
+          onChange={next => updateModel(selectedModel.localId, {mesure: next})}
+          prix={selectedModel.prix}
+          onPrixChange={v => updateModel(selectedModel.localId, {prix: v})}
+        />
       </View>
     );
   };

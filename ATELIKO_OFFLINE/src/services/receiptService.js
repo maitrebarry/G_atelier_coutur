@@ -21,7 +21,7 @@ async function getAtelierInfo() {
 }
 
 function money(value) {
-  const n = Number(String(value || '0').replace(',', '.'));
+  const n = Number(String(value || '0').replace(/\s/g, '').replace(',', '.'));
   return Number.isFinite(n) ? n : 0;
 }
 

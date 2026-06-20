@@ -3,6 +3,13 @@ import { Link, useSearchParams } from 'react-router-dom';
 import api, { getUserData } from '../api/api';
 import { buildMediaUrl } from '../config/api';
 import Swal from 'sweetalert2';
+import {
+  pdfBlobToImageBlob,
+  openWhatsAppDesktop,
+  downloadBlob,
+  formatPhoneForWhatsApp,
+  buildReceiptFileName,
+} from '../utils/receiptUtils';
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
@@ -18,9 +25,8 @@ const Clients = () => {
   const [habitPhotoCleared, setHabitPhotoCleared] = useState(false);
   const [editingMesureIndex, setEditingMesureIndex] = useState(0);
   const [isCreatingMesure, setIsCreatingMesure] = useState(false);
-  const [recuData, setRecuData] = useState(null);
   const [sharingReceipt, setSharingReceipt] = useState(false);
-  
+
   const fileInputRef = useRef(null);
   const habitFileInputRef = useRef(null);
   const [searchParams] = useSearchParams();
@@ -444,13 +450,13 @@ const Clients = () => {
 
             if (payments.length > 0) {
               const latestPayment = payments.sort((a, b) => new Date(b.datePaiement) - new Date(a.datePaiement))[0];
-              const recuResponse = await api.get(`/paiements/recu/client/${latestPayment.id}?atelierId=${atelierId}`);
-              setRecuData(recuResponse.data);
-              await handleSendReceiptWhatsApp();
+              const pdfRes = await api.get(`/paiements/recu/client/${latestPayment.id}/pdf?atelierId=${atelierId}`, { responseType: 'blob' });
+              const pdfBlob = pdfRes.data instanceof Blob ? pdfRes.data : new Blob([pdfRes.data], { type: 'application/pdf' });
+              await sendReceiptViaWhatsApp(pdfBlob, `client-${latestPayment.id}`, editingClient?.contact);
             } else {
-              const recuResponse = await api.get(`/paiements/recu/client/due/${editingClient.id}?atelierId=${atelierId}`);
-              setRecuData(recuResponse.data);
-              await handleSendReceiptWhatsApp();
+              const pdfRes = await api.get(`/paiements/recu/client/due/${editingClient.id}/pdf?atelierId=${atelierId}`, { responseType: 'blob' });
+              const pdfBlob = pdfRes.data instanceof Blob ? pdfRes.data : new Blob([pdfRes.data], { type: 'application/pdf' });
+              await sendReceiptViaWhatsApp(pdfBlob, `client-${editingClient.id}`, editingClient?.contact);
             }
           } catch (error) {
             console.error('Erreur chargement reçu:', error);
@@ -502,83 +508,16 @@ const Clients = () => {
     }
   };
 
-  const getCurrentAtelierId = () => {
-    const userData = JSON.parse(localStorage.getItem('userData') || sessionStorage.getItem('userData'));
-    return userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
-  };
-
-  const buildReceiptFileName = (recu) => {
-    const baseReference = String(recu?.reference || 'recu').replace(/[^a-zA-Z0-9_-]/g, '-');
-    return `recu-${baseReference}.pdf`;
-  };
-
-  const downloadBlob = (blob, fileName) => {
-    const blobUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
-  };
-
-  const fetchReceiptPdfBlob = async (recu) => {
-    if (!recu) {
-      throw new Error('Reçu introuvable');
-    }
-
-    const atelierId = getCurrentAtelierId();
-    if (!atelierId) {
-      throw new Error('Atelier introuvable pour générer le PDF.');
-    }
-
-    const receiptType = recu.typePaiement === 'TAILLEUR' ? 'tailleur' : 'client';
-    const response = await api.get(`/paiements/recu/${receiptType}/${recu.id}/pdf?atelierId=${atelierId}`, {
-      responseType: 'blob'
-    });
-
-    return response.data instanceof Blob
-      ? response.data
-      : new Blob([response.data], { type: 'application/pdf' });
-  };
-
-  const handleSendReceiptWhatsApp = async () => {
-    if (!recuData) {
-      return;
-    }
-
-    const fileName = buildReceiptFileName(recuData);
-
+  const sendReceiptViaWhatsApp = async (pdfBlob, reference, phone) => {
+    setSharingReceipt(true);
     try {
-      setSharingReceipt(true);
-      const blob = await fetchReceiptPdfBlob(recuData);
-      const file = new File([blob], fileName, { type: 'application/pdf' });
-      const canShareFile = typeof navigator !== 'undefined'
-        && typeof navigator.share === 'function'
-        && (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }));
-
-      if (canShareFile) {
-        await navigator.share({
-          files: [file],
-          title: 'Reçu de paiement ATELIKO',
-          text: 'Envoyer le reçu PDF via WhatsApp'
-        });
-        return;
-      }
-
-      downloadBlob(blob, fileName);
-      Swal.fire(
-        'PDF prêt',
-        'Le reçu PDF a été téléchargé. Joignez-le maintenant dans WhatsApp si le partage direct n\'est pas pris en charge par ce navigateur.',
-        'info'
-      );
-    } catch (error) {
-      console.error('Erreur partage reçu PDF:', error);
-      if (error?.name === 'AbortError') {
-        return;
-      }
-      Swal.fire('Erreur', 'Impossible de générer ou partager le reçu PDF.', 'error');
+      const imageBlob = await pdfBlobToImageBlob(pdfBlob);
+      const fileName = buildReceiptFileName(reference);
+      downloadBlob(imageBlob, fileName);
+      const formattedPhone = formatPhoneForWhatsApp(phone);
+      openWhatsAppDesktop(formattedPhone);
+    } catch (err) {
+      console.error('Erreur envoi reçu WhatsApp:', err);
     } finally {
       setSharingReceipt(false);
     }
@@ -1065,6 +1004,7 @@ const Clients = () => {
               </div>
           </div>
       )}
+
     </>
   );
 };

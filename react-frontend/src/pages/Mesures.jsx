@@ -3,6 +3,13 @@ import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import api, { getUserData } from '../api/api';
 import { buildMediaUrl } from '../config/api';
+import {
+  pdfBlobToImageBlob,
+  openWhatsAppDesktop,
+  downloadBlob,
+  formatPhoneForWhatsApp,
+  buildReceiptFileName,
+} from '../utils/receiptUtils';
 
 const CAMERA_CONSTRAINTS = {
   video: {
@@ -92,6 +99,8 @@ const Mesures = () => {
   const [clientSearch, setClientSearch] = useState('');
   const [prefilledClientInfo, setPrefilledClientInfo] = useState(null);
   const [hasPrefilledPreview, setHasPrefilledPreview] = useState(false);
+  const [avance, setAvance] = useState('');
+  const [avanceMoyen, setAvanceMoyen] = useState('ESPECES');
 
   const fileInputRef = useRef(null);
 
@@ -109,6 +118,8 @@ const Mesures = () => {
     setFormData(createInitialFormData());
     setDescription('');
     setPrice('');
+    setAvance('');
+    setAvanceMoyen('ESPECES');
     clearHabitPhoto();
     setPhotoFile(null);
     setSelectedModel(null);
@@ -823,43 +834,58 @@ const Mesures = () => {
         }
       }
 
+      // Afficher la confirmation de succès (fermeture auto)
       Swal.fire({
         icon: 'success',
-        title: 'Succès',
+        title: 'Client enregistré !',
         html: successHtml,
-        showCancelButton: true,
-        confirmButtonText: 'Envoyer le reçu',
-        cancelButtonText: 'Fermer',
-        focusCancel: true
-      }).then(async (result) => {
-        if (result.isConfirmed) {
-          try {
-            const atelierId = getCurrentAtelierId();
-            if (!atelierId) {
-              throw new Error('Atelier introuvable pour générer le reçu.');
-            }
-
-            const clientId = response?.data?.clientId;
-            if (!clientId) {
-              throw new Error('ID client introuvable après enregistrement.');
-            }
-
-            const paiementRes = await api.get(`/paiements/clients/${clientId}?atelierId=${atelierId}`);
-            const historique = paiementRes.data?.historiquePaiements || [];
-            if (historique.length === 0) {
-              const recuResponse = await api.get(`/paiements/recu/client/due/${clientId}?atelierId=${atelierId}`);
-              await handleSendReceiptWhatsApp(recuResponse.data, `/paiements/recu/client/due/${clientId}/pdf?atelierId=${atelierId}`);
-            } else {
-              const latestPayment = historique.sort((a, b) => new Date(b.datePaiement) - new Date(a.datePaiement))[0];
-              const recuResponse = await api.get(`/paiements/recu/client/${latestPayment.id}?atelierId=${atelierId}`);
-              await handleSendReceiptWhatsApp(recuResponse.data);
-            }
-          } catch (sendError) {
-            console.error('Erreur envoi reçu:', sendError);
-            Swal.fire('Erreur', sendError.response?.data?.message || sendError.message || 'Impossible d\'envoyer le reçu.', 'error');
-          }
-        }
+        timer: 2500,
+        timerProgressBar: true,
+        showConfirmButton: false,
       });
+
+      // Générer le reçu PDF et l'envoyer automatiquement via WhatsApp
+      try {
+        const atelierId = getCurrentAtelierId();
+        const clientId = response?.data?.clientId;
+
+        if (atelierId && clientId) {
+          let pdfRes;
+          let reference;
+
+          if (avance && Number(avance) > 0) {
+            const avanceRef = `AVANCE-${Date.now().toString().slice(-6)}`;
+            const avancePayload = {
+              montant: Number(avance),
+              moyen: avanceMoyen,
+              reference: avanceRef,
+              datePaiement: `${new Date().toISOString().split('T')[0]}T00:00:00`,
+              atelierId,
+              clientId,
+            };
+            const avancePaiementRes = await api.post('/paiements/clients', avancePayload);
+            pdfRes = await api.get(
+              `/paiements/recu/client/${avancePaiementRes.data.id}/pdf?atelierId=${atelierId}`,
+              { responseType: 'blob' }
+            );
+            reference = avancePaiementRes.data.reference || avanceRef;
+          } else {
+            pdfRes = await api.get(
+              `/paiements/recu/client/due/${clientId}/pdf?atelierId=${atelierId}`,
+              { responseType: 'blob' }
+            );
+            reference = `client-${clientId}`;
+          }
+
+          const pdfBlob = pdfRes.data instanceof Blob
+            ? pdfRes.data
+            : new Blob([pdfRes.data], { type: 'application/pdf' });
+
+          await sendReceiptViaWhatsApp(pdfBlob, reference, formData.contact);
+        }
+      } catch (recuError) {
+        console.error('Erreur génération reçu:', recuError);
+      }
 
       resetFormState();
     } catch (error) {
@@ -879,79 +905,16 @@ const Mesures = () => {
     return userData ? (userData.atelierId || (userData.atelier && userData.atelier.id)) : null;
   };
 
-  const buildReceiptFileName = (recu) => {
-    const baseReference = String(recu?.reference || 'recu').replace(/[^a-zA-Z0-9_-]/g, '-');
-    return `recu-${baseReference}.pdf`;
-  };
-
-  const downloadBlob = (blob, fileName) => {
-    const blobUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
-  };
-
-  const fetchReceiptPdfBlob = async (recu, pdfUrl) => {
-    if (!recu && !pdfUrl) {
-      throw new Error('Reçu introuvable');
-    }
-
-    const atelierId = getCurrentAtelierId();
-    if (!atelierId) {
-      throw new Error('Atelier introuvable pour générer le PDF.');
-    }
-
-    const response = pdfUrl
-      ? await api.get(pdfUrl, { responseType: 'blob' })
-      : await api.get(`/paiements/recu/${recu.typePaiement === 'TAILLEUR' ? 'tailleur' : 'client'}/${recu.id}/pdf?atelierId=${atelierId}`, {
-          responseType: 'blob'
-        });
-
-    return response.data instanceof Blob
-      ? response.data
-      : new Blob([response.data], { type: 'application/pdf' });
-  };
-
-  const handleSendReceiptWhatsApp = async (recu, pdfUrl) => {
-    if (!recu && !pdfUrl) {
-      return;
-    }
-
-    const fileName = buildReceiptFileName(recu);
-
+  const sendReceiptViaWhatsApp = async (pdfBlob, reference, phone) => {
+    setSharingReceipt(true);
     try {
-      setSharingReceipt(true);
-      const blob = await fetchReceiptPdfBlob(recu, pdfUrl);
-      const file = new File([blob], fileName, { type: 'application/pdf' });
-      const canShareFile = typeof navigator !== 'undefined'
-        && typeof navigator.share === 'function'
-        && (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }));
-
-      if (canShareFile) {
-        await navigator.share({
-          files: [file],
-          title: 'Reçu de paiement ATELIKO',
-          text: 'Envoyer le reçu PDF via WhatsApp'
-        });
-        return;
-      }
-
-      downloadBlob(blob, fileName);
-      Swal.fire(
-        'PDF prêt',
-        'Le reçu PDF a été téléchargé. Joignez-le maintenant dans WhatsApp si le partage direct n\'est pas pris en charge par ce navigateur.',
-        'info'
-      );
-    } catch (error) {
-      console.error('Erreur partage reçu PDF:', error);
-      if (error?.name === 'AbortError') {
-        return;
-      }
-      Swal.fire('Erreur', 'Impossible de générer ou partager le reçu PDF.', 'error');
+      const imageBlob = await pdfBlobToImageBlob(pdfBlob);
+      const fileName = buildReceiptFileName(reference);
+      downloadBlob(imageBlob, fileName);
+      const formattedPhone = formatPhoneForWhatsApp(phone);
+      openWhatsAppDesktop(formattedPhone);
+    } catch (err) {
+      console.error('Erreur envoi reçu WhatsApp:', err);
     } finally {
       setSharingReceipt(false);
     }
@@ -1573,6 +1536,38 @@ const Mesures = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Avance */}
+                <div className="row mt-2">
+                  <div className="col-12 mb-2">
+                    <h6 className="border-bottom pb-1"><i className="fas fa-money-bill-wave me-2 text-success"></i>Avance reçue</h6>
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Montant de l'avance (FCFA) <small className="text-muted">(optionnel)</small></label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={avance}
+                      onChange={(e) => setAvance(e.target.value)}
+                      min="0"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Mode de paiement de l'avance</label>
+                    <select
+                      className="form-select"
+                      value={avanceMoyen}
+                      onChange={(e) => setAvanceMoyen(e.target.value)}
+                      disabled={!avance || Number(avance) <= 0}
+                    >
+                      <option value="ESPECES">Espèces</option>
+                      <option value="MOBILE_MONEY">Mobile Money</option>
+                      <option value="VIREMENT">Virement</option>
+                      <option value="CARTE">Carte Bancaire</option>
+                    </select>
+                  </div>
+                </div>
                 <div className="row">
                   <div className="col-md-12 mb-3">
                     <label className="form-label">Description <small className="text-muted">(optionnel)</small></label>
@@ -1633,7 +1628,18 @@ const Mesures = () => {
                       ))}
                     </div>
                     <div className="mt-3 text-end">
-                      <strong>Total:</strong> {modelsToAdd.reduce((sum, item) => sum + Number(item.prix || 0), 0)} FCFA
+                      <strong>Total :</strong> {modelsToAdd.reduce((sum, item) => sum + Number(item.prix || 0), 0).toLocaleString('fr-FR')} FCFA
+                      {Number(avance) > 0 && (
+                        <>
+                          <br />
+                          <span className="text-success"><strong>Avance :</strong> {Number(avance).toLocaleString('fr-FR')} FCFA ({avanceMoyen})</span>
+                          <br />
+                          <span className="text-danger">
+                            <strong>Reste :</strong>{' '}
+                            {(modelsToAdd.reduce((sum, item) => sum + Number(item.prix || 0), 0) - Number(avance)).toLocaleString('fr-FR')} FCFA
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1813,6 +1819,7 @@ const Mesures = () => {
           </div>
         </div>
       )}
+
     </>
   );
 };

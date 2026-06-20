@@ -2,6 +2,13 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import Swal from 'sweetalert2';
+import {
+    pdfBlobToImageBlob,
+    openWhatsAppDesktop,
+    downloadBlob,
+    formatPhoneForWhatsApp,
+    buildReceiptFileName,
+} from '../utils/receiptUtils';
 
 const Paiements = () => {
     const [activeTab, setActiveTab] = useState('clients');
@@ -181,10 +188,15 @@ const Paiements = () => {
             const response = await api.post(endpoint, payload);
 
             Swal.fire('Succès', 'Paiement enregistré avec succès', 'success');
-            
+
             // Load receipt data
             const recuResponse = await api.get(`/paiements/recu/${isClient ? 'client' : 'tailleur'}/${response.data.id}?atelierId=${atelierId}`);
             setRecuData(recuResponse.data);
+
+            // Déclencher automatiquement l'envoi WhatsApp si c'est un paiement client
+            if (isClient) {
+                await handleSendReceiptWhatsApp(recuResponse.data);
+            }
 
             // Refresh data
             loadData();
@@ -245,11 +257,6 @@ const Paiements = () => {
         });
     };
 
-    const buildReceiptFileName = (recu) => {
-        const baseReference = String(recu?.reference || 'recu').replace(/[^a-zA-Z0-9_-]/g, '-');
-        return `recu-${baseReference}.pdf`;
-    };
-
     const getStatusBadge = (status) => {
         switch (status) {
             case 'PAYE': return <span className="badge bg-success">Payé</span>;
@@ -257,17 +264,6 @@ const Paiements = () => {
             case 'EN_ATTENTE': return <span className="badge bg-danger">Non payé</span>;
             default: return <span className="badge bg-secondary">{status}</span>;
         }
-    };
-
-    const downloadBlob = (blob, fileName) => {
-        const blobUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
     };
 
     const handleOpenReceipt = async (paiementId, receiptType) => {
@@ -309,45 +305,26 @@ const Paiements = () => {
             : new Blob([response.data], { type: 'application/pdf' });
     };
 
-    const handleSendReceiptWhatsApp = async () => {
-        if (!recuData) {
-            return;
-        }
-
-        const fileName = buildReceiptFileName(recuData);
-
+    const sendReceiptViaWhatsApp = async (recu) => {
+        if (!recu) return;
+        setSharingReceipt(true);
         try {
-            setSharingReceipt(true);
-            const blob = await fetchReceiptPdfBlob(recuData);
-            const file = new File([blob], fileName, { type: 'application/pdf' });
-            const canShareFile = typeof navigator !== 'undefined'
-                && typeof navigator.share === 'function'
-                && (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }));
-
-            if (canShareFile) {
-                await navigator.share({
-                    files: [file],
-                    title: 'Reçu de paiement ATELIKO',
-                    text: 'Envoyer le reçu PDF via WhatsApp'
-                });
-                return;
-            }
-
-            downloadBlob(blob, fileName);
-            Swal.fire(
-                'PDF prêt',
-                'Le reçu PDF a été téléchargé. Joignez-le maintenant dans WhatsApp si le partage direct n\'est pas pris en charge par ce navigateur.',
-                'info'
-            );
-        } catch (error) {
-            console.error('Erreur partage reçu PDF:', error);
-            if (error?.name === 'AbortError') {
-                return;
-            }
-            Swal.fire('Erreur', 'Impossible de générer ou partager le reçu PDF.', 'error');
+            const pdfBlob = await fetchReceiptPdfBlob(recu);
+            const imageBlob = await pdfBlobToImageBlob(pdfBlob);
+            const fileName = buildReceiptFileName(recu.reference);
+            downloadBlob(imageBlob, fileName);
+            const phone = formatPhoneForWhatsApp(recu.clientContact);
+            openWhatsAppDesktop(phone);
+        } catch (err) {
+            console.error('Erreur envoi reçu WhatsApp:', err);
         } finally {
             setSharingReceipt(false);
         }
+    };
+
+    const handleSendReceiptWhatsApp = (recu) => {
+        const effectiveRecu = recu || recuData;
+        sendReceiptViaWhatsApp(effectiveRecu);
     };
 
     const handlePrint = async () => {
@@ -366,7 +343,7 @@ const Paiements = () => {
                     printWindow.print();
                 };
             } else {
-                downloadBlob(blob, buildReceiptFileName(recuData));
+                downloadBlob(blob, `recu-${String(recuData?.reference || 'recu').replace(/[^a-zA-Z0-9_-]/g, '-')}.pdf`);
                 Swal.fire('PDF prêt', 'Le reçu PDF a été téléchargé. Vous pouvez l’imprimer depuis votre PDF viewer.', 'info');
             }
         } catch (error) {
@@ -835,6 +812,7 @@ const Paiements = () => {
                     </div>
                 </div>
             )}
+
         </>
     );
 };
