@@ -7,7 +7,7 @@ import api from '../api/backend';
 const BOTTOM_MODULES = [
   { label: 'Accueil', icon: 'home-outline', screen: 'Home' },
   { label: 'Clients', icon: 'people-outline', screen: 'Clients' },
-  { label: 'Affectations', icon: 'person-done-outline', screen: 'Affectation' },
+  { label: 'Affectations', icon: 'checkmark-done-outline', screen: 'Affectation' },
   { label: 'Rendez-vous', icon: 'calendar-outline', screen: 'Rendezvous' },
   { label: 'Paiements', icon: 'card-outline', screen: 'Paiements' },
 ];
@@ -50,7 +50,7 @@ export function AppHeader({ navigation, title, subtitle, showBack = false }) {
   const role = (userData?.role || '').toUpperCase();
   const isSuperAdmin = role === 'SUPERADMIN';
   const isProprietaire = ['PROPRIETAIRE', 'SUPERADMIN'].includes(role);
-  const atelierName = userData?.atelier || 'Ateliko';
+  const atelierName = (typeof userData?.atelier === 'string' ? userData.atelier : userData?.atelier?.nom) || userData?.atelierName || 'Ateliko';
   const displayTitle = title || atelierName;
 
   const apiBase = (api?.defaults?.baseURL || '').replace(/\/?api\/?$/i, '');

@@ -364,6 +364,7 @@ export default function MesureAddScreen({ navigation }) {
         </View>
       )}
 
+      {renderInput('Nom du modèle (ex: Grand boubou) *', 'modeleNom')}
       {renderInput('Prix du modèle (FCFA) *', 'prix', true)}
       {renderInput('Description (optionnel)', 'description')}
 

@@ -19,6 +19,7 @@ export default function HomeScreen({ navigation }) {
   const [dateModalVisible, setDateModalVisible] = useState(false);
   const [dateEditAtelierId, setDateEditAtelierId] = useState(null);
   const [dateForm, setDateForm] = useState({ dateDebut: '', dateFin: '' });
+  const [subscriptionData, setSubscriptionData] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -111,6 +112,11 @@ export default function HomeScreen({ navigation }) {
     loadSubscriptionPayments();
   }, [role, paymentStatusFilter]);
 
+  useEffect(() => {
+    if (role !== 'PROPRIETAIRE') return;
+    api.get('/subscription/current').then((res) => setSubscriptionData(res.data || null)).catch(() => {});
+  }, [role]);
+
   const role = (userData?.role || '').toUpperCase();
   const userPermissions = Array.isArray(userData?.permissions)
     ? userData.permissions.map((p) => (typeof p === 'string' ? p : p?.code)).filter(Boolean)
@@ -141,8 +147,9 @@ export default function HomeScreen({ navigation }) {
   const formatRdv = (rdv) => {
     if (!rdv) return '—';
     try {
-      const d = new Date(rdv.date);
-      const when = Number.isNaN(d.getTime()) ? String(rdv.date || '') : d.toLocaleString('fr-FR');
+      const dateStr = rdv.dateRDV || rdv.date;
+      const d = new Date(dateStr);
+      const when = Number.isNaN(d.getTime()) ? String(dateStr || '') : d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
       return `${rdv.clientNom || 'Client'} • ${when}`;
     } catch (e) {
       return '—';
@@ -288,21 +295,28 @@ export default function HomeScreen({ navigation }) {
       ? [
           {
             title: 'Total ateliers',
-            value: dashboardData?.totalAteliers ?? '0',
+            value: dashboardData?.nbAteliers ?? dashboardData?.totalAteliers ?? '0',
             icon: 'business-outline',
             color: '#20c997',
             screen: null,
           },
           {
             title: 'Total clients',
-            value: dashboardData?.totalClients ?? '0',
+            value: dashboardData?.nbClients ?? dashboardData?.totalClients ?? '0',
             icon: 'people-outline',
             color: '#0d6efd',
             screen: null,
           },
           {
-            title: "Chiffre d'affaires",
-            value: formatCurrency(dashboardData?.chiffreAffairesTotal || 0),
+            title: 'Utilisateurs',
+            value: dashboardData?.nbUtilisateurs ?? dashboardData?.totalUtilisateurs ?? '0',
+            icon: 'people-circle-outline',
+            color: '#6f42c1',
+            screen: null,
+          },
+          {
+            title: "Paiements totaux",
+            value: formatCurrency(dashboardData?.totalPaiements ?? dashboardData?.chiffreAffairesTotal ?? 0),
             icon: 'cash-outline',
             color: '#fd7e14',
             screen: null,
@@ -310,25 +324,46 @@ export default function HomeScreen({ navigation }) {
         ]
       : [
           {
-            title: "Chiffre d'affaires mensuel",
-            value: formatCurrency(dashboardData?.chiffreAffairesMensuel || 0),
+            title: "Total encaissé",
+            value: formatCurrency(dashboardData?.totalEncaisse ?? dashboardData?.chiffreAffairesMensuel ?? 0),
             icon: 'cash-outline',
             color: '#20c997',
+            screen: 'Paiements',
+          },
+          {
+            title: 'Clients',
+            value: dashboardData?.nbClients ?? dashboardData?.totalClients ?? '0',
+            icon: 'people-outline',
+            color: '#0d6efd',
+            screen: 'Clients',
+          },
+          {
+            title: 'Commandes',
+            value: dashboardData?.nbMesures ?? '0',
+            icon: 'shirt-outline',
+            color: '#fd7e14',
             screen: null,
           },
           {
-            title: 'Prochain RDV',
-            value: formatRdv(dashboardData?.rendezVousProchains?.[0]),
+            title: 'RDV à venir',
+            value: dashboardData?.rdvsAVenir ?? dashboardData?.rdvsAujourdhui ?? '0',
             icon: 'calendar-outline',
-            color: '#0d6efd',
+            color: '#0dcaf0',
             screen: 'Rendezvous',
           },
           {
-            title: 'Nombre de tailleurs',
-            value: dashboardData?.totalTailleurs ?? '0',
-            icon: 'cut-outline',
-            color: '#fd7e14',
-            screen: null,
+            title: 'Prochain RDV',
+            value: formatRdv((dashboardData?.prochainRdvs ?? dashboardData?.rendezVousProchains ?? [])[0]),
+            icon: 'alarm-outline',
+            color: '#6f42c1',
+            screen: 'Rendezvous',
+          },
+          {
+            title: 'Reste à encaisser',
+            value: formatCurrency(dashboardData?.resteAEncaisser ?? 0),
+            icon: 'hourglass-outline',
+            color: '#dc3545',
+            screen: 'Paiements',
           },
         ];
 
@@ -472,19 +507,82 @@ export default function HomeScreen({ navigation }) {
       );
     }
     if (role === 'PROPRIETAIRE') {
+      const sub = subscriptionData;
+      const subStatut = sub?.statut || sub?.status || null;
+      const subPlan   = sub?.planLibelle || sub?.plan_libelle || sub?.planCode || sub?.plan_code || null;
+      const subFin    = sub?.dateFin || sub?.date_fin || null;
+      const joursRestants = sub?.joursRestants ?? sub?.jours_restants ?? null;
+      const subColor  = subStatut === 'ACTIF' ? '#198754' : subStatut === 'EXPIRE' ? '#dc3545' : '#f59f00';
+
       return (
         <>
+          {sub ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Mon abonnement</Text>
+              <View style={[styles.subscriptionWidget, { borderColor: subColor }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View>
+                    <Text style={styles.subPlan}>{subPlan || 'Plan inconnu'}</Text>
+                    <View style={[styles.subStatutBadge, { backgroundColor: `${subColor}18`, borderColor: subColor }]}>
+                      <Text style={[styles.subStatutText, { color: subColor }]}>{subStatut || '—'}</Text>
+                    </View>
+                  </View>
+                  <Ionicons name="ribbon-outline" size={32} color={subColor} style={{ opacity: 0.7 }} />
+                </View>
+                {subFin ? (
+                  <Text style={styles.subInfo}>Expire le : {new Date(subFin).toLocaleDateString('fr-FR')}</Text>
+                ) : null}
+                {joursRestants !== null ? (
+                  <Text style={[styles.subInfo, { color: joursRestants <= 7 ? '#dc3545' : '#198754', fontWeight: '800' }]}>
+                    {joursRestants > 0 ? `${joursRestants} jour(s) restant(s)` : 'Abonnement expiré'}
+                  </Text>
+                ) : null}
+                <TouchableOpacity style={[styles.subBtn, { borderColor: subColor }]} onPress={() => navigation.navigate('Abonnement')}>
+                  <Text style={[styles.subBtnText, { color: subColor }]}>Gérer mon abonnement →</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Tâches urgentes</Text>
+            <Text style={styles.sectionTitle}>Prochains rendez-vous</Text>
             <View style={styles.panelCard}>
-              {dashboardData?.tachesUrgentes?.length > 0 ? (
-                dashboardData.tachesUrgentes.map((tache, index) => {
+              {(dashboardData?.prochainRdvs ?? dashboardData?.rendezVousProchains ?? []).length > 0 ? (
+                (dashboardData?.prochainRdvs ?? dashboardData?.rendezVousProchains ?? []).slice(0, 5).map((rdv, index) => {
+                  const dateStr = rdv.dateRDV || rdv.date;
+                  const d = dateStr ? new Date(dateStr) : null;
+                  const when = d && !Number.isNaN(d.getTime())
+                    ? d.toLocaleString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                    : String(dateStr || '—');
+                  return (
+                    <View key={`rdv-${index}`} style={styles.panelRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.panelMain}>{rdv.clientNom || 'Client'}</Text>
+                        <Text style={styles.panelSub}>{rdv.typeRendezVous || rdv.type || 'RDV'}</Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={styles.panelSub}>{when}</Text>
+                        <Text style={[styles.panelSub, { color: '#0d6efd', fontWeight: '700', fontSize: 10 }]}>{rdv.statut || ''}</Text>
+                      </View>
+                    </View>
+                  );
+                })
+              ) : (
+                <Text style={styles.emptyText}>Aucun rendez-vous à venir</Text>
+              )}
+            </View>
+          </View>
+
+          {dashboardData?.tachesUrgentes?.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Tâches urgentes</Text>
+              <View style={styles.panelCard}>
+                {dashboardData.tachesUrgentes.map((tache, index) => {
                   const description = String(tache?.description || 'Tâche urgente');
                   const isRetardTask = /retard/i.test(description);
                   return (
                     <View key={`urgent-${index}`} style={styles.panelRow}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.panelMain}>{description}</Text>
+                        <Text style={[styles.panelMain, { color: '#dc3545' }]}>{description}</Text>
                         <Text style={styles.panelSub}>{tache?.type || 'URGENT'}</Text>
                       </View>
                       {isRetardTask ? (
@@ -494,12 +592,10 @@ export default function HomeScreen({ navigation }) {
                       ) : null}
                     </View>
                   );
-                })
-              ) : (
-                <Text style={styles.emptyText}>Aucune tâche urgente</Text>
-              )}
+                })}
+              </View>
             </View>
-          </View>
+          ) : null}
         </>
       );
     }
@@ -710,7 +806,7 @@ export default function HomeScreen({ navigation }) {
     <View style={styles.page}>
       <AppHeader
         navigation={navigation}
-        title={userData?.atelier || 'Mon atelier'}
+        title={userData?.atelierName || userData?.atelier?.nom || (typeof userData?.atelier === 'string' ? userData.atelier : null) || 'Mon atelier'}
         subtitle={userData?.prenom ? `Bonjour, ${userData.prenom}` : undefined}
       />
 
@@ -995,4 +1091,16 @@ const styles = StyleSheet.create({
   modalSaveText: { color: '#fff', fontWeight: '800' },
   urgentBtn: { backgroundColor: '#fff1f2', borderWidth: 1, borderColor: '#fecdd3', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
   urgentBtnText: { color: '#be123c', fontWeight: '800', fontSize: 12 },
+
+  subscriptionWidget: {
+    backgroundColor: '#fff', borderRadius: 16, padding: 16,
+    borderWidth: 2, elevation: 3,
+    shadowColor: '#0f172a', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
+  },
+  subPlan:  { fontSize: 18, fontWeight: '900', color: '#1d2c4d', marginBottom: 6 },
+  subStatutBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1 },
+  subStatutText: { fontWeight: '800', fontSize: 12 },
+  subInfo: { fontSize: 13, color: '#62748c', marginTop: 6 },
+  subBtn: { marginTop: 12, borderWidth: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  subBtnText: { fontWeight: '800', fontSize: 13 },
 });

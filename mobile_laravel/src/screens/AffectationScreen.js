@@ -353,57 +353,78 @@ export default function AffectationScreen({ navigation, route }) {
     return overdueOnly ? affectations.filter(isAffectationOverdue) : affectations;
   }, [overdueOnly, affectations, isAffectationOverdue]);
 
-  const renderAffectation = ({ item }) => (
-    <View style={styles.affCard}>
-      {(() => {
-        const status = getStatusMeta(item?.statut);
-        return (
-          <>
-      <Text style={styles.affTitle}>{item?.client?.prenom} {item?.client?.nom}</Text>
-      <Text style={styles.affSub}>Tailleur: {item?.tailleur?.prenom} {item?.tailleur?.nom}</Text>
-      <Text style={styles.affSub}>Type: {item?.mesure?.typeVetement || '—'}</Text>
-      <View style={styles.affRow}>
-        <View style={[styles.statusBadge, { backgroundColor: status.bg, borderColor: status.color }]}> 
-          <Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text>
+  const stats = useMemo(() => {
+    const total = affectations.length;
+    const enAttente = affectations.filter((a) => a?.statut === 'EN_ATTENTE').length;
+    const enCours = affectations.filter((a) => a?.statut === 'EN_COURS').length;
+    const retard = affectations.filter((a) => isAffectationOverdue(a)).length;
+    return { total, enAttente, enCours, retard };
+  }, [affectations, isAffectationOverdue]);
+
+  const renderAffectation = ({ item }) => {
+    const status = getStatusMeta(item?.statut);
+    const overdue = isAffectationOverdue(item);
+    const dueDate = getAffectationDueDate(item);
+    const modelLabel = item?.mesure?.modeleNom || item?.mesure?.typeVetement || '—';
+
+    return (
+      <View style={[styles.affCard, overdue && styles.affCardOverdue]}>
+        {overdue ? (
+          <View style={styles.overdueBadge}><Text style={styles.overdueBadgeText}>⚠ En retard</Text></View>
+        ) : null}
+
+        <View style={styles.affHeaderRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.affTitle}>{item?.client?.prenom} {item?.client?.nom}</Text>
+            {item?.client?.contact ? <Text style={styles.affSub}>📞 {item.client.contact}</Text> : null}
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: status.bg, borderColor: status.color }]}>
+            <Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text>
+          </View>
         </View>
-        <Text style={styles.price}>{Number(item?.prixTailleur || 0).toLocaleString('fr-FR')} FCFA</Text>
+
+        <Text style={styles.affSub}>Tailleur : {item?.tailleur?.prenom} {item?.tailleur?.nom}</Text>
+        <Text style={styles.affSub}>Modèle : {modelLabel}</Text>
+        {dueDate ? (
+          <Text style={[styles.affSub, overdue && { color: '#dc3545', fontWeight: '700' }]}>
+            Échéance : {new Date(dueDate).toLocaleDateString('fr-FR')}
+          </Text>
+        ) : null}
+
+        <View style={styles.affRow}>
+          <Text style={styles.price}>{Number(item?.prixTailleur || 0).toLocaleString('fr-FR')} FCFA</Text>
+          <Text style={styles.progressLabel}>{status.progress}%</Text>
+        </View>
+
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${status.progress}%`, backgroundColor: overdue ? '#dc3545' : status.color }]} />
+        </View>
+
+        <View style={styles.actionsRow}>
+          {role === 'TAILLEUR' && item?.statut === 'EN_ATTENTE' ? (
+            <TouchableOpacity style={[styles.btn, styles.btnInfo]} onPress={() => changeStatus(item, 'EN_COURS')}>
+              <Text style={styles.btnText}>Démarrer</Text>
+            </TouchableOpacity>
+          ) : null}
+          {role === 'TAILLEUR' && item?.statut === 'EN_COURS' ? (
+            <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={() => changeStatus(item, 'TERMINE')}>
+              <Text style={styles.btnText}>Terminer</Text>
+            </TouchableOpacity>
+          ) : null}
+          {canCreate && item?.statut === 'TERMINE' ? (
+            <TouchableOpacity style={[styles.btn, styles.btnSuccess]} onPress={() => changeStatus(item, 'VALIDE')}>
+              <Text style={styles.btnText}>Valider</Text>
+            </TouchableOpacity>
+          ) : null}
+          {canCancel && item?.statut !== 'VALIDE' && item?.statut !== 'ANNULE' ? (
+            <TouchableOpacity style={[styles.btn, styles.btnDanger]} onPress={() => cancelAffectation(item.id)}>
+              <Text style={styles.btnText}>Annuler</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
-
-      <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${status.progress}%`, backgroundColor: status.color }]} />
-      </View>
-      <Text style={styles.progressLabel}>{status.progress}%</Text>
-
-      <View style={styles.actionsRow}>
-        {role === 'TAILLEUR' && item?.statut === 'EN_ATTENTE' ? (
-          <TouchableOpacity style={[styles.btn, styles.btnInfo]} onPress={() => changeStatus(item, 'EN_COURS')}>
-            <Text style={styles.btnText}>Démarrer</Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {role === 'TAILLEUR' && item?.statut === 'EN_COURS' ? (
-          <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={() => changeStatus(item, 'TERMINE')}>
-            <Text style={styles.btnText}>Terminer</Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {canCreate && item?.statut === 'TERMINE' ? (
-          <TouchableOpacity style={[styles.btn, styles.btnSuccess]} onPress={() => changeStatus(item, 'VALIDE')}>
-            <Text style={styles.btnText}>Valider</Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {canCancel && item?.statut !== 'VALIDE' && item?.statut !== 'ANNULE' ? (
-          <TouchableOpacity style={[styles.btn, styles.btnDanger]} onPress={() => cancelAffectation(item.id)}>
-            <Text style={styles.btnText}>Annuler</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
-          </>
-        );
-      })()}
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -422,6 +443,26 @@ export default function AffectationScreen({ navigation, route }) {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListHeaderComponent={
             <>
+              {/* ── Bandeau stats ── */}
+              <View style={styles.statsRow}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statNum}>{stats.total}</Text>
+                  <Text style={styles.statLbl}>Total</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={[styles.statNum, { color: '#f59f00' }]}>{stats.enAttente}</Text>
+                  <Text style={styles.statLbl}>En attente</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={[styles.statNum, { color: '#0dcaf0' }]}>{stats.enCours}</Text>
+                  <Text style={styles.statLbl}>En cours</Text>
+                </View>
+                <View style={[styles.statCard, stats.retard > 0 && { borderColor: '#dc3545', borderWidth: 1 }]}>
+                  <Text style={[styles.statNum, { color: '#dc3545' }]}>{stats.retard}</Text>
+                  <Text style={styles.statLbl}>En retard</Text>
+                </View>
+              </View>
+
               {canCreate ? (
                 <View style={styles.formBox}>
                   <Text style={styles.sectionTitle}>Nouvelle affectation</Text>
@@ -704,6 +745,11 @@ const styles = StyleSheet.create({
   overdueBannerText: { color: '#9f1239', fontWeight: '700', flex: 1, marginRight: 10 },
   overdueBannerAction: { color: '#be123c', fontWeight: '900' },
 
+  statsRow: { flexDirection: 'row', gap: 6, marginBottom: 12 },
+  statCard: { flex: 1, backgroundColor: '#fff', borderRadius: 10, padding: 8, alignItems: 'center', borderWidth: 1, borderColor: '#e9edf5' },
+  statNum: { fontSize: 18, fontWeight: '900', color: '#1f2d4c' },
+  statLbl: { fontSize: 10, color: '#63708e', marginTop: 2, textAlign: 'center' },
+
   affCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -712,8 +758,12 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 10,
   },
+  affCardOverdue: { borderColor: '#dc3545', borderWidth: 1.5, backgroundColor: '#fff8f8' },
+  affHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 },
+  overdueBadge: { alignSelf: 'flex-start', backgroundColor: '#dc3545', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 6 },
+  overdueBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
   affTitle: { fontWeight: '900', color: '#1f2d4c', fontSize: 15 },
-  affSub: { color: '#5f6f90', marginTop: 2 },
+  affSub: { color: '#5f6f90', marginTop: 2, fontSize: 12 },
   affRow: { marginTop: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   statusBadge: {
     borderWidth: 1,

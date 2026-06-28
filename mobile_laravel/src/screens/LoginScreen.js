@@ -105,12 +105,14 @@ export default function LoginScreen({ navigation }) {
 
       const photoPath =
         response.photoPath || response.user?.photoPath || response.photo || response.user?.photo || null;
-      // determine atelier name if provided by API
+      // determine atelier name — API may return atelier as object {id,nom} or string
+      const resolveAtelier = (val) =>
+        typeof val === 'string' ? val : (val?.nom || null);
       const atelierName =
-        response.atelier ||
         response.atelierName ||
-        response.user?.atelier ||
+        resolveAtelier(response.atelier) ||
         response.user?.atelierName ||
+        resolveAtelier(response.user?.atelier) ||
         response.user?.atelier_nom ||
         null;
       console.log('login response', response);
@@ -135,8 +137,8 @@ export default function LoginScreen({ navigation }) {
             headers: { Authorization: `Bearer ${token}` },
           });
           const u = userRes.data || {};
-          if (u.atelier || u.atelierName || u.atelier_nom) {
-            userData.atelier = u.atelier || u.atelierName || u.atelier_nom;
+          if (u.atelierName || u.atelier || u.atelier_nom) {
+            userData.atelier = u.atelierName || resolveAtelier(u.atelier) || u.atelier_nom;
           }
         } catch (e) {
           console.log('failed to fetch user details', e.message);
