@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, ScrollView, Modal, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { AppHeader, BottomBar } from '../components/MobileShell';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import api from '../api/backend';
@@ -51,10 +53,10 @@ export default function PaiementsScreen({ navigation }) {
         nom: raw.clientNom || raw.nom || '',
         prenom: raw.clientPrenom || raw.prenom || '',
         telephone: raw.clientTelephone || raw.contact || '',
-        total: Number(raw.prixTotal || 0),
+        total: Number(raw.prixTotal || raw.montantTotal || raw.totalDu || 0),
         paye: Number(raw.montantPaye || 0),
-        reste: Number(raw.resteAPayer || 0),
-        statutPaiement: raw.statutPaiement || 'EN_ATTENTE',
+        reste: Number(raw.resteAPayer || raw.montantRestant || 0),
+        statutPaiement: raw.statutPaiement || raw.statut || 'EN_ATTENTE',
         raw,
       };
     }
@@ -63,10 +65,10 @@ export default function PaiementsScreen({ navigation }) {
       nom: raw.tailleurNom || raw.nom || '',
       prenom: raw.tailleurPrenom || raw.prenom || '',
       telephone: raw.tailleurTelephone || raw.contact || '',
-      total: Number(raw.totalDu || 0),
-      paye: Number(raw.montantPaye || 0),
-      reste: Number(raw.resteAPayer || 0),
-      statutPaiement: raw.statutPaiement || 'EN_ATTENTE',
+      total: Number(raw.totalDu || raw.montantTotal || 0),
+      paye: Number(raw.montantPaye || raw.totalPaye || 0),
+      reste: Number(raw.resteAPayer || raw.montantRestant || raw.totalRestant || 0),
+      statutPaiement: raw.statutPaiement || raw.statut || 'EN_ATTENTE',
       raw,
     };
   };
@@ -283,13 +285,7 @@ export default function PaiementsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Paiements</Text>
-        <View style={{ width: 34 }} />
-      </View>
+      <AppHeader navigation={navigation} title="Paiements" subtitle="Clients & tailleurs" showBack />
 
       {!canViewPaiements ? (
         <View style={styles.noPermissionBox}>
@@ -342,10 +338,10 @@ export default function PaiementsScreen({ navigation }) {
               <Text style={styles.detailLine}>Payé: {selected.paye.toLocaleString('fr-FR')} FCFA</Text>
               <Text style={styles.detailLine}>Reste: {selected.reste.toLocaleString('fr-FR')} FCFA</Text>
 
-              {details?.historiquePaiements?.length ? (
+              {(details?.historiquePaiements || details?.paiements || []).length ? (
                 <View style={styles.historyBox}>
                   <Text style={styles.historyTitle}>Historique</Text>
-                  {details.historiquePaiements.map((p, idx) => (
+                  {(details?.historiquePaiements || details?.paiements || []).map((p, idx) => (
                     <View key={`pay-${idx}`} style={styles.historyRow}>
                       <View>
                         <Text style={styles.historyDate}>{new Date(p.datePaiement).toLocaleDateString('fr-FR')}</Text>
@@ -444,42 +440,22 @@ export default function PaiementsScreen({ navigation }) {
             </TouchableOpacity>
             <View style={styles.modalActionsRow}>
               <TouchableOpacity style={[styles.iconBtn, styles.shareBtn]} onPress={shareReceiptPdf}>
-                <Text style={styles.iconText}>📤</Text>
+                <Ionicons name="share-outline" size={22} color="#fff" />
               </TouchableOpacity>
               <TouchableOpacity style={[styles.iconBtn, styles.printBtn]} onPress={printReceiptPdf}>
-                <Text style={styles.iconText}>🖨️</Text>
+                <Ionicons name="print-outline" size={22} color="#fff" />
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
+      <BottomBar navigation={navigation} active="Paiements" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f6f8fb' },
-  headerRow: {
-    paddingTop: 52,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eef0f4',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#f1f4fa',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backBtnText: { fontSize: 20, color: '#1b2a4a', fontWeight: '700' },
-  title: { fontSize: 22, fontWeight: '900', color: '#1b2a4a' },
+  container: { flex: 1, backgroundColor: '#f4f6fb' },
   tabsRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingTop: 10 },
   tabBtn: {
     flex: 1,

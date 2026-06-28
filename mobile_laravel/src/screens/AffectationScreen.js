@@ -12,6 +12,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { AppHeader, BottomBar } from '../components/MobileShell';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../api/backend';
 
@@ -405,13 +407,7 @@ export default function AffectationScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Affectations</Text>
-        <View style={{ width: 34 }} />
-      </View>
+      <AppHeader navigation={navigation} title="Affectations" subtitle="Suivi des commandes" showBack />
 
       {!canView ? (
         <View style={styles.noPermissionBox}>
@@ -613,33 +609,13 @@ export default function AffectationScreen({ navigation, route }) {
           </View>
         </View>
       </Modal>
+      <BottomBar navigation={navigation} active="Affectation" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f6f8fb' },
-  headerRow: {
-    paddingTop: 52,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eef0f4',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#f1f4fa',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backBtnText: { fontSize: 20, color: '#1b2a4a', fontWeight: '700' },
-  title: { fontSize: 22, fontWeight: '900', color: '#1b2a4a' },
+  container: { flex: 1, backgroundColor: '#f4f6fb' },
 
   formBox: {
     backgroundColor: '#fff',

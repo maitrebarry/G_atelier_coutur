@@ -13,6 +13,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { AppHeader } from '../components/MobileShell';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../api/backend';
@@ -405,17 +407,7 @@ export default function AlbumsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Text style={styles.backBtnText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Albums</Text>
-        <View style={styles.backBtnPlaceholder} />
-      </View>
+      <AppHeader navigation={navigation} title="Albums" subtitle="Modèles de l'atelier" showBack />
 
       {!canViewAlbums ? (
         <View style={styles.noPermissionBox}>
@@ -588,29 +580,7 @@ export default function AlbumsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f6f8fb' },
-  headerRow: {
-    paddingTop: 52,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eef0f4',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#f1f4fa',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backBtnText: { fontSize: 20, color: '#1b2a4a', fontWeight: '700' },
-  backBtnPlaceholder: { width: 34, height: 34 },
-  title: { fontSize: 22, fontWeight: '900', color: '#1b2a4a' },
+  container: { flex: 1, backgroundColor: '#f4f6fb' },
 
   filtersWrap: { paddingHorizontal: 12, paddingTop: 12 },
   searchInput: {

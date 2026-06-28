@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Modal, TextInput, ScrollView, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../api/backend';
+import { Ionicons } from '@expo/vector-icons';
+import { AppHeader } from '../components/MobileShell';
 
 export default function AtelierScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
@@ -90,13 +92,7 @@ export default function AtelierScreen({ navigation }) {
 
   return (
     <View style={styles.page}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Ateliers</Text>
-        <View style={{ width: 34 }} />
-      </View>
+      <AppHeader navigation={navigation} title="Ateliers" subtitle="Gestion des ateliers" showBack />
 
       {!canView ? (
         <View style={styles.noPermissionBox}>

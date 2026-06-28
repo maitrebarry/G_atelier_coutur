@@ -15,6 +15,8 @@ import {
   TextInput,
   Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { AppHeader, BottomBar } from '../components/MobileShell';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../api/backend';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -317,17 +319,7 @@ export default function ClientListScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Text style={styles.backBtnText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Clients</Text>
-        <View style={styles.backBtnPlaceholder} />
-      </View>
+      <AppHeader navigation={navigation} title="Clients" subtitle="Carnet de l'atelier" showBack />
 
       <View style={styles.topRow}>
         {canEditClients ? (
@@ -336,7 +328,8 @@ export default function ClientListScreen({ navigation }) {
             onPress={() => navigation.navigate('MesureAdd')}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={styles.addBtnText}>+ Ajouter un client</Text>
+            <Ionicons name="person-add-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
+            <Text style={styles.addBtnText}>Ajouter un client</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -584,35 +577,15 @@ export default function ClientListScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+      <BottomBar navigation={navigation} active="Clients" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 44,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#f1f3f5',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backBtnPlaceholder: { width: 36, height: 36 },
-  backBtnText: { fontSize: 20, color: '#111', fontWeight: '700' },
-  topRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 10 },
-  title: { fontSize: 22, fontWeight: '700' },
-  addBtn: { backgroundColor: '#0d6efd', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 11 },
+  container: { flex: 1, backgroundColor: '#f4f6fb' },
+  topRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 14, marginTop: 10, marginBottom: 6 },
+  addBtn: { backgroundColor: '#0d6efd', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, flexDirection: 'row', alignItems: 'center' },
   addBtnText: { color: '#fff', fontWeight: '700' },
   item: {
     paddingVertical: 12,

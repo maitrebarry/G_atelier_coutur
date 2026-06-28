@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { AppHeader } from '../components/MobileShell';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import api from '../api/backend';
@@ -273,13 +275,7 @@ export default function AbonnementScreen({ navigation }) {
 
   return (
     <View style={styles.page}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Abonnement</Text>
-        <View style={{ width: 34 }} />
-      </View>
+      <AppHeader navigation={navigation} title="Abonnement" subtitle="Gestion de l'abonnement" showBack />
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: 12 }} />

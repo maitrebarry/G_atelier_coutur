@@ -492,5 +492,25 @@ export const offlineHandle = async (method, url, data) => {
     });
   }
 
+  if (method === 'put' && /^\/rendezvous\/[^/]+\/(confirmer|annuler|pret|terminer)$/.test(cleanUrl)) {
+    return withStore(async (store) => {
+      const [, , id, action] = cleanUrl.split('/');
+      const index = store.rendezvous.findIndex((r) => String(r.id) === String(id));
+      if (index < 0) throw new Error('Rendez-vous introuvable hors connexion');
+      const statusByAction = {
+        confirmer: 'CONFIRME',
+        annuler: 'ANNULE',
+        pret: 'PRET',
+        terminer: 'TERMINE',
+      };
+      store.rendezvous[index] = {
+        ...store.rendezvous[index],
+        statut: statusByAction[action] || store.rendezvous[index].statut,
+        updatedAt: nowIso(),
+      };
+      return store.rendezvous[index];
+    });
+  }
+
   throw new Error(`Endpoint indisponible hors connexion: ${method.toUpperCase()} ${cleanUrl}`);
 };

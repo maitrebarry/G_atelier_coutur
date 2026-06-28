@@ -8,7 +8,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import Icon from 'react-native-vector-icons/MaterialIcons'; // npm install react-native-vector-icons
+import { MaterialIcons as Icon, Ionicons } from '@expo/vector-icons';
+import { AppHeader } from '../components/MobileShell';
 
 const { width } = Dimensions.get('window');
 
@@ -521,14 +522,7 @@ export default function MesureAddScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Header avec progression */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Nouvelle mesure</Text>
-        <View style={styles.headerRight} />
-      </View>
+      <AppHeader navigation={navigation} title="Nouveau client" subtitle="Fiche de mesures" showBack />
 
       {/* Progress Tabs */}
       <View style={styles.progressContainer}>

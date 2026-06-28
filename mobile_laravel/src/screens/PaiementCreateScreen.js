@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Modal } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { AppHeader } from '../components/MobileShell';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import api from '../api/backend';
@@ -92,13 +94,7 @@ export default function PaiementCreateScreen({ route, navigation }) {
 
   return (
     <View style={styles.page}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Nouveau paiement</Text>
-        <View style={{ width: 34 }} />
-      </View>
+      <AppHeader navigation={navigation} title="Nouveau paiement" subtitle="Enregistrement paiement" showBack />
 
       <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.card}>

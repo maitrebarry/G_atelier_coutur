@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../api/backend';
+import { Ionicons } from '@expo/vector-icons';
+import { AppHeader } from '../components/MobileShell';
 
 export default function AssignerPermissionScreen({ navigation }) {
   const [userData, setUserData] = useState(null);
@@ -152,13 +154,7 @@ export default function AssignerPermissionScreen({ navigation }) {
 
   return (
     <View style={styles.page}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Assigner Permission</Text>
-        <View style={{ width: 34 }} />
-      </View>
+      <AppHeader navigation={navigation} title="Assigner Permission" subtitle="Droits d'accès" showBack />
 
       {!canAccess ? (
         <View style={styles.noPermissionBox}>

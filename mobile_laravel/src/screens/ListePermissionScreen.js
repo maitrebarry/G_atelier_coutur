@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../api/backend';
+import { Ionicons } from '@expo/vector-icons';
+import { AppHeader } from '../components/MobileShell';
 
 export default function ListePermissionScreen({ navigation }) {
   const [userData, setUserData] = useState(null);
@@ -111,13 +113,7 @@ export default function ListePermissionScreen({ navigation }) {
 
   return (
     <View style={styles.page}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Liste Permission</Text>
-        <View style={{ width: 34 }} />
-      </View>
+      <AppHeader navigation={navigation} title="Permissions" subtitle="Configuration des droits" showBack />
 
       {!canAccess ? (
         <View style={styles.noPermissionBox}>

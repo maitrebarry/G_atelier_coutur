@@ -1,18 +1,15 @@
 import React from 'react';
 import { View, ScrollView, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { AppHeader } from '../components/MobileShell';
 
 const DocumentationScreen = () => {
   const navigation = useNavigation();
 
   return (
+    <View style={{ flex: 1, backgroundColor: '#f4f6fb' }}>
+      <AppHeader navigation={navigation} title="Documentation" subtitle="Guide d'utilisation" showBack />
     <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Documentation ATELIKO</Text>
-        <Text style={styles.subtitle}>
-          Guide complet d'utilisation de l'application
-        </Text>
-      </View>
 
       <View style={styles.introduction}>
         <Text style={styles.introductionTitle}>À propos d'ATELIKO</Text>
@@ -221,6 +218,7 @@ const DocumentationScreen = () => {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 };
 

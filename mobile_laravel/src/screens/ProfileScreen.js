@@ -3,6 +3,8 @@ import { View, Text, Image, StyleSheet, Alert, ScrollView, TouchableOpacity, Tex
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../api/backend';
+import { Ionicons } from '@expo/vector-icons';
+import { AppHeader } from '../components/MobileShell';
 
 export default function ProfileScreen({ navigation }) {
   const [profile, setProfile] = useState(null);
@@ -139,13 +141,7 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <View style={styles.page}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtnText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Mon profil</Text>
-        <View style={{ width: 34 }} />
-      </View>
+      <AppHeader navigation={navigation} title="Mon profil" subtitle="Paramètres du compte" showBack />
 
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.card}>

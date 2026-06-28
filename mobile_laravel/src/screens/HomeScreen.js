@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Modal, ScrollView, Alert, StyleSheet, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Modal, ScrollView, Alert, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { AppHeader, BottomBar } from '../components/MobileShell';
 import api from '../api/backend';
 
 export default function HomeScreen({ navigation }) {
   const [userData, setUserData] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
-  const [sidebarVisible, setSidebarVisible] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false); // dropdown under avatar
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   const [atelierSubscriptions, setAtelierSubscriptions] = useState([]);
   const [subscriptionPayments, setSubscriptionPayments] = useState([]);
@@ -169,12 +169,12 @@ export default function HomeScreen({ navigation }) {
 
   const movementIcon = (type) => {
     const t = String(type || '').toUpperCase();
-    if (t.includes('RENDEZ') || t.includes('RDV')) return '📅';
-    if (t.includes('PAIEMENT')) return '💳';
-    if (t.includes('CLIENT')) return '👥';
-    if (t.includes('AFFECT')) return '📌';
-    if (t.includes('ABONN')) return '📦';
-    return '🕘';
+    if (t.includes('RENDEZ') || t.includes('RDV')) return 'calendar-outline';
+    if (t.includes('PAIEMENT')) return 'card-outline';
+    if (t.includes('CLIENT')) return 'people-outline';
+    if (t.includes('AFFECT')) return 'checkmark-done-outline';
+    if (t.includes('ABONN')) return 'ribbon-outline';
+    return 'time-outline';
   };
   
   const openOverdueAffectations = () => {
@@ -227,28 +227,28 @@ export default function HomeScreen({ navigation }) {
           {
             title: 'Affectations en attente',
             value: dashboardData?.affectationsEnAttente ?? '0',
-            icon: '⏳',
+            icon: 'time-outline',
             color: '#fd7e14',
             screen: null,
           },
           {
             title: 'Affectations en cours',
             value: dashboardData?.affectationsEnCours ?? '0',
-            icon: '🧵',
+            icon: 'cut-outline',
             color: '#0d6efd',
             screen: null,
           },
           {
             title: 'Terminées (7j)',
             value: dashboardData?.affectationsTermineesSemaine ?? '0',
-            icon: '✅',
+            icon: 'checkmark-circle-outline',
             color: '#f59f00',
             screen: null,
           },
           {
             title: 'Revenus mensuels',
             value: formatCurrency(dashboardData?.revenusMensuels || 0),
-            icon: '💰',
+            icon: 'cash-outline',
             color: '#20c997',
             screen: null,
           },
@@ -258,28 +258,28 @@ export default function HomeScreen({ navigation }) {
           {
             title: 'Nouveaux clients (7j)',
             value: dashboardData?.nouveauxClientsSemaine ?? '0',
-            icon: '👥',
+            icon: 'people-outline',
             color: '#20c997',
             screen: 'Clients',
           },
           {
             title: "Rendez-vous d'aujourd'hui",
             value: dashboardData?.rendezVousAujourdhui ?? '0',
-            icon: '📅',
+            icon: 'calendar-outline',
             color: '#0d6efd',
             screen: 'Rendezvous',
           },
           {
             title: 'Affectations en attente',
             value: dashboardData?.affectationsEnAttente ?? '0',
-            icon: '📌',
+            icon: 'pin-outline',
             color: '#fd7e14',
             screen: null,
           },
           {
             title: 'Paiements en attente',
             value: dashboardData?.paiementsAttente ?? '0',
-            icon: '💳',
+            icon: 'card-outline',
             color: '#0dcaf0',
             screen: 'Paiements',
           },
@@ -289,21 +289,21 @@ export default function HomeScreen({ navigation }) {
           {
             title: 'Total ateliers',
             value: dashboardData?.totalAteliers ?? '0',
-            icon: '🏭',
+            icon: 'business-outline',
             color: '#20c997',
             screen: null,
           },
           {
             title: 'Total clients',
             value: dashboardData?.totalClients ?? '0',
-            icon: '👥',
+            icon: 'people-outline',
             color: '#0d6efd',
             screen: null,
           },
           {
             title: "Chiffre d'affaires",
             value: formatCurrency(dashboardData?.chiffreAffairesTotal || 0),
-            icon: '💰',
+            icon: 'cash-outline',
             color: '#fd7e14',
             screen: null,
           },
@@ -312,21 +312,21 @@ export default function HomeScreen({ navigation }) {
           {
             title: "Chiffre d'affaires mensuel",
             value: formatCurrency(dashboardData?.chiffreAffairesMensuel || 0),
-            icon: '💰',
+            icon: 'cash-outline',
             color: '#20c997',
             screen: null,
           },
           {
             title: 'Prochain RDV',
             value: formatRdv(dashboardData?.rendezVousProchains?.[0]),
-            icon: '📅',
+            icon: 'calendar-outline',
             color: '#0d6efd',
             screen: 'Rendezvous',
           },
           {
             title: 'Nombre de tailleurs',
             value: dashboardData?.totalTailleurs ?? '0',
-            icon: '✂️',
+            icon: 'cut-outline',
             color: '#fd7e14',
             screen: null,
           },
@@ -348,8 +348,6 @@ export default function HomeScreen({ navigation }) {
           } catch (e) {
             // ignore storage error but still force logout navigation
           } finally {
-            setShowProfileMenu(false);
-            setSidebarVisible(false);
             navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
           }
         },
@@ -363,48 +361,25 @@ export default function HomeScreen({ navigation }) {
       activeOpacity={0.85}
       style={[styles.quickActionButton, { backgroundColor: color }]}
     >
-      <Text style={styles.quickActionIcon}>{icon}</Text>
+      <Ionicons name={icon} size={18} color="#fff" style={{ marginRight: 6 }} />
       <Text style={styles.quickActionLabel}>{title}</Text>
     </TouchableOpacity>
   );
 
-  // button style used for dashboard items (similar to JAKO-DANAYA)
-  const DashboardButton = ({ title, value, icon, onPress }) => (
+  const DashboardButton = ({ title, value, icon, color, onPress }) => (
     <TouchableOpacity
       onPress={onPress}
-      style={[
-        {
-          backgroundColor: '#fff',
-          borderRadius: 16,
-          padding: 14,
-          borderWidth: 1,
-          borderColor: '#eee',
-          marginBottom: 12,
-          flexDirection: 'row',
-          alignItems: 'center',
-        },
-      ]}
+      activeOpacity={0.86}
+      style={styles.dashboardCard}
     >
-      {icon && (
-        <View
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 12,
-            backgroundColor: '#f1f1f1',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: 12,
-          }}
-        >
-          <Text style={{ fontSize: 20 }}>{icon}</Text>
-        </View>
-      )}
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontWeight: '900', fontSize: 16 }}>{title}</Text>
-        {value !== undefined && <Text style={{ color: '#666', marginTop: 4 }}>{value}</Text>}
+      <View style={[styles.dashboardIconWrap, { backgroundColor: `${color}18` }]}>
+        <Ionicons name={icon} size={22} color={color} />
       </View>
-      <Text style={{ fontSize: 18, color: '#aaa' }}>›</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.dashboardCardTitle}>{title}</Text>
+        {value !== undefined && <Text style={styles.dashboardCardValue}>{value}</Text>}
+      </View>
+      <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
     </TouchableOpacity>
   );
 
@@ -731,98 +706,13 @@ export default function HomeScreen({ navigation }) {
     Alert.alert('Information', `Le module "${screen}" sera activé dans la prochaine étape.`);
   };
 
-  // Header layout
   return (
     <View style={styles.page}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>             
-          <TouchableOpacity style={styles.menuButton} onPress={() => setSidebarVisible(true)}>
-            <Text style={{ fontSize: 24 }}>☰</Text>
-          </TouchableOpacity>
-          <View style={{ flexDirection: 'column' }}>
-            <Text style={styles.atelierName}>{userData?.atelier || 'Mon atelier'}</Text>
-            <View style={styles.helloRow}>
-              <Text style={styles.hello}>Bonjour, {userData?.prenom || 'Utilisateur'}</Text>
-              <Text style={styles.wave}>👋</Text>
-            </View>
-          </View>
-        </View>
-        <View style={styles.headerCenter}>{/* empty, greeting moved left */}</View>
-        <View style={styles.headerRight}>
-          {/* Notification icon first */}
-          <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.notifButton}>
-            <Text style={{ fontSize: 22 }}>🔔</Text>
-          </TouchableOpacity>
-          {/* Profil photo -> toggle menu; show placeholder if missing */}
-          <TouchableOpacity onPress={() => setShowProfileMenu(!showProfileMenu)}>
-            {userData?.photo ? (
-              <Image source={{ uri: userData.photo }} style={styles.profilePhoto} />
-            ) : (
-              <View style={styles.profilePhotoPlaceholder}>
-                <Text style={{ fontSize: 18 }}>👤</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {showProfileMenu && (
-        <View style={styles.profileMenu}>
-          {userData?.atelier ? (
-            <View style={styles.profileMenuItem}>
-              <Text style={[styles.profileMenuText, { fontWeight: '900' }]}>{userData.atelier}</Text>
-            </View>
-          ) : null}
-          <TouchableOpacity
-            style={styles.profileMenuItem}
-            onPress={() => {
-              setShowProfileMenu(false);
-              navigation.navigate('Profile');
-            }}
-          >
-            <Text style={styles.profileMenuText}>Profil</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.profileMenuItem}
-            onPress={() => {
-              setShowProfileMenu(false);
-              handleLogout();
-            }}
-          >
-            <Text style={[styles.profileMenuText, { color: '#dc3545' }]}>Se déconnecter</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Sidebar */}
-      <Modal visible={sidebarVisible} animationType="slide" transparent>
-        <View style={styles.sidebarOverlay}>
-          <View style={styles.sidebar}>
-            {/* Icon pour fermer (croix) */}
-            <TouchableOpacity style={styles.sidebarCloseIcon} onPress={() => setSidebarVisible(false)}>
-              <Text style={{ fontSize: 22, color: '#dc3545' }}>✖️</Text>
-            </TouchableOpacity>
-            {/* Atelier connecté */}
-            {userData?.atelier ? (
-              <Text style={styles.sidebarAtelier}>{userData.atelier}</Text>
-            ) : null}
-            <Text style={styles.sidebarTitle}>Modules</Text>
-            {sidebarModules.map((item) => (
-              <TouchableOpacity key={item.label} style={styles.sidebarItem} onPress={() => { setSidebarVisible(false); goToModule(item.screen); }}>
-                <Text style={styles.sidebarIcon}>{item.icon}</Text>
-                <Text style={styles.sidebarLabel}>{item.label}</Text>
-              </TouchableOpacity>
-            ))}
-            {/* Profil */}
-            <TouchableOpacity style={styles.sidebarItem} onPress={() => { setSidebarVisible(false); navigation.navigate('Profile'); }}>
-              <Text style={styles.sidebarIcon}>👤</Text>
-              <Text style={styles.sidebarLabel}>Profil</Text>
-            </TouchableOpacity>
-
-          </View>
-        </View>
-      </Modal>
+      <AppHeader
+        navigation={navigation}
+        title={userData?.atelier || 'Mon atelier'}
+        subtitle={userData?.prenom ? `Bonjour, ${userData.prenom}` : undefined}
+      />
 
       {/* Body */}
       <ScrollView contentContainerStyle={styles.container}>
@@ -849,10 +739,10 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.sectionTitle}>Actions rapides</Text>
           <View style={styles.quickActionsGrid}>
             {canCreateClient ? (
-              <QuickActionButton title="Nouveau client" icon="🧵" color="#0ea5e9" onPress={() => navigation.navigate('MesureAdd')} />
+              <QuickActionButton title="Nouveau client" icon="person-add-outline" color="#0ea5e9" onPress={() => navigation.navigate('MesureAdd')} />
             ) : null}
             {canViewRendezVous ? (
-              <QuickActionButton title="Rendez-vous" icon="📅" color="#0d6efd" onPress={() => navigation.navigate('Rendezvous')} />
+              <QuickActionButton title="Rendez-vous" icon="calendar-outline" color="#0d6efd" onPress={() => navigation.navigate('Rendezvous')} />
             ) : null}
           </View>
         </View>
@@ -871,7 +761,7 @@ export default function HomeScreen({ navigation }) {
               return (
                 <View key={`recent-${index}`} style={styles.recentCard}>
                   <View style={styles.recentIconWrap}>
-                    <Text style={styles.recentIcon}>{movementIcon(item?.type)}</Text>
+                    <Ionicons name={movementIcon(item?.type)} size={20} color="#0d6efd" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.panelMain}>{title}</Text>
@@ -943,41 +833,42 @@ export default function HomeScreen({ navigation }) {
         </View>
       </Modal>
 
-      {/* Footer (bottom bar) */}
-      <View style={styles.bottomBar}>
-        {bottomBarModules.map((item) => (
-          <TouchableOpacity
-            key={item.label}
-            style={styles.bottomItem}
-            onPress={() => goToModule(item.screen)}
-          >
-            <Text style={styles.bottomIcon}>{item.icon}</Text>
-            <Text style={styles.bottomLabel}>{item.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <BottomBar navigation={navigation} active="Home" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: '#f8f9fa' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 36, paddingBottom: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee', marginTop: 10 },
-  menuButton: { padding: 8, borderRadius: 24, backgroundColor: '#f1f1f1', marginRight: 8 },
-  headerLeft: { flexDirection: 'row', alignItems: 'center' },
-  headerCenter: { flex: 1, alignItems: 'flex-start', marginLeft: 8 },
-  atelierName: { fontSize: 16, fontWeight: 'bold', color: '#0d6efd' },
-  helloRow: { flexDirection: 'row', alignItems: 'center' },
-  hello: { fontSize: 15, color: '#333' },
-  wave: { fontSize: 18, marginLeft: 4 },
-  headerRight: { flexDirection: 'row', alignItems: 'center' },
-  profilePhoto: { width: 40, height: 40, borderRadius: 20, marginLeft: 8, backgroundColor: '#eee' },
-  profilePhotoPlaceholder: { width: 40, height: 40, borderRadius: 20, marginLeft: 8, backgroundColor: '#eee', alignItems: 'center', justifyContent: 'center' },
-  notifButton: { marginLeft: 8 },
-  container: { padding: 18 },
-  section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#222', marginBottom: 12 },
+  page: { flex: 1, backgroundColor: '#f4f6fb' },
+  container: { padding: 16, paddingBottom: 112 },
+  section: { marginBottom: 22 },
+  sectionTitle: { fontSize: 17, fontWeight: '900', color: '#152238', marginBottom: 12 },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  dashboardCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#eef2f8',
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  dashboardIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  dashboardCardTitle: { fontSize: 14, fontWeight: '700', color: '#1f2937' },
+  dashboardCardValue: { fontSize: 18, fontWeight: '900', color: '#0d6efd', marginTop: 2 },
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -986,7 +877,7 @@ const styles = StyleSheet.create({
   },
   quickActionButton: {
     width: '48%',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 12,
     marginBottom: 8,
@@ -994,34 +885,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quickActionIcon: { color: '#fff', fontSize: 18, marginRight: 8 },
-  quickActionLabel: { color: '#fff', fontWeight: '700', textAlign: 'center' },
+  quickActionLabel: { color: '#fff', fontWeight: '800', fontSize: 13 },
   recentCard: {
     backgroundColor: '#fff',
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#edf1f6',
+    borderColor: '#eef2f8',
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
   },
   recentIconWrap: {
     width: 42,
     height: 42,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
-    backgroundColor: '#f3f6fb',
+    backgroundColor: '#ebf3ff',
   },
-  recentIcon: { fontSize: 20 },
-  recentAmount: { fontWeight: '800', color: '#1f2937', marginLeft: 8 },
+  recentAmount: { fontWeight: '800', color: '#1f2937', marginLeft: 8, fontSize: 13 },
   panelCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: '#eef2f8',
     padding: 12,
   },
   panelRow: {
@@ -1101,46 +995,4 @@ const styles = StyleSheet.create({
   modalSaveText: { color: '#fff', fontWeight: '800' },
   urgentBtn: { backgroundColor: '#fff1f2', borderWidth: 1, borderColor: '#fecdd3', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
   urgentBtnText: { color: '#be123c', fontWeight: '800', fontSize: 12 },
-  bottomBar: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingVertical: 8,
-  },
-  bottomItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  bottomIcon: { fontSize: 18 },
-  bottomLabel: { fontSize: 11, marginTop: 2, color: '#444' },
-  sidebarOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'flex-start' },
-  sidebar: { width: 260, backgroundColor: '#fff', padding: 24, paddingTop: 120, borderTopRightRadius: 24, borderBottomRightRadius: 24, elevation: 6, height: '100%' },
-  sidebarAtelier: { fontSize: 18, fontWeight: '700', marginBottom: 6, color: '#0d6efd' },
-  sidebarTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 18, color: '#222' },
-  sidebarItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
-  sidebarIcon: { fontSize: 22, marginRight: 12 },
-  sidebarLabel: { fontSize: 15, color: '#333' },
-  sidebarSectionTitle: { fontSize: 15, fontWeight: 'bold', color: '#0d6efd', marginTop: 32, marginBottom: 8 },
-  sidebarCloseIcon: { position: 'absolute', top: 120, right: 12, zIndex: 10 },
-  sidebarFooterSection: { marginTop: 32, borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 12 },
-  profileMenu: {
-    position: 'absolute',
-    top: 60,
-    right: 16,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 1000,
-    paddingVertical: 4,
-  },
-  profileMenuItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  profileMenuText: {
-    fontSize: 16,
-    color: '#333',
-  },
 });
